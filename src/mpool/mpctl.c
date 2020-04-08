@@ -2964,30 +2964,16 @@ mpool_mblock_write(
 	struct iovec       *iov,
 	int                 iov_cnt)
 {
-	struct mpioc_mblock mb = {
+	struct mpioc_mblock_rw mbrw = {
 		.mb_handle  = mbh,
 		.mb_iov_cnt = iov_cnt,
 		.mb_iov     = iov,
 	};
 
-	if (!ds || !iov)
+	if (!ds || !mbh || !iov)
 		return merr(EINVAL);
 
-	assert(mbh);
-
-	return mpool_ioctl(ds->ds_fd, MPIOC_MB_WRITE, &mb);
-}
-
-uint64_t
-mpool_mblock_write_async(
-	struct mpool           *ds,
-	uint64_t                mbh,
-	struct iovec           *iov,
-	int                     iov_cnt,
-	struct mp_asyncctx_ioc *pasyncio)
-{
-	/* Force synchronous writes */
-	return mpool_mblock_write(ds, mbh, iov, iov_cnt);
+	return mpool_ioctl(ds->ds_fd, MPIOC_MB_WRITE, &mbrw);
 }
 
 uint64_t
@@ -3027,7 +3013,7 @@ I_WRAP_SONAME_FNNAME_ZU(NONE, mpool_mblock_read)(
 
 	if (iov) {
 		for (i = 0; i < iovc; i++)
-			memset(iov[i].iov_base, 0xf0, iov[i].iov_len);
+			memset(iov[i].iov_base, 0xaa, iov[i].iov_len);
 	}
 	CALL_FN_W_5W(result, fn, ds, mbh, iov, iovc, offset);
 
@@ -3043,20 +3029,17 @@ mpool_mblock_read(
 	int               iov_cnt,
 	size_t            offset)
 {
-	struct mpioc_mblock mb;
+	struct mpioc_mblock_rw mbrw = {
+		.mb_handle  = mbh,
+		.mb_offset  = offset,
+		.mb_iov_cnt = iov_cnt,
+		.mb_iov     = iov,
+	};
 
-	if (!ds || !iov)
+	if (!ds || !mbh || !iov)
 		return merr(EINVAL);
 
-	assert(mbh);
-
-	memset(&mb, 0, sizeof(mb));
-	mb.mb_handle = mbh;
-	mb.mb_iov_cnt = iov_cnt;
-	mb.mb_iov = iov;
-	mb.mb_offset = offset;
-
-	return mpool_ioctl(ds->ds_fd, MPIOC_MB_READ, &mb);
+	return mpool_ioctl(ds->ds_fd, MPIOC_MB_READ, &mbrw);
 }
 
 uint64_t

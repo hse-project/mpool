@@ -612,8 +612,6 @@ struct mpioc_devprops {
  * @mb_spare:
  * @mb_mclassp: enum mp_media_classp, declared as uint8_t
  * @mb_offset:  mblock read offset
- * @mb_iov_cnt: count of mb_iov objects
- * @mb_iov:     pointers to user buffers
  */
 struct mpioc_mblock {
 	struct mpioc_cmn            mb_cmn;     /* Must be first field! */
@@ -623,18 +621,30 @@ struct mpioc_mblock {
 
 	uint8_t                     mb_spare;
 	uint8_t                     mb_mclassp;
-	uint8_t                     mb_rsvd1[6];
+	uint8_t                     mb_rsvd1[2];
+	uint32_t                    mb_rsvd2;
 
 	off_t                       mb_offset;
-	uint32_t                    mb_rsvd2;
-	uint16_t                    mb_rsvd3;
-	uint16_t                    mb_iov_cnt;
-	struct iovec __user        *mb_iov;
+	uint64_t                    mb_rsvd3;
 };
 
 struct mpioc_mblock_id {
 	struct mpioc_cmn    mi_cmn;     /* Must be first field! */
 	uint64_t            mi_handle;
+};
+
+#define MPIOC_KIOV_MIN          (4)
+#define MPIOC_KIOV_MAX          (1024)
+
+struct mpioc_mblock_rw {
+	struct mpioc_cmn        mb_cmn;     /* Must be first field! */
+	uint64_t                mb_objid;
+	uint64_t                mb_handle;
+	off_t                   mb_offset;
+	uint32_t                mb_rsvd2;
+	uint16_t                mb_rsvd3;
+	uint16_t                mb_iov_cnt;
+	struct iovec __user    *mb_iov;
 };
 
 /*
@@ -669,30 +679,6 @@ struct mpioc_mlog_io {
 	uint8_t                 mi_op;
 	uint8_t                 mi_rsvd1[5];
 	uint64_t                mi_rsvd2;
-};
-
-#define MPIOC_MLOG_KIOV_MIN   (4)
-#define MPIOC_MLOG_KIOV_MAX   (1024)
-
-/* mpioc_mlog_iov is used only to reserve space in mpioc_union
- * for the common case of a handful of user buffer pointers
- * passed in via mpioc_mlog_io.mi_iov.
- */
-struct mpioc_mlog_iov {
-	struct mpioc_mlog_io    mi_mlog;
-	struct iovec            mi_kiov[MPIOC_MLOG_KIOV_MIN];
-};
-
-#define MPIOC_MBLOCK_KIOV_MIN   (4)
-#define MPIOC_MBLOCK_KIOV_MAX   (1024)
-
-/* mpioc_mblock_iov is used only to reserve space in mpioc_union
- * for the common case of a handful of user buffer pointers
- * passed in via mpioc_mblock.mb_iov.
- */
-struct mpioc_mblock_iov {
-	struct mpioc_mblock     mb_mblock;
-	struct iovec            mb_kiov[MPIOC_MBLOCK_KIOV_MIN];
 };
 
 /**
@@ -744,10 +730,9 @@ union mpioc_union {
 	struct mpioc_mlog           mpu_mlog;
 	struct mpioc_mlog_id        mpu_mlog_id;
 	struct mpioc_mlog_io        mpu_mlog_io;
-	struct mpioc_mlog_iov       mpu_mlog_iov;
 	struct mpioc_mblock         mpu_mblock;
-	struct mpioc_mblock_id      mpu_mblockid;
-	struct mpioc_mblock_iov     mpu_mblock_iov;
+	struct mpioc_mblock_id      mpu_mblock_id;
+	struct mpioc_mblock_rw      mpu_mblock_rw;
 	struct mpioc_vma            mpu_vma;
 	struct mpioc_test           mpu_test;
 };
@@ -801,10 +786,8 @@ union mpioc_union {
 #define MPIOC_MB_GET            _IOWR(MPIOC_MAGIC, 57, struct mpioc_mblock)
 #define MPIOC_MB_PUT            _IOWR(MPIOC_MAGIC, 58, struct mpioc_mblock)
 
-#define MPIOC_MB_READ           _IOWR(MPIOC_MAGIC, 60, struct mpioc_mblock)
-#define MPIOC_MB_WRITE          _IOWR(MPIOC_MAGIC, 61, struct mpioc_mblock)
-#define MPIOC_MB_WRITE_ASYNC    _IOWR(MPIOC_MAGIC, 62, struct mpioc_mblock)
-#define MPIOC_MB_WRITE_ASYNC_FIN _IOWR(MPIOC_MAGIC, 63, struct mpioc_mblock)
+#define MPIOC_MB_READ           _IOWR(MPIOC_MAGIC, 60, struct mpioc_mblock_rw)
+#define MPIOC_MB_WRITE          _IOWR(MPIOC_MAGIC, 61, struct mpioc_mblock_rw)
 
 #define MPIOC_VMA_CREATE        _IOWR(MPIOC_MAGIC, 70, struct mpioc_vma)
 #define MPIOC_VMA_DESTROY       _IOWR(MPIOC_MAGIC, 71, struct mpioc_vma)
