@@ -1,0 +1,22 @@
+#!/bin/bash
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2015-2020 Micron Technology, Inc.  All rights reserved.
+#
+
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+
+    for smoke_tmp in $MPOOL_SMOKE_VARS; do
+        unset $smoke_tmp
+    done
+    unset smoke_tmp
+
+    ss_path=$(echo "$PATH" | sed -e "s/:NF1:.*:NF2//g" -e 's/::*/:/g' -e 's/^://' -e 's/:$//')
+    PATH=$ss_path
+
+else
+    echo "Usage: source ${0}" 1>&2
+fi
+
+true

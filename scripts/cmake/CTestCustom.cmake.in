@@ -1,0 +1,6 @@
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2015-2020 Micron Technology, Inc.  All rights reserved.
+#
+set(CTEST_CUSTOM_PRE_TEST "${MPOOL_TREE_SCRIPTS_DIR}/dev/mpool-chkconfig-fix.sh -u $ENV{USER}")

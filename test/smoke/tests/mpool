@@ -1,0 +1,81 @@
+#!/bin/bash
+
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2015-2020 Micron Technology, Inc.  All rights reserved.
+#
+
+#doc: run all of the mpft correctness tests
+
+mp1=$(new_mpool) || err
+mp2=$(new_mpool) || err
+mp3=$(new_mpool) || err
+
+mpool -h > /dev/null || err
+mpool list -h > /dev/null || err
+
+set -x
+
+X=$($sudo mpool list -H |wc -l)
+[ $X -eq 3 ] || err
+
+X=$($sudo mpool list -H $mp1 |grep "${mp1}" |wc -l)
+[ $X -eq 1 ] || err
+
+X=$($sudo mpool list -H $mp2 |grep "${mp1}" |wc -l)
+[ $X -eq 0 ] || err
+
+X=$($sudo mpool list -H $mp1 $mp2 |wc -l)
+[ $X -eq 2 ] || err
+
+X=$($sudo mpool list -H $mp1 $mp2 floobie |wc -l)
+[ $X -eq 2 ] || err
+
+
+X=$($sudo mpool get -H |wc -l)
+[ $X -eq 3 ] || err
+
+X=$($sudo mpool get -H $mp1 |grep "${mp1}" |wc -l)
+[ $X -eq 1 ] || err
+
+X=$($sudo mpool get -H $mp1 $mp2 |wc -l)
+[ $X -eq 2 ] || err
+
+X=$($sudo mpool get -H $mp1 $mp2 floobie |wc -l)
+[ $X -eq 2 ] || err
+
+
+# Test that chmod 0 works
+#
+$sudo mpool set $mp1 mode=0 || err
+
+set -- $(mpool get -H $mp1)
+[ $5 -eq 0 ] || err
+
+set -- $(ls -l /dev/mpool/$mp1)
+[ "$1" = "c---------" ] || err
+
+$sudo mpool deactivate $mp1 || err
+$sudo mpool activate $mp1 || err
+
+set -- $(mpool get -H $mp1)
+[ $5 -eq 0 ] || err
+
+set -- $(ls -l /dev/mpool/$mp1)
+[ "$1" = "c---------" ] || err
+
+$sudo mpool deactivate $mp1 || err
+$sudo mpool activate $mp1 mode=0640 || err
+
+set -- $(mpool get -H $mp1)
+[ $5 -eq 0640 ] || err
+
+set -- $(ls -l /dev/mpool/$mp1)
+[ "$1" = "crw-r-----" ] || err
+
+
+
+cmd $sudo ${MPOOL_BIN}/mpool destroy "$mp1"
+cmd $sudo ${MPOOL_BIN}/mpool destroy "$mp2"
+cmd $sudo ${MPOOL_BIN}/mpool destroy "$mp3"

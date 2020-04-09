@@ -1,0 +1,9 @@
+#!/usr/bin/bash
+
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2015-2020 Micron Technology, Inc.  All rights reserved.
+#
+
+cmd echo aloha

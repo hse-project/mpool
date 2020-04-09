@@ -1,0 +1,19 @@
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2015-2020 Micron Technology, Inc.  All rights reserved.
+#
+
+[Unit]
+Description=mpool scan
+DefaultDependencies=no
+After=systemd-tmpfiles-setup.service systemd-udevd.service local-fs.target network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/mpool scan --activate -v
+StartLimitInterval=0
+
+[Install]
+WantedBy=multi-user.target

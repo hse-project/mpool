@@ -1,0 +1,85 @@
+#!/bin/bash
+
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2015-2020 Micron Technology, Inc.  All rights reserved.
+#
+
+#doc: test the option parser
+
+mpool test -h
+[ $? -ne 0 ] || err
+
+mpool -T test -h | grep ^usage
+[ $? -eq 0 ] || err
+
+mpool -T test -Whelp | grep ^usage
+[ $? -eq 0 ] || err
+
+# No options, no arguments.
+#
+set -- $(mpool -T test)
+echo $*
+[ $1 -eq 0 -a $2 -eq 0 ] || err
+
+
+# Test argc with no options.
+#
+set -- $(mpool -T test bar baz)
+echo $*
+[ $1 -eq 2 -a $2 -eq 0 ] || err
+
+
+# Test argc in presence of options.
+#
+set -- $(mpool -T test -vv foo bar baz)
+echo $*
+[ $1 -eq 3 -a $2 -eq 2 ] || err
+
+
+# Test option count accumulation and retention of last setting.
+#
+set -- $(mpool -T test -v -i1 -v -sfoo -v -i7 -v -sbar -v foo)
+echo $*
+[ $1 -eq 1 -a $2 -eq 5 -a $3 -eq 2 -a $4 -eq 7 -a $7 -eq 2 -a $8 = "bar" ] || err
+
+
+# Test long option uid conversion.
+#
+uid=$(id -u operator)
+set -- $(mpool -T test --uid=operator)
+echo $*
+[ $1 -eq 0 -a $5 -eq 1 -a $6 -eq ${uid} ] || err
+
+uid=$(id -u daemon)
+set -- $(mpool -T test -uroot --uid daemon arg1)
+echo $*
+[ $1 -eq 1 -a $5 -eq 2 -a $6 -eq ${uid} ] || err
+
+uid=$(id -u nobody)
+set -- $(mpool -T test -Wuid=nobody arg0 arg1 arg2)
+echo $*
+[ $1 -eq 3 -a $5 -eq 1 -a $6 -eq ${uid} ] || err
+
+
+# Missing or invalid option argument..
+#
+mpool -T test --int64 2>&1 | grep 'requires an argument' || err
+
+mpool -T test --int64= 2>&1 | grep 'unable to convert' || err
+
+mpool -T test --int64=abc 2>&1 | grep 'unable to convert' || err
+
+mpool -T test -s 2>&1 | grep 'requires an argument' || err
+
+mpool -T test -W 2>&1 | grep 'requires an argument' || err
+
+
+# -i and -u are mutually exclusive
+#
+mpool -T test -i1 -u2 2>&1 | grep 'excludes'
+[ $? -eq 0 ] || err
+
+mpool -T test -v -u3 -sfoo -i4 -v 2>&1 | grep 'excludes'
+[ $? -eq 0 ] || err

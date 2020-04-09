@@ -1,0 +1,20 @@
+#!/usr/bin/bash
+
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2015-2020 Micron Technology, Inc.  All rights reserved.
+#
+
+#doc: a "hello world" test
+
+# expect success
+cmd ${MPOOL_BIN}/mpool version
+cmd grep version: $LOG
+
+#expect success
+cmd ${MPOOL_BIN}/mpool version show
+cmd grep version: $LOG
+
+#expect failure
+cmd --exp-err-status ${MPOOL_BIN}/mpool version show me the money

@@ -1,0 +1,21 @@
+#!/bin/bash
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2015-2020 Micron Technology, Inc.  All rights reserved.
+#
+
+show_vars ()  {
+    # do not use "declare -n" (not supported on older versions of bash)
+    local var_name
+    local var_value
+    for var_name in "$@"; do
+        var_value=$(eval echo \"\$"$var_name"\")
+        printf "%-16s = %s\n" "$var_name" "$var_value"
+    done
+    printf "%-16s = %s\n" "PATH" "$PATH"
+}
+
+show_vars $MPOOL_SMOKE_VARS
+unset show_vars
+true

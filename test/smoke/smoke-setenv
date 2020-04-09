@@ -1,0 +1,203 @@
+#!/bin/bash
+
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2015-2020 Micron Technology, Inc.  All rights reserved.
+#
+
+# All shell variables that are not supposed to be part of the caller's
+# environment are prefixed with "ss" (mnemonic: ss = smoke setenv (the name of
+# this script)).  This helps prevent collisions between the caller and this
+# shell script.  The following list contains all internal symbols, which
+# should be unset prior to leaving this script to avoid polluting the caller's
+# environment.
+ss_internal_symbols="
+    ss_arg
+    ss_dryrun
+    ss_update_path
+    ss_err
+    ss_exit
+    ss_help
+    ss_internal_symbols
+    ss_mpool_build_dir
+    ss_mpool_src
+    ss_path
+    ss_script_dir
+    ss_script_is_sourced
+    ss_set_build_dir
+    ss_set_build_dir_from_mode
+    ss_setenv_cmd
+    ss_show_vars
+"
+
+# Extra care is used to ensure this script "exits" correctly.  When sourced,
+# we can't use "exit" because it exits the caller's shell.  When not sourced,
+# we want to use "exit" to indicate status.  The ss_exit function does the
+# right thing.
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    ss_script_is_sourced=0
+    ss_exit="exit"
+else
+    ss_script_is_sourced=1
+    ss_exit="unset $ss_internal_symbols; return"
+fi
+
+
+# exported smoke vars
+export MPOOL_SMOKE_VARS="MPOOL_SRC MPOOL_BIN MPOOL_BUILD_DIR MPOOL_SMOKE_VARS MPOOL_SMOKING"
+
+ss_script_dir=$(readlink -m "${BASH_SOURCE[0]}")
+ss_mpool_src=$(readlink -m "$ss_script_dir/../../..")
+ss_setenv_cmd=smoke-setenv
+ss_dryrun=0
+ss_update_path=0
+
+ss_err () {
+    while (( $# > 0 )); do
+        echo "${ss_setenv_cmd}: $1"
+        shift
+    done 1>&2
+}
+
+ss_show_vars () {
+    # do not use "declare -n" (not supported on older versions of bash)
+    local var_name
+    local var_value
+    for var_name in "$@"; do
+        var_value=$(eval echo \"\$"$var_name"\")
+        printf "%-16s = %s\n" "$var_name" "$var_value"
+    done
+    printf "%-16s = %s\n" "PATH" "$PATH"
+
+}
+
+ss_help () {
+cat<<EOF
+Usage: source ${ss_setenv_cmd} [OPTIONS] { <build_mode> | <build_dir> }
+Options:
+  -h   // help
+  -n   // dry run
+Examples:
+  source ${ss_setenv_cmd} debug
+  source ${ss_setenv_cmd} relassert
+  source ${ss_setenv_cmd} ~/builds/debug
+
+This script must be invoked with 'source' so it can modify
+the following variables in the caller's environment:
+EOF
+    for var in $MPOOL_SMOKE_VARS; do
+        echo "  $var"
+    done
+    echo ""
+}
+    
+ss_set_build_dir () {
+    ss_mpool_build_dir=$1
+    if [[ ! -d "$ss_mpool_build_dir" ]]; then
+        ss_err "No such directory: $ss_mpool_build_dir"
+        return 1
+    fi
+    return 0
+}
+
+ss_set_build_dir_from_mode () {
+    local mode=$1
+    case "$mode" in
+        (debug|optdebug|release|relassert|relwithdebug)
+            if ! ss_mpool_build_dir=$(make -C "$ss_mpool_src" "$mode" -s printq-BUILD_DIR); then
+                ss_err "Bug in ${ss_setenv_cmd} script: ss_mpool_src=$ss_mpool_src not set correctly!"
+                return 1
+            fi
+            ;;
+        (*)
+            ss_err "Unknown build mode: $mode"
+            return 1
+            ;;
+    esac
+    return 0
+}
+
+ss_arg=
+while (( $# > 0 )); do
+    case "$1" in
+        (-h|-\?)
+            ss_help
+            eval $ss_exit 0
+            ;;
+        (-n)
+            ss_dryrun=1
+            shift
+            ;;
+        (-p)
+            ss_update_path=1
+            shift
+            ;;
+        (-*)
+            ss_err "Unkown option: '$1'" "Use -h for help"
+            eval $ss_exit 1
+            ;;
+        (*)
+            if [[ "$ss_arg" != "" ]]; then
+                ss_help 1>&2
+                eval $ss_exit 1
+            fi
+            ss_arg=$1
+            shift 1
+            ;;
+    esac
+done
+
+if [[ "$ss_arg" == "" ]]; then
+    ss_help 1>&2
+    eval $ss_exit 1
+fi
+
+case "$ss_arg" in
+    (*/*)
+        if ! ss_set_build_dir "$ss_arg"; then
+            eval $ss_exit 1
+        fi
+        ;;
+    (*)
+        if ! ss_set_build_dir_from_mode "$ss_arg"; then
+            eval $ss_exit 1
+        fi
+        ;;
+esac
+
+if (( ss_dryrun )); then
+
+    echo MPOOL_SRC=$ss_mpool_src
+    echo MPOOL_BIN=$ss_mpool_build_dir/stage/bin
+    echo MPOOL_BUILD_DIR=$ss_mpool_build_dir
+    echo MPOOL_SMOKE_VARS=$MPOOL_SMOKE_VARS
+    echo MPOOL_SMOKING=1
+
+    if (( ss_update_path )); then
+        ss_path=$(echo "$PATH" | sed -e "s/:NF1:.*:NF2//g" -e 's/::*/:/g' -e 's/^://' -e 's/:$//')
+        echo "PATH=:NF1:$ss_mpool_build_dir/stage/bin:NF2:$ss_path"
+    fi
+
+elif (( ss_script_is_sourced )); then
+
+    MPOOL_SRC=$ss_mpool_src
+    MPOOL_BIN=$ss_mpool_build_dir/stage/bin
+    MPOOL_BUILD_DIR=$ss_mpool_build_dir
+    MPOOL_SMOKING=1
+
+    if (( ss_update_path )); then
+        ss_path=$(echo "$PATH" | sed -e "s/:NF1:.*:NF2//g" -e 's/::*/:/g' -e 's/^://' -e 's/:$//')
+        PATH=:NF1:$MPOOL_BIN:NF2:$ss_path
+    fi
+
+    #ss_show_vars $MPOOL_SMOKE_VARS
+    export $MPOOL_SMOKE_VARS
+
+else
+    ss_err "${ss_setenv_cmd} must be invoked with 'source' to have any effect." \
+           "Use -h for help"
+    eval $ss_exit 1
+fi
+
+eval $ss_exit 0

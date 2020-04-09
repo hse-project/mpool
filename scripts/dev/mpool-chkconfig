@@ -1,0 +1,255 @@
+#!/usr/bin/bash
+
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2015-2020 Micron Technology, Inc.  All rights reserved.
+#
+
+# mpool-chkconfig
+#
+# This scripts checks whether the system is properly configured to
+# build, test and run the code
+#
+
+# Error counters
+errs=0
+no_unit_tests=0
+no_huge_page_tests=0
+verbose=0
+fixup=0
+fixes_attempted=0
+user=$(id -un)
+
+# Variables / requirements
+required_hugepages=32     #TODO: how many huge pages do unit tests need?
+mpooldir="/mpool"
+
+printhelp() {
+    echo "This script will verify whether the system is properly configured"
+    echo "to build and [unit] test mpool"
+    echo
+    echo "Usage: mpool-chkconfig [args]"
+    echo "Args:"
+    echo "   -v|--verbose      - Be verbose"
+    echo "   -f|--fix          - Attempt to fix problems if found"
+    echo "   -h|--help      - Print this message"
+}
+
+while (( $# > 0 )); do
+    flag="$1"
+    shift
+    case "$flag" in
+
+	(-v|--verbose)
+	    verbose=1
+	    ;;
+	(-f|--fix)
+	    fixup=1
+	    ;;
+	(-h|--help) # must be last; -? matches any one-letter option
+	    printhelp
+	    exit
+	    ;;
+    esac
+done
+
+if (($fixup)); then
+    if [ "${user}" != "root" ]; then
+	# Make a sudo prefix for issuing fix commands
+	sudo="sudo"
+	echo "Fixes require sudo; you may be prompted for your password"
+    fi
+fi
+
+#
+# System configuration
+#
+
+# Does the mpooldir exist?
+if [ ! -d ${mpooldir}/$USER ]; then
+    echo "Error: No ${mpooldir}/$USER directory"
+    ((errs++))
+    ((no_unit_tests++))
+    if (($fixup)); then
+	echo "...attempting to fix"
+	${sudo} mkdir -p ${mpooldir}/$USER
+	((fixes_attempted++))
+    fi
+elif (($verbose)); then
+    echo "Good: found ${mpooldir}/$USER"
+fi
+
+# Is the mpooldir writable?
+if [ ! -w ${mpooldir} ]; then
+    echo "Error: You don't have write permission in ${mpooldir}"
+    ((errs++))
+    ((no_unit_tests++))
+    if (($fixup)); then
+	echo "...attempting to fix"
+	${sudo} chgrp nf ${mpooldir}
+	${sudo} chmod g+w ${mpooldir}
+	((fixes_attempted++))
+    fi
+elif (($verbose)); then
+    echo "Good: ${mpooldir} is writable"
+fi
+
+# Is the mpooldir writable?
+if [ ! -w ${mpooldir}/$USER ]; then
+    echo "Error: You don't have write permission in ${mpooldir}/$USER"
+    ((errs++))
+    ((no_unit_tests++))
+    if (($fixup)); then
+	echo "...attempting to fix"
+	${sudo} chgrp nf ${mpooldir}/$USER
+	${sudo} chmod g+w ${mpooldir}/$USER
+	((fixes_attempted++))
+    fi
+elif (($verbose)); then
+    echo "Good: ${mpooldir}/$USER is writable"
+fi
+
+# Is hugetlbfs mounted?
+hugetlbfs=$(grep hugetlbfs -m1 /proc/mounts | awk '{print $2}')
+if [ ! -d ${hugetlbfs} ]; then
+    echo "Error: No hugetlbfs"
+    if (($fixup)); then
+	echo "...can't fix this - see the sysadmin"
+    fi
+elif (($verbose)); then
+    echo "Good: found hugetlbfs at ${hugetlbfs}"
+fi
+
+# Is hugetlbfs writable?
+if [ ! -w ${hugetlbfs} ]; then
+    echo "Error: you don't have write permission in ${hugetlbfs}"
+    ((errs++))
+    ((no_unit_tests++))
+    if (($fixup)); then
+	echo "...attempting to fix"
+	${sudo} chgrp nf ${hugetlbfs}
+	${sudo} chmod g+w ${hugetlbfs}
+	((fixes_attempted++))
+    fi
+elif (($verbose)); then
+    echo "Good: hugetlbfs is writable"
+fi
+
+# Are there enough free huge pages to run unit tests?
+free_hugepages=$(grep HugePages_Free /proc/meminfo | awk '{print $2}')
+if ((free_hugepages < required_hugepages)) ; then
+    echo -n "Not enough free huge pages for unit tests "
+    echo "(have ${free_hugepages}, need ${required_hugepages})"
+    ((no_huge_page_tests++))
+    ((errs++))
+    if (($fixup)); then
+	echo "...attempting to fix"
+	x=$(sysctl -n vm.nr_hugepages)
+	x=$((x + required_hugepages * 2))
+	${sudo} sysctl -w vm.nr_hugepages=$x
+	((fixes_attempted++))
+    fi
+elif (($verbose)); then
+    echo "Good: there are ${free_hugepages} huge pages available"
+fi
+
+# (SDIR is path where this script lives)
+SDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# If this is el6...
+if [[ "$(uname -r | grep -c el6)" == '1' ]]; then
+    # Are our udev rules installed?
+    UDEV_DIR=/etc/udev/rules.d
+    UDEV_FILE=90-mpool.rules
+    if [ ! -e $UDEV_DIR/$UDEV_FILE ]; then
+	echo "Udev rules not installed ($UDEV_DIR/$UDEV_FILE)"
+	((errs++))
+	if (($fixup)); then
+	    echo "...attempting to fix"
+	    ${sudo} cp $SDIR/udev/rules.d/$UDEV_FILE ${UDEV_DIR}
+	    ((fixes_attempted++))
+	fi
+    fi
+
+    # Are el6 transparent hugepages enabled (thp crashes systems)
+    # (THPFILE only exists on el6)
+    THPFILE=/sys/kernel/mm/redhat_transparent_hugepage/enabled
+    if [ -f $THPFILE ]; then
+	if [[ "$(grep -c '\[never\]' $THPFILE)" == '0' ]]; then
+	    echo "This el6 and transparent huge pages are not disabled !!"
+	    ((errs++))
+	    if (($fixup)); then
+		echo "...attempting to fix"
+		# THPFILE variable didn't make it into sudo... is there a fix?
+		${sudo} -E sh -c 'echo never > /sys/kernel/mm/redhat_transparent_hugepage/enabled'
+	    fi
+	fi
+    fi
+fi
+
+#
+# User privileges, etc.
+#
+
+# Is the caller in the "nf" group?
+ingroup=$(id -nG | grep -cw "nf")
+if ((!ingroup)) ; then
+    echo "Error: user ${user} not in nf group"
+    if (($fixup)); then
+	echo "...attempting to fix"
+	${sudo} usermod -aG nf ${user}
+	((fixes_attempted++))
+    fi
+
+    ingroup=$(id -nG | grep -cw "nf")
+    if [ ${ingroup} -eq 0 -a $(id -u) -ne 0 ] ; then
+	((errs++))
+	((no_unit_tests++))
+    fi
+elif (($verbose)); then
+    echo "Good: user ${user} is a member of the nf group"
+fi
+
+#
+# Check for syslog-ng RPM
+#
+syslog_rpm='sbu-syslog-ng'
+rpm -q ${syslog_rpm} > /dev/null
+if (($? != 0)); then
+    echo "Error: ${syslog_rpm} rpm is not installed"
+    ((errs++))
+    if (($fixup)); then
+        echo "...attempting to fix"
+        ${sudo} yum install -y $syslog_rpm
+        ((fixes_attempted++))
+    fi
+elif (($verbose)); then
+    echo "Good: $syslog_rpm rpm is installed"
+fi
+
+#
+# Summarize results
+#
+if ((errs)) ; then
+    echo "${errs} errors found"
+    echo
+fi
+
+if ((no_unit_tests)) ; then
+    echo "You can't run unit tests"
+fi
+
+if ((no_huge_page_tests)) ; then
+    echo "You can't run unit tests involving huge pages"
+fi
+
+if (((fixes_attempted)) && ((errs))) ; then
+    echo "Fixes were attempted; re-run to see if it's fixed"
+fi
+
+if ((!errs)) ; then
+    echo "No problems found"
+fi
+
+exit $errs

@@ -1,0 +1,13 @@
+#!/bin/bash
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2015-2020 Micron Technology, Inc.  All rights reserved.
+#
+
+set -e
+set -u
+
+smoke_dir=$(readlink -m "${BASH_SOURCE[0]}"/..)
+source "$smoke_dir"/smoke-setenv "${MPOOL_BUILD_DIR}"
+"$smoke_dir"/smoke --logdir "${MPOOL_BUILD_DIR}"/smokelogs "$1"

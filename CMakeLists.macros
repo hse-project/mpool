@@ -1,0 +1,716 @@
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2015-2020 Micron Technology, Inc.  All rights reserved.
+#
+
+#----------------------------------------------------------------
+# Syntax Conventions:
+#
+#  Cmake keywords and vars    : uppercase
+#  mpool global vars          : uppercase
+#  Local vars                 : lowercase
+#  Function parameter FOO     : param_FOO
+#----------------------------------------------------------------
+
+
+INCLUDE(CMakeParseArguments)
+
+FUNCTION(MY_JOIN output sep)
+    SET(result "")
+    SET(esep "") # effective sep is empty at the beginning
+    FOREACH(arg ${ARGN})
+        SET(result "${result}${esep}${arg}")
+        SET(esep "${sep}")
+    ENDFOREACH()
+    SET(${output} "${result}" PARENT_SCOPE)
+ENDFUNCTION()
+
+#
+# Functions that add text to the beginning of each element of a list
+#
+# The action of each of these is given in terms of their operation on
+# the variable foo defined as:
+#
+#     SET( foo /tmp/cat /tmp/dog )
+#
+
+#
+# MY_ADD_PREFIX(output " -I" ${foo})  ==>  ${output}=="-I/tmp/cat; -I/tmp/dog"
+#
+FUNCTION(MY_ADD_PREFIX output_var text)
+    SET(result "")
+    FOREACH(arg ${ARGN})
+        LIST(APPEND result "${text}${arg}")
+    ENDFOREACH()
+    SET(${output_var} "${result}" PARENT_SCOPE)
+ENDFUNCTION()
+
+#
+# MY_PREPEND_OVER(output " -I" ${foo})  ==>  ${output}=="-I/tmp/cat -I/tmp/dog"
+#
+FUNCTION(MY_PREPEND_OVER output pfx)
+    SET(result "")
+    FOREACH(arg ${ARGN})
+        SET(result "${result}${pfx}${arg}")
+    ENDFOREACH()
+    SET(${output} "${result}" PARENT_SCOPE)
+ENDFUNCTION()
+
+
+FUNCTION(MY_ADD_SUFFIX output_var text)
+    SET(result "")
+    FOREACH(arg ${ARGN})
+        LIST(APPEND result "${arg}${text}")
+    ENDFOREACH()
+    SET(${output_var} "${result}" PARENT_SCOPE)
+ENDFUNCTION()
+
+
+#----------------------------------------------------------------
+# Use mpool_copy_files to copy a set of files from the current src
+# dir to the corresponding build output dir:
+#
+#   mpool_copy_files(foobar
+#    ${CMAKE_CURRENT_BINARY_DIR}
+#     readme *.txt *.json *.sh doc/*.txt)
+#----------------------------------------------------------------
+
+MACRO(mpool_copy_files target_name dst_dir)
+  ADD_CUSTOM_TARGET(${target_name} ALL)
+  FOREACH(PATTERN ${ARGN})
+    FILE(GLOB COPY_FILES
+      RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+      ${PATTERN})
+    FOREACH(filename ${COPY_FILES})
+      SET(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${filename}")
+      SET(DST "${dst_dir}/${filename}")
+      ADD_CUSTOM_COMMAND(
+        TARGET ${target_name}
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SRC} ${DST})
+    ENDFOREACH()
+  ENDFOREACH()
+ENDMACRO()
+
+#----------------------------------------------------------------
+# MPOOL_DOC:  Install documentation with no processing
+#
+# Usage:
+#
+#   MPOOL_DOC(
+#       NAME        foobar
+#       SRCS        foo.c bar.c
+#       DESTINATION dir
+#       COMPONENT   component)
+#----------------------------------------------------------------
+
+FUNCTION(MPOOL_DOC)
+    SET(one_value_opts
+        NAME            # (required) name for collection of object files
+        COMPONENT       # (required) installation component
+        DESTINATION     # (required) installation directory
+        )
+
+    SET(multi_value_opts
+        SRCS            # (required) list of source files
+        )
+
+    CMAKE_PARSE_ARGUMENTS(
+        param
+        "" "${one_value_opts}" "${multi_value_opts}"
+        ${ARGN})
+
+    IF("${param_NAME}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "MPOOL_DOC: Must set NAME")
+    ENDIF()
+
+    IF("${param_SRCS}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "MPOOL_DOC: Must set SRCS")
+    ENDIF()
+
+    IF("${param_COMPONENT}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "MPOOL_DOC: Must set COMPONENT")
+    ENDIF()
+
+    IF("${param_DESTINATION}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "MPOOL_DOC: Must set DESTINATION")
+    ENDIF()
+
+    #
+    # Docs are unlikely to be private, but for consistency,
+    # allow that special component here.
+    #
+    IF(NOT "${param_COMPONENT}" STREQUAL "private")
+      INSTALL(
+        FILES ${param_SRCS}
+        DESTINATION ${param_DESTINATION}
+        COMPONENT ${param_COMPONENT}
+      )
+    ENDIF()
+ENDFUNCTION()
+
+#----------------------------------------------------------------
+# MPOOL_MKDOCS:  Install documentation with mkdocs processing.
+#   Output is an HTML documentation site.
+#
+# Usage:
+#
+#   MPOOL_MKDOCS(
+#       NAME        foobar
+#       SRCDIR      foo
+#       OPTIONS     mkdocs_opts
+#       DESTINATION dir
+#       COMPONENT   component)
+#----------------------------------------------------------------
+
+FUNCTION(MPOOL_MKDOCS)
+    SET(one_value_opts
+        NAME            # (required) name for document
+        SRCDIR          # (required) directory containing docs and YAML cfg
+        DESTINATION     # (required) installation directory
+        COMPONENT       # (required) installation component
+        )
+
+    SET(multi_value_opts
+        OPTIONS         # (optional) mkdoc options
+        )
+
+    CMAKE_PARSE_ARGUMENTS(
+        param
+        "" "${one_value_opts}" "${multi_value_opts}"
+        ${ARGN})
+
+    IF("${param_NAME}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "MPOOL_MKDOCS: Must set NAME")
+    ENDIF()
+
+    IF("${param_SRCDIR}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "MPOOL_MKDOCS: Must set SRCDIR")
+    ENDIF()
+
+    IF("${param_DESTINATION}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "MPOOL_MKDOCS: Must set DESTINATION")
+    ENDIF()
+
+    IF("${param_COMPONENT}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "MPOOL_MKDOCS: Must set COMPONENT")
+    ENDIF()
+
+    #
+    # Stage out to the build side of the tree.
+    #
+    FILE(COPY ${param_SRCDIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+    #
+    # Set up a target for the above copy.
+    #
+    GET_FILENAME_COMPONENT(basename_SRCDIR ${param_SRCDIR} NAME)
+    SET(BUILD_SRCDIR "${CMAKE_CURRENT_BINARY_DIR}/${basename_SRCDIR}")
+
+    ADD_CUSTOM_TARGET(
+        ${param_NAME}-srcs
+        ALL
+        DEPENDS ${BUILD_SRCDIR}
+    )
+
+    #
+    # Generate the website.  The outputs are not completely
+    # deterministic, so we'll depend upon the top index.html and hope
+    # for the rest as a side-effect.
+    #
+    FILE(GLOB mdsrcs ${param_SRCDIR}/docs/*.md)
+    LIST(APPEND mdsrcs ${param_SRCDIR}/mkdocs.yml)
+
+    #
+    # RHEL vs. FC handles locales differently (of course).
+    #
+    IF( "${MPOOL_DISTRO}" STREQUAL "el6" OR "${MPOOL_DISTRO}" STREQUAL "el7" )
+      SET(MPOOL_LOCALE "en_US.utf-8")
+    ELSE()
+      SET(MPOOL_LOCALE "en_US.UTF-8")
+    ENDIF()
+
+    ADD_CUSTOM_COMMAND(
+      OUTPUT "${BUILD_SRCDIR}/site/index.html"
+      COMMAND env LC_ALL=${MPOOL_LOCALE} LANG=${MPOOL_LOCALE} mkdocs build ${param_OPTIONS}
+      DEPENDS ${mdsrcs}
+      WORKING_DIRECTORY ${BUILD_SRCDIR}
+    )
+
+    ADD_CUSTOM_TARGET(
+      ${param_NAME}-site
+      ALL
+      DEPENDS "${BUILD_SRCDIR}/site/index.html"
+    )
+
+    #
+    # Docs are unlikely to be private, but for consistency,
+    # allow that special component here.
+    #
+    IF(NOT "${param_COMPONENT}" STREQUAL "private")
+      INSTALL(
+        DIRECTORY "${BUILD_SRCDIR}/site/"
+        DESTINATION ${param_DESTINATION}
+        COMPONENT ${param_COMPONENT})
+    ENDIF()
+
+ENDFUNCTION()
+
+#----------------------------------------------------------------
+# MPOOL_PANDOC:  Install documentation with pandoc processing.
+#   Output is HTML and PDF as standalone documents.
+#
+# Usage:
+#
+#   MPOOL_PANDOC(
+#       NAME        foobar
+#       SRCS        foo.md
+#       STYLESHEET  bar.css
+#       OPTIONS     pandoc_opts
+#       DESTINATION dir
+#       COMPONENT   component)
+#----------------------------------------------------------------
+
+FUNCTION(MPOOL_PANDOC)
+    SET(one_value_opts
+        NAME            # (required) name for document
+        STYLESHEET      # (optional) stylesheet for HTML output
+        OPTIONS         # (optional) pandoc options to override defaults
+        DESTINATION     # (required) installation directory
+        COMPONENT       # (required) installation component
+        )
+
+    SET(multi_value_opts
+        SRCS            # (required) list of source files
+        )
+
+    SET(pandoc_common_opts  "--toc" "--smart" "-s")
+    SET(pandoc_pdf_opts     "-V" "geometry:margin=1in")
+
+    SET(pandoc_pdf_opts     "${pandoc_pdf_opts}" "${pandoc_common_opts}")
+
+    CMAKE_PARSE_ARGUMENTS(
+        param
+        "" "${one_value_opts}" "${multi_value_opts}"
+        ${ARGN})
+
+    IF("${param_NAME}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "MPOOL_PANDOC: Must set NAME")
+    ENDIF()
+
+    IF("${param_SRCS}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "MPOOL_PANDOC: Must set SRCS")
+    ENDIF()
+
+    IF(NOT "${param_OPTIONS}" STREQUAL "")
+        SET(pandoc_html_opts "${param_OPTIONS}")
+        SET(pandoc_pdf_opts  "${param_OPTIONS}")
+    ENDIF()
+
+    IF(NOT "${param_STYLESHEET}" STREQUAL "")
+        SET(
+          pandoc_html_opts "${pandoc_html_opts}" "--css" "${param_STYLESHEET}")
+        SET(
+          pandoc_html_opts "${pandoc_html_opts}" "${pandoc_common_opts}")
+    ENDIF()
+
+    IF("${param_DESTINATION}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "MPOOL_PANDOC: Must set DESTINATION")
+    ENDIF()
+
+    IF("${param_COMPONENT}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "MPOOL_PANDOC: Must set COMPONENT")
+    ENDIF()
+
+    SET(
+      pdf_output_file
+      "${CMAKE_CURRENT_BINARY_DIR}/${param_NAME}.pdf"
+    )
+
+    SET(
+      html_output_file
+      "${CMAKE_CURRENT_BINARY_DIR}/${param_NAME}.html"
+    )
+
+    mpool_copy_files(
+      ${param_SRCS}-src
+      ${CMAKE_CURRENT_BINARY_DIR}
+      ${param_SRCS}
+    )
+
+    ADD_CUSTOM_COMMAND(
+        OUTPUT ${pdf_output_file} ${html_output_file}
+        COMMAND pandoc ${pandoc_pdf_opts} -o ${pdf_output_file} ${param_SRCS}
+        COMMAND pandoc ${pandoc_html_opts} -o ${html_output_file} ${param_SRCS}
+        DEPENDS ${param_SRCS} ${param_STYLESHEET} ${param_SRCS}-src
+    )
+
+    ADD_CUSTOM_TARGET(
+        ${param_NAME}-doc
+        ALL
+        DEPENDS ${pdf_output_file} ${html_output_file}
+    )
+
+    #
+    # Docs are unlikely to be private, but for consistency,
+    # allow that special component here.
+    #
+    IF(NOT "${param_COMPONENT}" STREQUAL "private")
+      INSTALL(
+        FILES ${pdf_output_file} ${html_output_file}
+        DESTINATION ${param_DESTINATION}
+        COMPONENT ${param_COMPONENT})
+    ENDIF()
+ENDFUNCTION()
+
+#----------------------------------------------------------------
+# MPOOL_EXECUTABLE : Function to build an executable.
+#
+# Usage:
+#
+#    MPOOL_EXECUTABLE(
+#        NAME      foobar
+#        SRCS      foo.c bar.c
+#        DEP_LIBS  mpool_platform
+#        LINK_LIBS m
+#        [OUTDIR dir]
+#        [DESTINATION dir]
+#        [COMPONENT component])
+#
+# DESTINATION is optional.  It defaults to "bin".
+# COMPONENT is optional.  It defaults to "runtime".
+#----------------------------------------------------------------
+
+FUNCTION(MPOOL_EXECUTABLE)
+    SET(one_value_opts
+        NAME            # (required) name for collection of object files
+        COMPONENT       # (optional) installation component
+        DESTINATION     # (optional) installation directory
+        OUTDIR          # (optional) output directory
+        )
+
+    SET(multi_value_opts
+        SRCS            # (required) list of source files
+        DEPS
+        DEP_LIBS
+        LINK_LIBS
+        )
+
+    CMAKE_PARSE_ARGUMENTS(
+        param
+        "" "${one_value_opts}" "${multi_value_opts}"
+        ${ARGN})
+
+    IF("${param_NAME}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "MPOOL_EXECUTABLE: Must set NAME")
+    ENDIF()
+
+    IF("${param_SRCS}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "MPOOL_EXECUTABLE: Must set SRCS")
+    ENDIF()
+
+    # Optional DESTINATION defaults to "bin"
+    IF("${param_DESTINATION}" STREQUAL "")
+        SET(param_DESTINATION "bin")
+    ENDIF()
+
+    # Optional COMPONENT defaults to "runtime"
+    IF("${param_COMPONENT}" STREQUAL "")
+        SET(param_COMPONENT "runtime")
+    ENDIF()
+
+    IF(NOT "${param_UNPARSED_ARGUMENTS}" STREQUAL "")
+        MESSAGE(
+            FATAL_ERROR
+            "MPOOL_EXECUTABLE: Unknown args: ${param_UNPARSED_ARGUMENTS}")
+    ENDIF()
+
+    # All make targets that produce executables are suffixed with "-bin".  The
+    # target property named "OUTPUT_NAME" defines the name of the executable file.
+    ADD_EXECUTABLE(${param_NAME}-bin ${param_SRCS})
+    SET_TARGET_PROPERTIES(${param_NAME}-bin PROPERTIES OUTPUT_NAME ${param_NAME})
+
+    IF (NOT "${param_OUTDIR}" STREQUAL "")
+        SET_PROPERTY(TARGET ${param_NAME}-bin PROPERTY RUNTIME_OUTPUT_DIRECTORY ${param_OUTDIR})
+    ENDIF()
+
+    IF(NOT "${param_DEPS}" STREQUAL "")
+        ADD_DEPENDENCIES(${param_NAME}-bin ${param_DEPS})
+    ENDIF()
+
+    IF(NOT "${param_DEP_LIBS}" STREQUAL "")
+        ADD_DEPENDENCIES(      ${param_NAME}-bin ${param_DEP_LIBS}  )
+        TARGET_LINK_LIBRARIES( ${param_NAME}-bin ${param_DEP_LIBS} rt  )
+    ENDIF()
+
+    IF(NOT "${param_LINK_LIBS}" STREQUAL "")
+        TARGET_LINK_LIBRARIES( ${param_NAME}-bin ${param_LINK_LIBS} rt )
+    ENDIF()
+
+    #
+    # Some executables are entirely private; e.g., test-builds of the
+    # KVDB API example code.  Do not install them lest CPack find them.
+    #
+    IF(NOT "${param_COMPONENT}" STREQUAL "private")
+      INSTALL(
+        TARGETS ${param_NAME}-bin
+        DESTINATION ${param_DESTINATION}
+        COMPONENT ${param_COMPONENT})
+    ENDIF()
+ENDFUNCTION()
+
+
+#----------------------------------------------------------------
+#
+# MPOOL_OBJECT_FILES : Function to build a collection of object files
+#
+#----------------------------------------------------------------
+FUNCTION(MPOOL_OBJECT_FILES)
+
+    SET(one_value_opts
+        NAME            # (required) name for collection of object files
+        )
+
+    SET(multi_value_opts
+        SRCS            # (required) list of source files
+        DEPS            # CMake targets that must be built first
+        CFLAGS          # Additional CFLAGS
+        INCLUDES        # Directories to search for #include
+        )
+
+    CMAKE_PARSE_ARGUMENTS(
+        param
+        "" "${one_value_opts}" "${multi_value_opts}"
+        ${ARGN})
+
+    IF("${param_NAME}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "MPOOL_OBJECT_FILES: Must set NAME")
+    ENDIF()
+
+    IF("${param_SRCS}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "MPOOL_OBJECT_FILES: Must set SRCS")
+    ENDIF()
+
+    IF(NOT "${param_UNPARSED_ARGUMENTS}" STREQUAL "")
+        MESSAGE(
+            FATAL_ERROR
+            "MPOOL_OBJECT_FILES: Unknown args: ${param_UNPARSED_ARGUMENTS}")
+    ENDIF()
+
+    ADD_LIBRARY(${param_NAME} OBJECT ${param_SRCS})
+    TARGET_INCLUDE_DIRECTORIES(${param_NAME} PRIVATE ${param_INCLUDES})
+    TARGET_COMPILE_OPTIONS(${param_NAME} PRIVATE ${param_CFLAGS})
+    IF(NOT "${param_DEPS}" STREQUAL "")
+        ADD_DEPENDENCIES(${param_NAME} ${param_DEPS})
+    ENDIF()
+
+ENDFUNCTION()
+
+#----------------------------------------------------------------
+#
+# MPOOL_LIBRARY : Function to build a static library
+#
+#----------------------------------------------------------------
+FUNCTION(MPOOL_LIBRARY)
+    SET(one_value_opts
+        NAME            # (required) name for collection of object files
+        COMPONENT       # (optional) installation component
+        OUTPUT_NAME     # (optional) actual name of installed library
+        )
+
+    SET(multi_value_opts
+        SRCS            # (required) list of source or obj files
+        DEPS            # CMake targets that must be built first
+        CFLAGS          # Additional CFLAGS
+        INCLUDES        # Directories to search for #include
+        LINK_LIBS       # Libraries that must be linked along with this lib
+        )
+
+    CMAKE_PARSE_ARGUMENTS(
+        param
+        "" "${one_value_opts}" "${multi_value_opts}"
+        ${ARGN})
+
+    IF("${param_NAME}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "MPOOL_OBJECT_FILES: Must set NAME")
+    ENDIF()
+
+    # Optional COMPONENT defaults to "devel"
+    IF("${param_COMPONENT}" STREQUAL "")
+        SET(param_COMPONENT "devel")
+    ENDIF()
+
+    IF("${param_SRCS}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "MPOOL_OBJECT_FILES: Must set SRCS")
+    ENDIF()
+
+    IF(NOT "${param_UNPARSED_ARGUMENTS}" STREQUAL "")
+        MESSAGE(
+            FATAL_ERROR
+            "MPOOL_OBJECT_FILES: Unknown args: ${param_UNPARSED_ARGUMENTS}")
+    ENDIF()
+
+    ADD_LIBRARY(${param_NAME}-lib STATIC ${param_SRCS})
+
+    IF("${param_OUTPUT_NAME}" STREQUAL "")
+        SET_TARGET_PROPERTIES(${param_NAME}-lib PROPERTIES OUTPUT_NAME ${param_NAME})
+    ELSE()
+        SET_TARGET_PROPERTIES(${param_NAME}-lib PROPERTIES OUTPUT_NAME ${param_OUTPUT_NAME})
+    ENDIF()
+
+    TARGET_INCLUDE_DIRECTORIES(${param_NAME}-lib PRIVATE ${param_INCLUDES})
+    TARGET_COMPILE_OPTIONS(${param_NAME}-lib PRIVATE ${param_CFLAGS})
+    TARGET_LINK_LIBRARIES(${param_NAME}-lib ${param_LINK_LIBS})
+    IF(NOT "${param_DEPS}" STREQUAL "")
+        ADD_DEPENDENCIES(${param_NAME}-lib ${param_DEPS})
+    ENDIF()
+
+    #
+    # Some libraries are entirely private; e.g., libraries specific to
+    # the mpool CLI.  Do not install them lest CPack find them.
+    #
+    IF(NOT "${param_COMPONENT}" STREQUAL "private")
+      INSTALL(
+        TARGETS ${param_NAME}-lib
+        DESTINATION lib
+        COMPONENT ${param_COMPONENT}
+      )
+    ENDIF()
+ENDFUNCTION()
+
+#----------------------------------------------------------------
+#
+# MPOOL_SHARED_LIBRARY : Function to build a shared library
+#
+#----------------------------------------------------------------
+FUNCTION(MPOOL_SHARED_LIBRARY)
+    SET(one_value_opts
+        NAME            # (required) name for collection of object files
+        COMPONENT       # (optional) installation component
+        OUTPUT_NAME     # (optional) actual name of installed library
+        )
+
+    SET(multi_value_opts
+        SRCS            # (required) list of source or obj files
+        DEPS            # CMake targets that must be built first
+        CFLAGS          # Additional CFLAGS
+        INCLUDES        # Directories to search for #include
+        LINK_LIBS       # Libraries that must be linked along with this lib
+        )
+
+    CMAKE_PARSE_ARGUMENTS(
+        param
+        "" "${one_value_opts}" "${multi_value_opts}"
+        ${ARGN})
+
+    IF("${param_NAME}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "MPOOL_OBJECT_FILES: Must set NAME")
+    ENDIF()
+
+    # Optional COMPONENT defaults to "runtime"
+    IF("${param_COMPONENT}" STREQUAL "")
+        SET(param_COMPONENT "runtime")
+    ENDIF()
+
+    IF("${param_SRCS}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "MPOOL_OBJECT_FILES: Must set SRCS")
+    ENDIF()
+
+    IF(NOT "${param_UNPARSED_ARGUMENTS}" STREQUAL "")
+        MESSAGE(
+            FATAL_ERROR
+            "MPOOL_OBJECT_FILES: Unknown args: ${param_UNPARSED_ARGUMENTS}")
+    ENDIF()
+
+    ADD_LIBRARY(${param_NAME}-solib SHARED ${param_SRCS})
+
+    IF("${param_OUTPUT_NAME}" STREQUAL "")
+        SET_TARGET_PROPERTIES(${param_NAME}-solib PROPERTIES OUTPUT_NAME ${param_NAME})
+    ELSE()
+        SET_TARGET_PROPERTIES(${param_NAME}-solib PROPERTIES OUTPUT_NAME ${param_OUTPUT_NAME})
+    ENDIF()
+
+    SET_TARGET_PROPERTIES(${param_NAME}-solib PROPERTIES SOVERSION "1.7")
+
+    TARGET_INCLUDE_DIRECTORIES(${param_NAME}-solib PRIVATE ${param_INCLUDES})
+    TARGET_COMPILE_OPTIONS(${param_NAME}-solib PRIVATE ${param_CFLAGS})
+    TARGET_LINK_LIBRARIES(${param_NAME}-solib ${param_LINK_LIBS})
+    IF(NOT "${param_DEPS}" STREQUAL "")
+        ADD_DEPENDENCIES(${param_NAME}-solib ${param_DEPS})
+    ENDIF()
+
+    #
+    # Some libraries are entirely private; e.g., libraries specific to
+    # the mpool CLI.  Do not install them lest CPack find them.
+    #
+    IF(NOT "${param_COMPONENT}" STREQUAL "private")
+      INSTALL(
+        TARGETS ${param_NAME}-solib
+        DESTINATION lib
+        COMPONENT ${param_COMPONENT}
+      )
+    ENDIF()
+ENDFUNCTION()
+
+#----------------------------------------------------------------
+#
+# MPOOL_EXECUTABLE2 : Function to build a binary executable
+#
+#----------------------------------------------------------------
+FUNCTION(MPOOL_EXECUTABLE2)
+    SET(one_value_opts
+        NAME            # (required) name for collection of object files
+        COMPONENT       # (optional) installation component, default "runtime"
+        DESTINATION     # (optional) installation directory
+        )
+
+    SET(multi_value_opts
+        SRCS            # (required) list of source or obj files
+        DEPS            # CMake targets that must be built first
+        CFLAGS          # Additional CFLAGS
+        INCLUDES        # Directories to search for #include
+        LINK_LIBS       # Libraries to use when linking
+        )
+
+    CMAKE_PARSE_ARGUMENTS(
+        param
+        "" "${one_value_opts}" "${multi_value_opts}"
+        ${ARGN})
+
+    IF("${param_NAME}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "MPOOL_EXECUTABLE: Must set NAME")
+    ENDIF()
+
+    IF("${param_SRCS}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "MPOOL_EXECUTABLE: Must set SRCS")
+    ENDIF()
+
+    # Optional DESTINATION defaults to "bin"
+    IF("${param_DESTINATION}" STREQUAL "")
+        SET(param_DESTINATION "bin")
+    ENDIF()
+
+    # Optional COMPONENT defaults to "runtime"
+    IF("${param_COMPONENT}" STREQUAL "")
+        SET(param_COMPONENT "runtime")
+    ENDIF()
+
+    IF(NOT "${param_UNPARSED_ARGUMENTS}" STREQUAL "")
+        MESSAGE(
+            FATAL_ERROR
+            "MPOOL_EXECUTABLE: Unknown args: ${param_UNPARSED_ARGUMENTS}")
+    ENDIF()
+
+    ADD_EXECUTABLE(${param_NAME}-bin ${param_SRCS})
+    SET_TARGET_PROPERTIES(${param_NAME}-bin PROPERTIES OUTPUT_NAME ${param_NAME})
+    TARGET_INCLUDE_DIRECTORIES(${param_NAME}-bin PRIVATE ${param_INCLUDES})
+    TARGET_COMPILE_OPTIONS(${param_NAME}-bin PRIVATE ${param_CFLAGS})
+     TARGET_LINK_LIBRARIES(${param_NAME}-bin ${param_LINK_LIBS} rt)
+    IF(NOT "${param_DEPS}" STREQUAL "")
+        ADD_DEPENDENCIES(      ${param_NAME}-bin ${param_DEPS}  )
+    ENDIF()
+
+    INSTALL(
+      TARGETS ${param_NAME}-bin
+      DESTINATION ${param_DESTINATION}
+      COMPONENT ${param_COMPONENT})
+ENDFUNCTION()

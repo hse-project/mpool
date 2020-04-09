@@ -1,0 +1,15 @@
+#!/bin/bash
+
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2015-2020 Micron Technology, Inc.  All rights reserved.
+#
+
+#doc: run all of the mpft correctness tests
+
+mp=$(new_mpool) || err
+
+cmd --ign-logs ${MPOOL_BIN}/mpft wild.correctness mp=$mp
+
+cmd $sudo ${MPOOL_BIN}/mpool destroy "$mp"
