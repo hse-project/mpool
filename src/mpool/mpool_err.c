@@ -31,9 +31,14 @@
  */
 #define MERR_BASE_SZ        (MERR_ALIGN * 64 * 2)
 
-char mpool_merr_base[MERR_BASE_SZ] _merr_attributes = "mpool_merr_bug0u";
+char mpool_merr_base[MERR_BASE_SZ] _merr_attributes = "mpool_merr_baseu";
+char mpool_merr_bug0[] _merr_attributes = "mpool_merr_bug0u";
 char mpool_merr_bug1[] _merr_attributes = "mpool_merr_bug1u";
 char mpool_merr_bug2[] _merr_attributes = "mpool_merr_bug2u";
+char mpool_merr_bug3[] _merr_attributes = "mpool_merr_bug3u";
+
+extern uint8_t __start_mpool_merr;
+extern uint8_t __stop_mpool_merr;
 
 /**
  * mpool_merr_lineno() - Return the line number from given merr_t
@@ -56,6 +61,10 @@ mpool_merr_pack(int errnum, const char *file, int line)
 	if (errnum < 0)
 		errnum = -errnum;
 
+	if (file < (char *)&__start_mpool_merr ||
+	    file >= (char *)&__stop_mpool_merr)
+		file = mpool_merr_bug0;
+
 	if (!file || !IS_ALIGNED((ulong)file, MERR_ALIGN))
 		file = mpool_merr_bug1;
 
@@ -64,7 +73,7 @@ mpool_merr_pack(int errnum, const char *file, int line)
 	if (((s64)((u64)off << MERR_FILE_SHIFT) >> MERR_FILE_SHIFT) == off)
 		err = (u64)off << MERR_FILE_SHIFT;
 
-	err |= ((u64)line << MERR_LINE_SHIFT) & MERR_LINE_MASK;
+	err |= (line & MERR_LINE_MASK) << MERR_LINE_SHIFT;
 	err |= errnum & MERR_ERRNO_MASK;
 
 	return err;
@@ -85,6 +94,11 @@ mpool_merr_file(merr_t err)
 	off *= MERR_ALIGN;
 
 	file = mpool_merr_base + off;
+
+	if (file < (char *)&__start_mpool_merr ||
+	    file >= (char *)&__stop_mpool_merr)
+		return mpool_merr_bug3;
+
 	len = strnlen(file, PATH_MAX);
 	file += len;
 
@@ -108,7 +122,7 @@ mpool_strerror(
 	int errnum = mpool_errno(err);
 
 	if (errnum == EBUG)
-		strlcpy(buf, "Software bug", bufsz);
+		strlcpy(buf, "mpool software bug", bufsz);
 	else
 		strerror_r(errnum, buf, bufsz);
 
@@ -121,18 +135,19 @@ mpool_strinfo(
 	char   *buf,
 	size_t  bufsz)
 {
-	int off = 0;
+	int n;
 
-	if (err) {
-		if (mpool_merr_file(err))
-			off = snprintf(buf, bufsz, "%s:%d: ",
-				       mpool_merr_file(err),
-				       mpool_merr_lineno(err));
-		if (off >= 0 && off < bufsz)
-			mpool_strerror(err, buf + off, bufsz - off);
-	} else {
-		snprintf(buf, bufsz, "Success");
+	if (!err) {
+		strlcpy(buf, "Success", bufsz);
+		return buf;
 	}
+
+	n = snprintf(buf, bufsz, "%s:%d: ",
+		     mpool_merr_file(err) ?: "?",
+		     mpool_merr_lineno(err));
+
+	if (n >= 0 && n < bufsz)
+		mpool_strerror(err, buf + n, bufsz - n);
 
 	return buf;
 }

@@ -61,7 +61,7 @@
  */
 #define MERR_ALIGN          (1u << 6)
 
-#define _merr_section       __attribute__((__section__(".merr")))
+#define _merr_section       __attribute__((__section__("mpool_merr")))
 #define _merr_attributes    _merr_section __aligned(MERR_ALIGN) __maybe_unused
 
 static char _mpool_merr_file[]    _merr_attributes = __BASE_FILE__;
