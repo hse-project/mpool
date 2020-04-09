@@ -91,9 +91,8 @@ mpool_merr_file(merr_t err)
 		return NULL;
 
 	off = (s64)(err & MERR_FILE_MASK) >> MERR_FILE_SHIFT;
-	off *= MERR_ALIGN;
 
-	file = mpool_merr_base + off;
+	file = mpool_merr_base + (off * MERR_ALIGN);
 
 	if (file < (char *)&__start_mpool_merr ||
 	    file >= (char *)&__stop_mpool_merr)

@@ -57,9 +57,9 @@
 
 #define EBUG                (666)
 
-/* MERR_ALIGN      Alignment of _mpool_merr_file in section ".merr"
+/* MERR_ALIGN      Alignment of _mpool_merr_file in section "mpool_merr"
  */
-#define MERR_ALIGN          (1u << 6)
+#define MERR_ALIGN          (1 << 6)
 
 #define _merr_section       __attribute__((__section__("mpool_merr")))
 #define _merr_attributes    _merr_section __aligned(MERR_ALIGN) __maybe_unused
