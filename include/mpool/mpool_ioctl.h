@@ -422,15 +422,6 @@ struct mblock_props_ex {
 	uint64_t                mbx_rsvd2;
 };
 
-/**
- * mblock_layout_flags:
- * @MB_FLG_NEED_FLUSH: requires flush at mblock_commit()
- */
-enum mblock_layout_flags {
-	MB_FLG_NEED_FLUSH    = 0x1,
-};
-
-
 /*
  * mlog struct definitions used by the ioctl commands.
  *

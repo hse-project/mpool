@@ -68,8 +68,7 @@ struct ecio_layout_mlo {
  *
  * @eld_rwlock:  implements pmd_obj_*lock() for this layout
  * @eld_state:   enum ecio_layout_state
- * @eld_flags:   enum mlog_open_flags for mlogs,
- *               enum mblock_layout_flags for mblocks
+ * @eld_flags:   enum mlog_open_flags for mlogs
  * @eld_objid:   object id associated with layout
  * @eld_mlo:     info. specific to an mlog, NULL for mblocks.
  * @eld_gen:     object generation
