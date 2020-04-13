@@ -168,6 +168,43 @@ mpool_transmogrify(
 	return 0;
 }
 
+static int
+mpool_iov_coalesce(
+	struct iovec   *dstv,
+	int             dstc,
+	struct iovec   *srcv,
+	int             srcc,
+	size_t         *lenp)
+{
+	int     dstmax = dstc - 1;
+	size_t  len = 0;
+	int     n, i;
+
+	if (!dstv || dstc < 1 || !srcv || srcc < 1)
+		return INT_MAX;
+
+	dstv[0] = srcv[0];
+
+	for (n = 0, i = 1; i < srcc && n < dstmax; ++i) {
+		if (srcv[i].iov_base == dstv[n].iov_base + dstv[n].iov_len) {
+			dstv[n].iov_len += srcv[i].iov_len;
+			continue;
+		}
+
+		len += dstv[n].iov_len;
+		dstv[++n] = srcv[i];
+	}
+
+	if (lenp) {
+		while (i < srcc)
+			len += srcv[i++].iov_len;
+
+		*lenp = len + dstv[n].iov_len;
+	}
+
+	return (i < srcc) ? INT_MAX : (n + 1);
+}
+
 static void
 mpool_params_init2(
 	struct mpool_params        *dst,
@@ -2746,17 +2783,31 @@ mpool_mlog_rw(
 	size_t              off,
 	u8                  rw)
 {
-	struct mpioc_mlog_io    mi;
+	struct mpioc_mlog_io mi = { };
 
-	if (!mlh || !iov)
+	if (!mlh || !iov || iovc < 1)
 		return merr(EINVAL);
 
-	memset(&mi, 0, sizeof(mi));
 	mi.mi_objid = mlh->ml_objid;
 	mi.mi_iov   = iov;
 	mi.mi_iovc  = iovc;
 	mi.mi_off   = off;
 	mi.mi_op    = rw;
+
+	/* Coalesce iov[] (if possible) to reduce churn in the kernel.
+	 */
+	if (iovc > 8) {
+		struct iovec v[64];
+		const int vmax = ARRAY_SIZE(v);
+		int c;
+
+		c = mpool_iov_coalesce(v, vmax, iov, iovc, NULL);
+
+		if (c < vmax) {
+			mi.mi_iov = v;
+			mi.mi_iovc = c;
+		}
+	}
 
 	if (rw == MPOOL_OP_READ)
 		return mpool_ioctl(mlh->ml_dsfd, MPIOC_MLOG_READ, &mi);
@@ -2962,11 +3013,11 @@ mpool_mblock_write(
 	struct mpool       *ds,
 	uint64_t            mbh,
 	struct iovec       *iov,
-	int                 iov_cnt)
+	int                 iovc)
 {
 	struct mpioc_mblock_rw mbrw = {
 		.mb_handle  = mbh,
-		.mb_iov_cnt = iov_cnt,
+		.mb_iov_cnt = iovc,
 		.mb_iov     = iov,
 	};
 
@@ -3026,13 +3077,13 @@ mpool_mblock_read(
 	struct mpool     *ds,
 	uint64_t          mbh,
 	struct iovec     *iov,
-	int               iov_cnt,
+	int               iovc,
 	size_t            offset)
 {
 	struct mpioc_mblock_rw mbrw = {
 		.mb_handle  = mbh,
 		.mb_offset  = offset,
-		.mb_iov_cnt = iov_cnt,
+		.mb_iov_cnt = iovc,
 		.mb_iov     = iov,
 	};
 
