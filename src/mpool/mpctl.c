@@ -168,43 +168,6 @@ mpool_transmogrify(
 	return 0;
 }
 
-static int
-mpool_iov_coalesce(
-	struct iovec   *dstv,
-	int             dstc,
-	struct iovec   *srcv,
-	int             srcc,
-	size_t         *lenp)
-{
-	int     dstmax = dstc - 1;
-	size_t  len = 0;
-	int     n, i;
-
-	if (!dstv || dstc < 1 || !srcv || srcc < 1)
-		return INT_MAX;
-
-	dstv[0] = srcv[0];
-
-	for (n = 0, i = 1; i < srcc && n < dstmax; ++i) {
-		if (srcv[i].iov_base == dstv[n].iov_base + dstv[n].iov_len) {
-			dstv[n].iov_len += srcv[i].iov_len;
-			continue;
-		}
-
-		len += dstv[n].iov_len;
-		dstv[++n] = srcv[i];
-	}
-
-	if (lenp) {
-		while (i < srcc)
-			len += srcv[i++].iov_len;
-
-		*lenp = len + dstv[n].iov_len;
-	}
-
-	return (i < srcc) ? INT_MAX : (n + 1);
-}
-
 static void
 mpool_params_init2(
 	struct mpool_params        *dst,
@@ -2793,21 +2756,6 @@ mpool_mlog_rw(
 	mi.mi_iovc  = iovc;
 	mi.mi_off   = off;
 	mi.mi_op    = rw;
-
-	/* Coalesce iov[] (if possible) to reduce churn in the kernel.
-	 */
-	if (iovc > 8) {
-		struct iovec v[64];
-		const int vmax = ARRAY_SIZE(v);
-		int c;
-
-		c = mpool_iov_coalesce(v, vmax, iov, iovc, NULL);
-
-		if (c < vmax) {
-			mi.mi_iov = v;
-			mi.mi_iovc = c;
-		}
-	}
 
 	if (rw == MPOOL_OP_READ)
 		return mpool_ioctl(mlh->ml_dsfd, MPIOC_MLOG_READ, &mi);

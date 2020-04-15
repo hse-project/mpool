@@ -682,90 +682,79 @@ mlog_stat_init(
 static merr_t
 mlog_setup_buf(
 	struct mlog_stat    *lstat,
-	struct iovec       **riov,
-	u16                  iovcnt,
+	struct iovec        *iov,
+	u16                 *iovcntp,
 	u16                  l_iolen,
 	u8                   op)
 {
-	struct iovec  *iov = *riov;
+	struct iovec   *iovstart = iov;
+	char          **xbuf;
 
-	char  *buf;
-	u16    i;
-	u16    len       = MLOG_LPGSZ(lstat);
-	bool   alloc_iov = false;
+	u16 iovcnt, len, i;
 
+	if (!lstat || !iov || !iovcntp || l_iolen > PAGE_SIZE)
+		return merr(EINVAL);
+
+	len = MLOG_LPGSZ(lstat);
 	assert(len == PAGE_SIZE);
-	assert(l_iolen <= PAGE_SIZE);
+	assert(IS_ALIGNED(len, MLOG_SECSZ(lstat)));
+	assert(IS_ALIGNED(l_iolen, MLOG_SECSZ(lstat)));
 
-	if (!iov) {
-		assert((iovcnt * sizeof(*iov)) <= PAGE_SIZE);
+	xbuf = (op == MPOOL_OP_READ) ? lstat->lst_rbuf : lstat->lst_abuf;
+	iovcnt = *iovcntp;
 
-		iov = kcalloc(iovcnt, sizeof(*iov), GFP_KERNEL);
-		if (!iov)
-			return merr(ENOMEM);
-
-		alloc_iov = true;
-		*riov = iov;
-	}
-
-	for (i = 0; i < iovcnt; i++, iov++) {
-
-		buf = ((op == MPOOL_OP_READ) ?
-			lstat->lst_rbuf[i] : lstat->lst_abuf[i]);
+	for (i = 0; i < iovcnt; ++i) {
+		char *buf = xbuf[i];
 
 		/* iov_len for the last log page in read/write buffer. */
 		if (i == iovcnt - 1 && l_iolen != 0)
 			len = l_iolen;
 
-		assert(IS_ALIGNED(len, MLOG_SECSZ(lstat)));
-
-		if (op == MPOOL_OP_WRITE && buf) {
-			iov->iov_base = buf;
-			iov->iov_len  = len;
-			continue;
-		}
-
-		/*
-		 * Pages for the append buffer are allocated in
-		 * mlog_append_*(), so we shouldn't be here for MPOOL_OP_WRITE.
-		 */
-		assert(op == MPOOL_OP_READ);
-
-		/*
-		 * If the read buffer contains stale log pages from a prior
+		/* If the read buffer contains stale log pages from a prior
 		 * iterator, reuse them. No need to zero these pages for
 		 * the same reason provided in the following comment.
 		 */
-		if (buf) {
-			iov->iov_base = buf;
-			iov->iov_len  = len;
-			continue;
-		}
+		if (buf)
+			goto coalesce;
 
-		/*
-		 * No need to zero the read buffer as we never read more than
+		/* Pages for the append buffer are allocated
+		 * in mlog_append_*().
+		 */
+		if (op != MPOOL_OP_READ)
+			return merr(EINVAL);
+
+		/* No need to zero the read buffer as we never read more than
 		 * what's needed and do not consume beyond what's read.
 		 */
 		buf = (char *)__get_free_page(GFP_KERNEL);
 		if (!buf) {
 			mlog_free_rbuf(lstat, 0, i - 1);
-			if (alloc_iov) {
-				kfree(iov);
-				*riov = NULL;
-			}
-
 			return merr(ENOMEM);
 		}
 
-		/*
-		 * Must be a page-aligned buffer so that it can be used
+		lstat->lst_rbuf[i] = buf;
+
+coalesce:
+		/* Must be a page-aligned buffer so that it can be used
 		 * in bio_add_page().
 		 */
-		assert(PAGE_ALIGNED(buf));
+		if (!PAGE_ALIGNED(buf))
+			return merr(EINVAL);
 
-		lstat->lst_rbuf[i] = iov->iov_base = buf;
+		if (i > 0) {
+			if (iov->iov_base + iov->iov_len == buf) {
+				iov->iov_len += len;
+				continue;
+			}
+
+			++iov;
+		}
+
+		iov->iov_base = buf;
 		iov->iov_len = len;
 	}
+
+	*iovcntp = iov - iovstart + 1;
 
 	return 0;
 }
@@ -970,15 +959,15 @@ mlog_populate_rbuf(
 	off_t                         *soff,
 	bool                           skip_ser)
 {
-	struct iovec           *iov = NULL;
-	struct mlog_stat       *lstat;
+	struct iovec        iovbuf[256], *iov = iovbuf;
+	struct mlog_stat   *lstat;
 
 	merr_t err;
 	off_t  off;
 	u16    maxsec;
 	u16    l_iolen;
 	u16    sectsz;
-	u16    iovcnt;
+	u16    iovcnt, oiovcnt;
 	u8     nseclpg;
 	u8     leading;
 
@@ -992,13 +981,20 @@ mlog_populate_rbuf(
 
 	*nsec   = min_t(u32, maxsec, *nsec);
 	iovcnt  = (*nsec + nseclpg - 1) / nseclpg;
+	oiovcnt = iovcnt;
 
 	/* No. of sectors in the last log page. */
 	l_iolen = MLOG_LPGSZ(lstat);
 	if (!FORCE_4KA(lstat) && !(IS_SECPGA(lstat)))
 		l_iolen = (*nsec % nseclpg) * sectsz;
 
-	err = mlog_setup_buf(lstat, &iov, iovcnt, l_iolen, MPOOL_OP_READ);
+	if (iovcnt > NELEM(iovbuf)) {
+		iov = kmalloc(iovcnt * sizeof(*iov), GFP_KERNEL);
+		if (!iov)
+			return merr(ENOMEM);
+	}
+
+	err = mlog_setup_buf(lstat, iov, &iovcnt, l_iolen, MPOOL_OP_READ);
 	if (err) {
 		mp_pr_err("mpool %s, mlog 0x%lx setup failed, iovcnt: %u, last iolen: %u",
 			  err, mp->pds_name, (ulong)layout->eld_objid,
@@ -1028,9 +1024,10 @@ mlog_populate_rbuf(
 	 * likely to happen when there're multiple threads reading from
 	 * the same mlog simultaneously, using their own iterator.
 	 */
-	mlog_free_rbuf(lstat, iovcnt, MLOG_NLPGMB(lstat) - 1);
+	mlog_free_rbuf(lstat, oiovcnt, MLOG_NLPGMB(lstat) - 1);
 
-	kfree(iov);
+	if (iov != iovbuf)
+		kfree(iov);
 
 	return 0;
 }
@@ -1463,12 +1460,12 @@ mlog_flush_abuf(
 	struct ecio_layout_descriptor  *layout,
 	bool                            skip_ser)
 {
-	struct iovec           *iov = NULL;
-	struct mlog_stat       *lstat;
+	struct iovec        iovbuf[256], *iov = iovbuf;
+	struct mlog_stat   *lstat;
 
 	merr_t err;
 	off_t  off;
-	u16    abidx;
+	u16    iovcnt, abidx;
 	u16    l_iolen;
 	u16    sectsz;
 	u8     nseclpg;
@@ -1490,13 +1487,21 @@ mlog_flush_abuf(
 			l_iolen = (asidx + 1) * sectsz;
 	}
 
-	err = mlog_setup_buf(lstat, &iov, abidx + 1, l_iolen, MPOOL_OP_WRITE);
+	iovcnt = abidx + 1;
+
+	if (iovcnt > NELEM(iovbuf)) {
+		iov = kmalloc(iovcnt * sizeof(*iov), GFP_KERNEL);
+		if (!iov)
+			return merr(ENOMEM);
+	}
+
+	err = mlog_setup_buf(lstat, iov, &iovcnt, l_iolen, MPOOL_OP_WRITE);
 	if (err) {
 		mp_pr_err("mpool %s, mlog 0x%lx flush, buffer setup failed, iovcnt: %u, last iolen: %u",
 			  err, mp->pds_name,
-			  (ulong)layout->eld_objid, abidx + 1, l_iolen);
+			  (ulong)layout->eld_objid, iovcnt, l_iolen);
 
-		return err;
+		goto errout;
 	}
 
 	off = lstat->lst_asoff * sectsz;
@@ -1504,20 +1509,20 @@ mlog_flush_abuf(
 	assert((IS_ALIGNED(off, MLOG_LPGSZ(lstat))) ||
 		(!FORCE_4KA(lstat) && IS_ALIGNED(off, MLOG_SECSZ(lstat))));
 
-	err = mlog_rw(mp, layout2mlog(layout), iov, abidx + 1, off,
-			MPOOL_OP_WRITE, skip_ser);
+	err = mlog_rw(mp, layout2mlog(layout), iov, iovcnt, off,
+		      MPOOL_OP_WRITE, skip_ser);
 	if (err) {
 		mp_pr_err("mpool %s, mlog 0x%lx flush append buffer, IO failed iovcnt %u, off 0x%lx",
 			  err, mp->pds_name,
-			  (ulong)layout->eld_objid, abidx + 1, off);
-		kfree(iov);
-
-		return err;
+			  (ulong)layout->eld_objid, iovcnt, off);
+		goto errout;
 	}
 
-	kfree(iov);
+errout:
+	if (iov != iovbuf)
+		kfree(iov);
 
-	return 0;
+	return err;
 }
 
 /**
