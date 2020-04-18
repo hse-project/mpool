@@ -42,10 +42,6 @@
 #define MPOOL_DRIVES_MAX       3
 #define MPOOL_COUNT_MAX        128
 
-/* Invalid media class id. */
-#define MCID_INVALID ((u32)(-1))
-#define MCID_ALL (MCID_INVALID - 1)
-
 /* opaque handle for clients */
 struct mpool_descriptor;
 struct mp_obj_descriptor; /* for any mpool object: mblock, mlog, etc... */

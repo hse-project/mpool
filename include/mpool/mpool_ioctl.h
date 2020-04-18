@@ -243,7 +243,6 @@ struct mp_usage {
  *                  (enum pd_devtype)
  * @mc_mclass: media class (enum mp_media_classp)
  * @mc_sectorsz: media class (enum mp_media_classp)
- * @mc_pdcnt: total drive count
  * @mc_spare: percent spare zones for drives
  * @mc_uacnt: UNAVAIL status drive count
  * @mc_zonepg: pages per zone
@@ -254,8 +253,7 @@ struct mpool_mclass_xprops {
 	uint8_t                    mc_devtype;
 	uint8_t                    mc_mclass;
 	uint8_t                    mc_sectorsz;
-	uint8_t                    mc_rsvd1[5];
-	uint32_t                   mc_pdcnt;
+	uint8_t                    mc_rsvd1[9];
 	uint32_t                   mc_spare;
 	uint16_t                   mc_uacnt;
 	uint16_t                   mc_rsvd2;
@@ -315,14 +313,13 @@ struct mpool_mdparm {
 /**
  * struct mpool_xprops - Extended mpool properties
  * @ppx_params: mpool configuration parameters
- * @ppx_tdcnt:  total drive count in each media class
  * @ppx_drive_spares: percent spare zones for drives in each media class
  * @ppx_uacnt:  UNAVAIL status drive count in each media class
  */
 struct mpool_xprops {
 	struct mpool_params     ppx_params;
 	struct mpool_mdparm     ppx_mdparm;
-	uint16_t                ppx_tdcnt[MP_MED_NUMBER];
+	uint16_t                ppx_rsvd[MP_MED_NUMBER];
 	uint8_t                 ppx_drive_spares[MP_MED_NUMBER];
 	uint16_t                ppx_uacnt[MP_MED_NUMBER];
 	uint32_t                ppx_pd_mclassv[MP_MED_NUMBER];

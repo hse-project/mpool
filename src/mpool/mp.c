@@ -61,9 +61,6 @@ mpool_dev_init_all(
 				     dpaths[idx], merr_errno(err));
 		} else {
 			pd_file_init(&pdv[idx].pdi_parm, pd_prop);
-			/* PD not yet assigned to a media class. */
-			pdv[idx].pdi_mcid  = MCID_INVALID;
-
 			pdv[idx].pdi_state = OMF_PD_ACTIVE;
 
 			pdname = strrchr(dpaths[idx], '/');
