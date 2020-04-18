@@ -2825,7 +2825,7 @@ mpool_mblock_alloc(
 }
 
 uint64_t
-mpool_mblock_find_get(
+mpool_mblock_find(
 	struct mpool           *ds,
 	uint64_t                objid,
 	uint64_t               *mbh,
@@ -2850,38 +2850,21 @@ mpool_mblock_find_get(
 }
 
 uint64_t
-mpool_mblock_get(
+mpool_mblock_find_get(
 	struct mpool           *ds,
-	uint64_t                mbh,
+	uint64_t                objid,
+	uint64_t               *mbh,
 	struct mblock_props    *props)
 {
-	struct mpioc_mblock mb = { .mb_handle = mbh };
-	merr_t              err;
-
-	if (!ds || !mbh)
-		return merr(EINVAL);
-
-	err = mpool_ioctl(ds->ds_fd, MPIOC_MB_GET, &mb);
-	if (err)
-		return err;
-
-	if (props)
-		*props = mb.mb_props.mbx_props;
-
-	return 0;
+	return mpool_mblock_find(ds, objid, mbh, props);
 }
 
 uint64_t
 mpool_mblock_put(
-	struct mpool   *ds,
+	struct mpool   *mp,
 	uint64_t        mbh)
 {
-	struct mpioc_mblock mb = { .mb_handle = mbh };
-
-	if (!ds || !mbh)
-		return merr(EINVAL);
-
-	return mpool_ioctl(ds->ds_fd, MPIOC_MB_PUT, &mb);
+	return 0;
 }
 
 uint64_t

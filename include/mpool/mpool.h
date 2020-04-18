@@ -861,15 +861,7 @@ mpool_mblock_alloc(
 	uint64_t                       *mbh,
 	struct mblock_props            *props);
 
-/**
- * mpool_mblock_find_get() - get a handle and a ref on an mblock
- * @mp:     mpool
- * @objid:  Object ID for the mblock
- * @mbh:    mblock handle
- * @props:  mblock properties (returned if the ptr is non-NULL)
- *
- *   %0 on success, <%0 on error
- */
+/* deprecated, do not use */
 /* MTF_MOCK */
 uint64_t
 mpool_mblock_find_get(
@@ -879,31 +871,22 @@ mpool_mblock_find_get(
 	struct mblock_props    *props);
 
 /**
- * mpool_mblock_get() - Add 1 to the refcount for the mblock associated with
- *                   this uhandle.
- *
- * @mp:    mpool
- * @mbh:   uhandle for accessing the mblock
- * @props: mblock properties (returned if pointer is non-NULL)
+ * mpool_mblock_find() -
+ * @mp:     mpool
+ * @objid:  Object ID for the mblock
+ * @mbh:    mblock handle
+ * @props:  mblock properties (returned if the ptr is non-NULL)
  *
  *   %0 on success, <%0 on error
  */
-/* MTF_MOCK */
 uint64_t
-mpool_mblock_get(
+mpool_mblock_find(
 	struct mpool           *mp,
-	uint64_t                mbh,
+	uint64_t                objid,
+	uint64_t               *mbh,
 	struct mblock_props    *props);
 
-/**
- * mpool_mblock_put() - put a ref on an mblock
- * @mp:   mpool
- * @mbh:  Handle for accessing the mblock
- *
- * Caller can no longer use the uhandle (unless another thread has a valid get)
- *
- *   %0 on success, <%0 on error
- */
+/* deprecated, do not use */
 /* MTF_MOCK */
 uint64_t
 mpool_mblock_put(
