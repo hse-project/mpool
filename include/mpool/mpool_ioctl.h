@@ -593,42 +593,37 @@ struct mpioc_devprops {
 /**
  * struct mpioc_mblock:
  * @mb_cmn:
- * @mb_objid:
- * @mb_handle:
+ * @mb_objid:   mblock unique ID (permanent)
+ * @mb_offset:  mblock read offset (ephemeral)
  * @mb_props:
  * @mb_layout
  * @mb_spare:
  * @mb_mclassp: enum mp_media_classp, declared as uint8_t
- * @mb_offset:  mblock read offset
  */
 struct mpioc_mblock {
 	struct mpioc_cmn            mb_cmn;     /* Must be first field! */
 	uint64_t                    mb_objid;
-	uint64_t                    mb_handle;
+	int64_t                     mb_offset;
 	struct mblock_props_ex      mb_props;
 
 	uint8_t                     mb_spare;
 	uint8_t                     mb_mclassp;
-	uint8_t                     mb_rsvd1[2];
+	uint16_t                    mb_rsvd1;
 	uint32_t                    mb_rsvd2;
-
-	off_t                       mb_offset;
 	uint64_t                    mb_rsvd3;
 };
 
 struct mpioc_mblock_id {
 	struct mpioc_cmn    mi_cmn;     /* Must be first field! */
-	uint64_t            mi_handle;
+	uint64_t            mi_objid;
 };
 
-#define MPIOC_KIOV_MIN          (4)
 #define MPIOC_KIOV_MAX          (1024)
 
 struct mpioc_mblock_rw {
 	struct mpioc_cmn        mb_cmn;     /* Must be first field! */
 	uint64_t                mb_objid;
-	uint64_t                mb_handle;
-	off_t                   mb_offset;
+	int64_t                 mb_offset;
 	uint32_t                mb_rsvd2;
 	uint16_t                mb_rsvd3;
 	uint16_t                mb_iov_cnt;

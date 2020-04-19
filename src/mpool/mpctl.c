@@ -2856,7 +2856,7 @@ mpool_mblock_alloc(
 	if (err)
 		return err;
 
-	*mbh = mb.mb_handle;
+	*mbh = mb.mb_objid;
 
 	if (props)
 		*props = mb.mb_props.mbx_props;
@@ -2886,7 +2886,7 @@ mpool_mblock_find(
 	if (props)
 		*props = mb.mb_props.mbx_props;
 
-	*mbh = mb.mb_handle;
+	*mbh = mb.mb_objid;
 
 	return 0;
 }
@@ -2914,7 +2914,7 @@ mpool_mblock_commit(
 	struct mpool   *ds,
 	uint64_t        mbh)
 {
-	struct mpioc_mblock_id  mi = { .mi_handle = mbh };
+	struct mpioc_mblock_id  mi = { .mi_objid = mbh };
 
 	if (!ds)
 		return merr(EINVAL);
@@ -2927,7 +2927,7 @@ mpool_mblock_abort(
 	struct mpool   *ds,
 	uint64_t        mbh)
 {
-	struct mpioc_mblock_id  mi = { .mi_handle = mbh };
+	struct mpioc_mblock_id  mi = { .mi_objid = mbh };
 
 	if (!ds)
 		return merr(EINVAL);
@@ -2940,7 +2940,7 @@ mpool_mblock_delete(
 	struct mpool   *ds,
 	uint64_t        mbh)
 {
-	struct mpioc_mblock_id  mi = { .mi_handle = mbh };
+	struct mpioc_mblock_id  mi = { .mi_objid = mbh };
 
 	if (!ds)
 		return merr(EINVAL);
@@ -2954,7 +2954,7 @@ mpool_mblock_getprops(
 	uint64_t                mbh,
 	struct mblock_props    *props)
 {
-	struct mpioc_mblock mb = { .mb_handle = mbh };
+	struct mpioc_mblock mb = { .mb_objid = mbh };
 
 	merr_t  err;
 
@@ -2989,7 +2989,7 @@ mpool_mblock_write(
 	int                 iovc)
 {
 	struct mpioc_mblock_rw mbrw = {
-		.mb_handle  = mbh,
+		.mb_objid   = mbh,
 		.mb_iov_cnt = iovc,
 		.mb_iov     = iov,
 	};
@@ -3054,7 +3054,7 @@ mpool_mblock_read(
 	size_t            offset)
 {
 	struct mpioc_mblock_rw mbrw = {
-		.mb_handle  = mbh,
+		.mb_objid   = mbh,
 		.mb_offset  = offset,
 		.mb_iov_cnt = iovc,
 		.mb_iov     = iov,
