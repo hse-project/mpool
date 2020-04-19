@@ -1560,16 +1560,15 @@ mpool_ioctl(
  */
 
 /**
- * mlog_find_hmap() - Lookup mlog map for the handle given an object ID
+ * mlog_hmap_find() - Lookup mlog map for the handle given an object ID
  *
  * @ds:     dataset handle
  * @objid:  object ID
  * @locked: is the ds_lock already acquired?
  * @do_get: if true, increment refcount on the mlog handle
  */
-static
-struct mpool_mlog *
-mlog_find_hmap(
+static struct mpool_mlog *
+mlog_hmap_find(
 	struct mpool   *ds,
 	u64             objid,
 	bool            locked,
@@ -1614,29 +1613,20 @@ mlog_find_hmap(
 }
 
 /**
- * mlog_put_hmap() - Put a reference on the mlog handle stored in ds mlog map
- * If reference drops to zero, then flag the caller
- *
+ * mlog_hmap_put_locked() - drop a reference on given mlog handle
  * @ds:      dataset handle
  * @mlh:     mlog handle
  * @do_free: set to true if the last reference was dropped (output)
  */
-static
-void
-mlog_put_hmap(
+static void
+mlog_hmap_put_locked(
 	struct mpool       *ds,
 	struct mpool_mlog  *mlh,
 	bool               *do_free)
 {
 	struct mp_mloghmap *mlmap;
 
-	merr_t err;
-
 	if (!ds || !mlh)
-		return;
-
-	err = ds_acquire(ds);
-	if (err)
 		return;
 
 	mlmap = &ds->ds_mlmap[mlh->ml_idx];
@@ -1644,7 +1634,7 @@ mlog_put_hmap(
 	assert(mlmap->mlm_refcnt > 0);
 
 	if (--mlmap->mlm_refcnt > 0)
-		goto exit;
+		return;
 
 	ds->ds_mlnidx = mlh->ml_idx;
 	--ds->ds_mltot;
@@ -1653,21 +1643,31 @@ mlog_put_hmap(
 
 	if (do_free)
 		*do_free = 1;
+}
 
-exit:
+static void
+mlog_hmap_put(
+	struct mpool       *ds,
+	struct mpool_mlog  *mlh,
+	bool               *do_free)
+{
+	if (!ds || !mlh || ds_acquire(ds))
+		return;
+
+	mlog_hmap_put_locked(ds, mlh, do_free);
+
 	ds_release(ds);
 }
 
 /**
- * mlog_insert_hmap() - Insert <objid, mlh> pair into mlog map
+ * mlog_hmap_insert() - Insert <objid, mlh> pair into mlog map
  *
  * @ds:      dataset handle
  * @objid:   object ID
  * @mlh:     mlog handle
  */
-static
-merr_t
-mlog_insert_hmap(
+static merr_t
+mlog_hmap_insert(
 	struct mpool       *ds,
 	u64                 objid,
 	struct mpool_mlog  *mlh)
@@ -1691,10 +1691,10 @@ mlog_insert_hmap(
 		goto exit;
 	}
 
-	dup = mlog_find_hmap(ds, objid, true, true);
+	dup = mlog_hmap_find(ds, objid, true, true);
 	if (dup) {
+		mlog_hmap_put_locked(ds, dup, NULL);
 		ds_release(ds);
-		mlog_put_hmap(ds, dup, NULL);
 
 		return merr(EEXIST);
 	}
@@ -1729,6 +1729,23 @@ exit:
 	ds_release(ds);
 
 	return err;
+}
+
+static bool
+mlog_hmap_delok_locked(
+	struct mpool *ds,
+	struct mpool_mlog *mlh)
+{
+	struct mp_mloghmap *mlmap;
+
+	if (!ds || !mlh)
+		return false;
+
+	mlmap = &ds->ds_mlmap[mlh->ml_idx];
+	assert(mlmap->mlm_hdl == mlh);
+	assert(mlmap->mlm_refcnt > 0);
+
+	return (mlmap->mlm_refcnt == 1);
 }
 
 /**
@@ -1791,7 +1808,7 @@ mlog_alloc_handle(
 	mutex_init(&mlh->ml_lock);
 
 	/* Insert this mlog handle in the dataset mlog map */
-	err = mlog_insert_hmap(ds, objid, mlh);
+	err = mlog_hmap_insert(ds, objid, mlh);
 	if (err) {
 		mlog_user_desc_free(mldesc);
 		mpool_user_desc_free(mp);
@@ -2055,25 +2072,38 @@ mpool_mlog_abort(
 	if (!ds_is_writable(ds))
 		return merr(EPERM);
 
-	memset(&mi, 0, sizeof(mi));
-	mi.mi_objid = mlh->ml_objid;
-
-	err = mlog_acquire(mlh, rw);
+	err = ds_acquire(ds);
 	if (err)
 		return err;
+
+	if (!mlog_hmap_delok_locked(ds, mlh)) {
+		ds_release(ds);
+		return merr(EBUSY);
+	}
+
+	err = mlog_acquire(mlh, rw);
+	if (err) {
+		ds_release(ds);
+		return err;
+	}
+
+	memset(&mi, 0, sizeof(mi));
+	mi.mi_objid = mlh->ml_objid;
 
 	err = mpool_ioctl(ds->ds_fd, MPIOC_MLOG_ABORT, &mi);
 	if (err) {
 		mlog_release(mlh, rw);
+		ds_release(ds);
 		return err;
 	}
 
-	mlog_put_hmap(ds, mlh, &do_free);
+	mlog_hmap_put_locked(ds, mlh, &do_free);
 	assert(do_free == true);
 
 	mlog_invalidate(mlh);
 
 	mlog_release(mlh, rw);
+	ds_release(ds);
 
 	mlog_free_handle(mlh);
 
@@ -2097,25 +2127,38 @@ mpool_mlog_delete(
 	if (!ds_is_writable(ds))
 		return merr(EPERM);
 
-	memset(&mi, 0, sizeof(mi));
-	mi.mi_objid = mlh->ml_objid;
-
-	err = mlog_acquire(mlh, rw);
+	err = ds_acquire(ds);
 	if (err)
 		return err;
+
+	if (!mlog_hmap_delok_locked(ds, mlh)) {
+		ds_release(ds);
+		return merr(EBUSY);
+	}
+
+	err = mlog_acquire(mlh, rw);
+	if (err) {
+		ds_release(ds);
+		return err;
+	}
+
+	memset(&mi, 0, sizeof(mi));
+	mi.mi_objid = mlh->ml_objid;
 
 	err = mpool_ioctl(ds->ds_fd, MPIOC_MLOG_DELETE, &mi);
 	if (err) {
 		mlog_release(mlh, rw);
+		ds_release(ds);
 		return err;
 	}
 
-	mlog_put_hmap(ds, mlh, &do_free);
+	mlog_hmap_put_locked(ds, mlh, &do_free);
 	assert(do_free == true);
 
 	mlog_invalidate(mlh);
 
 	mlog_release(mlh, rw);
+	ds_release(ds);
 
 	mlog_free_handle(mlh);
 
@@ -2196,9 +2239,8 @@ exit:
 	return err;
 }
 
-static
-merr_t
-__mpool_mlog_find(
+static merr_t
+mpool_mlog_find_impl(
 	struct mpool        *ds,
 	u64                  objid,
 	struct mlog_props   *props,
@@ -2233,7 +2275,7 @@ __mpool_mlog_find(
 		*props = *p;
 
 again:
-	mlh = mlog_find_hmap(ds, objid, false, do_get);
+	mlh = mlog_hmap_find(ds, objid, false, do_get);
 	if (mlh)
 		goto exit;
 
@@ -2269,7 +2311,7 @@ mpool_mlog_find_get(
 	struct mlog_props   *props,
 	struct mpool_mlog  **mlh_out)
 {
-	return __mpool_mlog_find(ds, objid, props, mlh_out, true);
+	return mpool_mlog_find_impl(ds, objid, props, mlh_out, true);
 }
 
 uint64_t
@@ -2279,7 +2321,7 @@ mpool_mlog_resolve(
 	struct mlog_props   *props,
 	struct mpool_mlog  **mlh_out)
 {
-	return __mpool_mlog_find(ds, objid, props, mlh_out, false);
+	return mpool_mlog_find_impl(ds, objid, props, mlh_out, false);
 }
 
 uint64_t
@@ -2306,7 +2348,7 @@ mpool_mlog_put(
 	if (err)
 		goto errout;
 
-	mlog_put_hmap(ds, mlh, &do_free);
+	mlog_hmap_put(ds, mlh, &do_free);
 	if (do_free)
 		mlog_invalidate(mlh);
 
