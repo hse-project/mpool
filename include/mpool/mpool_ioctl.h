@@ -132,7 +132,6 @@ enum mp_media_classp {
  * @pdp_devid:   UUID for drive
  * @pdp_mclassp: enum mp_media_classp
  * @pdp_status:  enum pd_status
- * @pdp_state:   enum pd_state_omf
  * @pdp_total:   raw capacity of drive
  * @pdp_avail:   available capacity (total - bad zones) of drive
  * @pdp_spare:   spare capacity of drive
@@ -145,8 +144,7 @@ struct mp_devprops {
 	uuid_le    pdp_devid;
 	uint8_t    pdp_mclassp;
 	uint8_t    pdp_status;
-	uint8_t    pdp_state;
-	uint8_t    pdp_rsvd1[5];
+	uint8_t    pdp_rsvd1[6];
 	uint64_t   pdp_total;
 	uint64_t   pdp_avail;
 	uint64_t   pdp_spare;
@@ -347,7 +345,6 @@ struct pd_znparam {
  * struct pd_prop - PD properties
  * @pdp_didstr:         drive id string (model)
  * @pdp_devtype:	device type (enum pd_devtype)
- * @pdp_state:		device state (enum pd_state)
  * @pdp_phys_if:	physical interface of the drive
  *			Determined by the device discovery.
  *			(device_phys_if)
