@@ -9,7 +9,6 @@ message(STATUS "Configuring mpool in ${CMAKE_CURRENT_SOURCE_DIR}")
 set(MPOOL_LIBS
   ${MPOOL_LIBS}
   uuid
-  crypto
   pthread
 )
 
