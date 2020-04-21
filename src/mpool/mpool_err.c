@@ -134,16 +134,17 @@ mpool_strinfo(
 	char   *buf,
 	size_t  bufsz)
 {
-	int n;
+	int n = 0;
 
 	if (!err) {
 		strlcpy(buf, "Success", bufsz);
 		return buf;
 	}
 
-	n = snprintf(buf, bufsz, "%s:%d: ",
-		     mpool_merr_file(err) ?: "?",
-		     mpool_merr_lineno(err));
+	if (mpool_merr_file(err))
+		n = snprintf(buf, bufsz, "%s:%d: ",
+			     mpool_merr_file(err),
+			     mpool_merr_lineno(err));
 
 	if (n >= 0 && n < bufsz)
 		mpool_strerror(err, buf + n, bufsz - n);

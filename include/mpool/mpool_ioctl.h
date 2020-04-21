@@ -251,7 +251,7 @@ struct mpool_mclass_xprops {
 	uint8_t                    mc_devtype;
 	uint8_t                    mc_mclass;
 	uint8_t                    mc_sectorsz;
-	uint8_t                    mc_rsvd1[9];
+	uint8_t                    mc_rsvd1;
 	uint32_t                   mc_spare;
 	uint16_t                   mc_uacnt;
 	uint16_t                   mc_rsvd2;
@@ -514,7 +514,7 @@ struct mpioc_cmn {
 	int64_t                 mc_err;         /* mpool_err_t */
 	char __user            *mc_msg;         /* mdr_msg */
 	char __user            *mc_merr_base;
-};
+} __attribute__((__aligned__(8)));
 
 struct mpioc_mpool {
 	struct mpioc_cmn        mp_cmn;         /* Must be first field! */
@@ -633,7 +633,7 @@ struct mpioc_mblock_rw {
 struct mpioc_mlog {
 	struct mpioc_cmn            ml_cmn;     /* Must be first field! */
 	uint64_t                    ml_objid;
-	uint64_t                    ml_handle;  /* key in refmap */
+	uint64_t                    ml_rsvd;
 	struct mlog_props_ex        ml_props;
 
 	struct mlog_capacity        ml_cap;
@@ -652,12 +652,12 @@ struct mpioc_mlog_id {
 
 struct mpioc_mlog_io {
 	struct mpioc_cmn        mi_cmn;     /* Must be first field! */
-	struct iovec __user    *mi_iov;
 	uint64_t                mi_objid;
-	off_t                   mi_off;
-	uint16_t                mi_iovc;
+	int64_t                 mi_off;
 	uint8_t                 mi_op;
 	uint8_t                 mi_rsvd1[5];
+	uint16_t                mi_iovc;
+	struct iovec __user    *mi_iov;
 	uint64_t                mi_rsvd2;
 };
 
@@ -670,11 +670,11 @@ struct mpioc_vma {
 	uint32_t            im_advice;
 	uint32_t            im_mbidc;
 	uint64_t __user    *im_mbidv;
-	size_t              im_bktsz;
-	off_t               im_offset;
-	size_t              im_len;
-	size_t              im_vssp;
-	size_t              im_rssp;
+	uint64_t            im_bktsz;
+	int64_t             im_offset;
+	uint64_t            im_len;
+	uint64_t            im_vssp;
+	uint64_t            im_rssp;
 	uint64_t            im_rsvd;
 };
 
