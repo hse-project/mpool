@@ -2188,7 +2188,7 @@ mpool_mlog_open(
 	if (err)
 		return err;
 
-	err = mpool_ioctl(ds->ds_fd, MPIOC_MLOG_OPEN, &ml);
+	err = mpool_ioctl(ds->ds_fd, MPIOC_MLOG_FIND, &ml);
 	if (err)
 		goto errout;
 
@@ -2239,8 +2239,8 @@ exit:
 	return err;
 }
 
-static merr_t
-mpool_mlog_find_impl(
+uint64_t
+mpool_mlog_find(
 	struct mpool        *ds,
 	u64                  objid,
 	struct mlog_props   *props,
@@ -2251,21 +2251,17 @@ mpool_mlog_find_impl(
 		.ml_objid = objid,
 	};
 
+	struct mlog_props_ex   *px;
 	struct mpool_mlog      *mlh;
 	struct mlog_props      *p;
-	struct mlog_props_ex   *px;
-
-	merr_t  err;
-	int     cmd;
+	merr_t                  err;
 
 	if (!ds || !mlh_out)
 		return merr(EINVAL);
 
-	cmd = do_get ? MPIOC_MLOG_FIND_GET : MPIOC_MLOG_RESOLVE;
-
 	*mlh_out = NULL;
 
-	err = mpool_ioctl(ds->ds_fd, cmd, &ml);
+	err = mpool_ioctl(ds->ds_fd, MPIOC_MLOG_FIND, &ml);
 	if (err)
 		return err;
 
@@ -2283,10 +2279,10 @@ again:
 		return merr(EBUG);
 
 	err = mlog_alloc_handle(ds, px, ds->ds_mpname, &mlh);
-	if (merr_errno(err) == EEXIST)
-		goto again;
-	else if (err) {
-		(void)mpool_mlog_cmd_byoid(ds, p->lpr_objid, MPIOC_MLOG_PUT);
+	if (err) {
+		if (merr_errno(err) == EEXIST)
+			goto again;
+
 		return err;
 	}
 
@@ -2311,7 +2307,7 @@ mpool_mlog_find_get(
 	struct mlog_props   *props,
 	struct mpool_mlog  **mlh_out)
 {
-	return mpool_mlog_find_impl(ds, objid, props, mlh_out, true);
+	return mpool_mlog_find(ds, objid, props, mlh_out, true);
 }
 
 uint64_t
@@ -2321,7 +2317,7 @@ mpool_mlog_resolve(
 	struct mlog_props   *props,
 	struct mpool_mlog  **mlh_out)
 {
-	return mpool_mlog_find_impl(ds, objid, props, mlh_out, false);
+	return mpool_mlog_find(ds, objid, props, mlh_out, false);
 }
 
 uint64_t
@@ -2329,13 +2325,9 @@ mpool_mlog_put(
 	struct mpool       *ds,
 	struct mpool_mlog  *mlh)
 {
-	struct mpioc_mlog_id    mi = {
-		.mi_objid = mlh->ml_objid,
-	};
-
-	merr_t  err;
 	bool    do_free = false;
 	bool    rw = false;
+	merr_t  err;
 
 	if (!ds || !mlh)
 		return merr(EINVAL);
@@ -2344,15 +2336,11 @@ mpool_mlog_put(
 	if (err)
 		return err;
 
-	err = mpool_ioctl(ds->ds_fd, MPIOC_MLOG_PUT, &mi);
-	if (err)
-		goto errout;
-
 	mlog_hmap_put(ds, mlh, &do_free);
+
 	if (do_free)
 		mlog_invalidate(mlh);
 
-errout:
 	mlog_release(mlh, rw);
 
 	if (do_free)
@@ -2879,7 +2867,7 @@ mpool_mblock_find(
 	if (!ds || !mbh)
 		return merr(EINVAL);
 
-	err = mpool_ioctl(ds->ds_fd, MPIOC_MB_FIND_GET, &mb);
+	err = mpool_ioctl(ds->ds_fd, MPIOC_MB_FIND, &mb);
 	if (err)
 		return err;
 

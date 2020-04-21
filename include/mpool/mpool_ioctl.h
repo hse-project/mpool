@@ -742,11 +742,7 @@ union mpioc_union {
 #define MPIOC_MLOG_COMMIT       _IOWR(MPIOC_MAGIC, 32, struct mpioc_mlog_id)
 #define MPIOC_MLOG_ABORT        _IOWR(MPIOC_MAGIC, 33, struct mpioc_mlog_id)
 #define MPIOC_MLOG_DELETE       _IOWR(MPIOC_MAGIC, 34, struct mpioc_mlog_id)
-#define MPIOC_MLOG_OPEN         _IOWR(MPIOC_MAGIC, 35, struct mpioc_mlog)
-#define MPIOC_MLOG_CLOSE        _IOWR(MPIOC_MAGIC, 36, struct mpioc_mlog_id)
-#define MPIOC_MLOG_FIND_GET     _IOWR(MPIOC_MAGIC, 37, struct mpioc_mlog)
-#define MPIOC_MLOG_RESOLVE      _IOWR(MPIOC_MAGIC, 38, struct mpioc_mlog)
-#define MPIOC_MLOG_PUT          _IOWR(MPIOC_MAGIC, 39, struct mpioc_mlog_id)
+#define MPIOC_MLOG_FIND         _IOWR(MPIOC_MAGIC, 37, struct mpioc_mlog)
 #define MPIOC_MLOG_READ         _IOWR(MPIOC_MAGIC, 40, struct mpioc_mlog_io)
 #define MPIOC_MLOG_WRITE        _IOWR(MPIOC_MAGIC, 41, struct mpioc_mlog_io)
 #define MPIOC_MLOG_PROPS        _IOWR(MPIOC_MAGIC, 42, struct mpioc_mlog)
@@ -755,16 +751,11 @@ union mpioc_union {
 #define MPIOC_MB_ALLOC          _IOWR(MPIOC_MAGIC, 50, struct mpioc_mblock)
 #define MPIOC_MB_PROPS          _IOWR(MPIOC_MAGIC, 51, struct mpioc_mblock)
 
-#define MPIOC_MB_ABORT          _IOWR(MPIOC_MAGIC, 52,			\
-				      struct mpioc_mblock_id)
-#define MPIOC_MB_COMMIT         _IOWR(MPIOC_MAGIC, 53,			\
-				      struct mpioc_mblock_id)
-#define MPIOC_MB_DELETE         _IOWR(MPIOC_MAGIC, 54,			\
-				      struct mpioc_mblock_id)
+#define MPIOC_MB_ABORT          _IOWR(MPIOC_MAGIC, 52, struct mpioc_mblock_id)
+#define MPIOC_MB_COMMIT         _IOWR(MPIOC_MAGIC, 53, struct mpioc_mblock_id)
+#define MPIOC_MB_DELETE         _IOWR(MPIOC_MAGIC, 54, struct mpioc_mblock_id)
 
-#define MPIOC_MB_FIND_GET       _IOWR(MPIOC_MAGIC, 56, struct mpioc_mblock)
-#define MPIOC_MB_GET            _IOWR(MPIOC_MAGIC, 57, struct mpioc_mblock)
-#define MPIOC_MB_PUT            _IOWR(MPIOC_MAGIC, 58, struct mpioc_mblock)
+#define MPIOC_MB_FIND           _IOWR(MPIOC_MAGIC, 56, struct mpioc_mblock)
 
 #define MPIOC_MB_READ           _IOWR(MPIOC_MAGIC, 60, struct mpioc_mblock_rw)
 #define MPIOC_MB_WRITE          _IOWR(MPIOC_MAGIC, 61, struct mpioc_mblock_rw)
