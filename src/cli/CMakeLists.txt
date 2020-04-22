@@ -29,8 +29,8 @@ MPOOL_EXECUTABLE2(
     ${MPOOL_INCLUDE_DIRS}
 
   DEPS
-    mpool-solib
+    mpool-lib
 
   LINK_LIBS
-    mpool-solib
+    mpool-lib
 )

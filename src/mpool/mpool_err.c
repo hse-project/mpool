@@ -61,9 +61,11 @@ mpool_merr_pack(int errnum, const char *file, int line)
 	if (errnum < 0)
 		errnum = -errnum;
 
+	/* Ignore files not from our section.
+	 */
 	if (file < (char *)&__start_mpool_merr ||
 	    file >= (char *)&__stop_mpool_merr)
-		file = mpool_merr_bug0;
+		goto finish;
 
 	if (!file || !IS_ALIGNED((ulong)file, MERR_ALIGN))
 		file = mpool_merr_bug1;
@@ -73,7 +75,9 @@ mpool_merr_pack(int errnum, const char *file, int line)
 	if (((s64)((u64)off << MERR_FILE_SHIFT) >> MERR_FILE_SHIFT) == off)
 		err = (u64)off << MERR_FILE_SHIFT;
 
+finish:
 	err |= (line & MERR_LINE_MASK) << MERR_LINE_SHIFT;
+	err |= ((u64)line << MERR_LINE_SHIFT) & MERR_LINE_MASK;
 	err |= errnum & MERR_ERRNO_MASK;
 
 	return err;
@@ -91,6 +95,8 @@ mpool_merr_file(merr_t err)
 		return NULL;
 
 	off = (s64)(err & MERR_FILE_MASK) >> MERR_FILE_SHIFT;
+	if (off == 0)
+		return NULL;
 
 	file = mpool_merr_base + (off * MERR_ALIGN);
 

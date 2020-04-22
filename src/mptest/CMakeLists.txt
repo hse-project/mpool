@@ -18,7 +18,7 @@ MPOOL_EXECUTABLE2(
     ${MPOOL_UTIL_DIR}/include
 
   LINK_LIBS
-    mpool-solib
+    mpool-lib
 
   COMPONENT
     test
