@@ -229,7 +229,7 @@ void mpool_params_init(struct mpool_params *params);
 
 /**
  * mpool_params_get() - get parameters of an activated mpool
- * @mp:  mpool handle
+ * @mp:     mpool handle
  * @params: mpool parameters
  * @ei:     error detail
  */
@@ -242,7 +242,7 @@ mpool_params_get(
 
 /**
  * mpool_params_set() - set parameters of an activated mpool
- * @mp:  mpool handle
+ * @mp:     mpool handle
  * @params: mpool parameters
  * @ei:     error detail
  */
@@ -254,7 +254,7 @@ mpool_params_set(
 
 /**
  * mpool_props_get() - Get properties of an mpool
- * @mp:  mpool handle
+ * @mp:    mpool handle
  * @props: mpool props (output)
  * @usage: mpool usage (output)
  */
@@ -266,9 +266,9 @@ mpool_props_get(
 
 /**
  * mpool_devprops_get() - Get properties of a device within an mpool
- * @mp:  mpool handle
+ * @mp:      mpool handle
  * @devname: device name
- * @dprops: device props (output)
+ * @dprops:  device props (output)
  */
 uint64_t
 mpool_devprops_get(
@@ -845,7 +845,7 @@ mpool_mdc_usage(
  * @mp:		mpool
  * @mclassp:	media class
  * @spare:      allocate from spare zones
- * @mbh:	mblock handle (output)
+ * @mbid:	mblock object ID (output)
  * @props:	properties of new mblock (output) - will be returned if the
  *		ptr is non-NULL
  *
@@ -858,7 +858,7 @@ mpool_mblock_alloc(
 	struct mpool                   *mp,
 	enum mp_media_classp		mclassp,
 	bool                            spare,
-	uint64_t                       *mbh,
+	uint64_t                       *mbid,
 	struct mblock_props            *props);
 
 /* deprecated, do not use */
@@ -867,14 +867,13 @@ uint64_t
 mpool_mblock_find_get(
 	struct mpool           *mp,
 	uint64_t                objid,
-	uint64_t               *mbh,
+	uint64_t               *mbid,
 	struct mblock_props    *props);
 
 /**
- * mpool_mblock_find() -
+ * mpool_mblock_find() - look up an mblock by object ID
  * @mp:     mpool
- * @objid:  Object ID for the mblock
- * @mbh:    mblock handle
+ * @objid:  object ID for the mblock
  * @props:  mblock properties (returned if the ptr is non-NULL)
  *
  *   %0 on success, <%0 on error
@@ -883,7 +882,6 @@ uint64_t
 mpool_mblock_find(
 	struct mpool           *mp,
 	uint64_t                objid,
-	uint64_t               *mbh,
 	struct mblock_props    *props);
 
 /* deprecated, do not use */
@@ -895,8 +893,8 @@ mpool_mblock_put(
 
 /**
  * mpool_mblock_commit() - commit an mblock
- * @mp:  mpool
- * @mbh: mblock handle
+ * @mp:   mpool
+ * @mbid: mblock object ID
  *
  * Return:
  *   %0 on success, <%0 on error
@@ -905,12 +903,12 @@ mpool_mblock_put(
 uint64_t
 mpool_mblock_commit(
 	struct mpool   *mp,
-	uint64_t        mbh);
+	uint64_t        mbid);
 
 /**
  * mpool_mblock_abort() - abort an mblock
- * @mp:  mpool
- * @mbh: mblock handle
+ * @mp:   mpool
+ * @mbid: mblock object ID
  *
  * mblock must have been allocated but not yet committed.
  *
@@ -921,12 +919,12 @@ mpool_mblock_commit(
 uint64_t
 mpool_mblock_abort(
 	struct mpool   *mp,
-	uint64_t        mbh);
+	uint64_t        mbid);
 
 /**
  * mpool_mblock_delete() - abort an mblock
- * @mp:  mpool
- * @mbh: mblock handle
+ * @mp:   mpool
+ * @mbid: mblock object ID
  *
  * mblock must have been allocated but not yet committed.
  *
@@ -937,12 +935,12 @@ mpool_mblock_abort(
 uint64_t
 mpool_mblock_delete(
 	struct mpool   *mp,
-	uint64_t        mbh);
+	uint64_t        mbid);
 
 /**
  * mpool_mblock_getprops() - get properties of an mblock
  * @mp:     mpool
- * @mbh:    mblock handle
+ * @mbid:   mblock ojbect ID
  * @props:  properties (output)
  *
  * Return:
@@ -952,14 +950,14 @@ mpool_mblock_delete(
 uint64_t
 mpool_mblock_getprops(
 	struct mpool           *mp,
-	uint64_t                mbh,
+	uint64_t                mbid,
 	struct mblock_props    *props);
 
 /**
  * mpool_mblock_write_data() - write data to an mblock (wrapper)
  * @mp:              mpool
  * @sync_writes      flag to use sync writes only
- * @mbh:             mblock handle
+ * @mbid:            mblock object Id
  * @iov, @iov_cnt:   iovec containing data to be written
  * @pasyncio:        Async IO context
  *
@@ -975,7 +973,7 @@ uint64_t
 mpool_mblock_write_data(
 	struct mpool           *mp,
 	bool                    sync_writes,
-	uint64_t                mbh,
+	uint64_t                mbid,
 	struct iovec           *iov,
 	int                     iov_cnt,
 	struct mp_asyncctx_ioc *pasyncio);
@@ -983,7 +981,7 @@ mpool_mblock_write_data(
 /**
  * mpool_mblock_write() - write data to an mblock synchronously
  * @mp:              mpool
- * @mbh:             mblock handle
+ * @mbid:            mblock object ID
  * @iov, @iov_cnt:   iovec containing data to be written
  *
  * Mblock writes are all or nothing.  Either all data is written to media, or
@@ -996,15 +994,16 @@ mpool_mblock_write_data(
 uint64_t
 mpool_mblock_write(
 	struct mpool     *mp,
-	uint64_t          mbh,
+	uint64_t          mbid,
 	struct iovec     *iov,
 	int               iov_cnt);
 
 /**
  * mpool_mblock_write_async() - write data to an mblock asynchronously
  * @mp:              mpool
- * @mbh:             mblock handle
- * @iov, @iov_cnt:   iovec containing data to be written
+ * @mbid:            mblock object ID
+ * @iov:             iovec containing data to be written
+ * @iov_cnt:         length of iov[]
  * @pasyncio:        Async IO context
  *
  * Mblock writes are all or nothing.  Either all data is written to media, or
@@ -1021,7 +1020,7 @@ mpool_mblock_write(
 uint64_t
 mpool_mblock_write_async(
 	struct mpool           *mp,
-	uint64_t                mbh,
+	uint64_t                mbid,
 	struct iovec           *iov,
 	int                     iov_cnt,
 	struct mp_asyncctx_ioc *pasyncio);
@@ -1045,8 +1044,9 @@ mpool_mblock_asyncio_flush(
 /**
  * mpool_mblock_read() - read data from an mblock
  * @mp:             mpool
- * @mbh:            mblock handle
- * @iov, @iov_cnt:  iovec for output data
+ * @mbid:           mblock object ID
+ * @iov:            iovec for output data
+ * @iov_cnt:        length of iov[]
  * @offset:         PAGE aligned offset into the mblock
  *
  * Return:
@@ -1057,7 +1057,7 @@ mpool_mblock_asyncio_flush(
 uint64_t
 mpool_mblock_read(
 	struct mpool     *mp,
-	uint64_t          mbh,
+	uint64_t          mbid,
 	struct iovec     *iov,
 	int               iov_cnt,
 	size_t            offset);

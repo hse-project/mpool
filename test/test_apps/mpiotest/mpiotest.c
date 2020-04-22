@@ -56,7 +56,6 @@
  */
 struct minfo {
 	uint64_t    objid;
-	uint64_t    handle;
 	size_t      wander;     /* offset into wbuf */
 	size_t      wobble;     /* wcc variability */
 
@@ -105,8 +104,6 @@ ulong   td_run;
 ulong         rdverify = 13;
 const ulong   rdverify_min = 0;
 const ulong   rdverify_max = 100;
-
-ulong         put_percent = 20;
 
 /* Verification via mcache */
 ulong         mcverify = 17;
@@ -320,7 +317,7 @@ verify_page_vec(
 int
 verify_with_mcache(
 	struct mpool *ds,
-	uint64_t      handle,
+	uint64_t      objid,
 	struct minfo *minfo,
 	struct minfo *minfov,
 	size_t        wcc,
@@ -399,12 +396,12 @@ verify_with_mcache(
 	}
 
 	err = mpool_mcache_getpagesv(minfo->map, pagec,
-				  objnumv, offsetv, pagev);
+				     objnumv, offsetv, pagev);
 	if (err) {
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
 		eprint("mpool_mcache_getpagesv: %d "
-		       "handle=0x%lx len=%zu: %s\n",
-		       test->t_idx, handle, wcc + wobble,
+		       "objid=0x%lx len=%zu: %s\n",
+		       test->t_idx, objid, wcc + wobble,
 		       errbuf);
 		goto err_out;
 	}
@@ -423,7 +420,7 @@ verify_with_mcache(
 mcache_map_err:
 	mpool_strinfo(err, errbuf, sizeof(errbuf));
 	eprint("mpool_mcache_map_create failed:"
-	       " handle=0x%lx: %s\n", handle, errbuf);
+	       " objid=0x%lx: %s\n", objid, errbuf);
 
 err_out:
 	if (buf)
@@ -508,7 +505,7 @@ test_start(void *arg)
 	for (wloops = 0; wloops < mballoc_max; ++wloops) {
 		struct mblock_props props;
 		struct minfo       *minfo;
-		uint64_t            handle;
+		uint64_t            objid;
 		size_t              rss, vss;
 
 		if (sigint || sigalrm)
@@ -521,7 +518,7 @@ test_start(void *arg)
 		wobble = (random() % test->t_wobblemax) & PAGE_MASK;
 
 		err = mpool_mblock_alloc(ds, MP_MED_CAPACITY, false,
-					 &handle, &props);
+					 &objid, &props);
 		if (err) {
 			if (mpool_errno(err) == ENOSPC)
 				break;
@@ -531,7 +528,6 @@ test_start(void *arg)
 			break;
 		}
 
-		minfo->handle = handle;
 		minfo->objid  = props.mpr_objid;
 		minfo->wander = wander;
 		minfo->wobble = wobble;
@@ -552,7 +548,7 @@ test_start(void *arg)
 			niov = 2;
 		}
 
-		err = mpool_mblock_write(ds, handle, iov, niov);
+		err = mpool_mblock_write(ds, objid, iov, niov);
 		if (err) {
 			mpool_strinfo(err, errbuf, sizeof(errbuf));
 			eprint("mpool_mblock_write: %d objid=0x%lx"
@@ -563,7 +559,7 @@ test_start(void *arg)
 
 		++stats->mbwrite;
 
-		err = mpool_mblock_commit(ds, handle);
+		err = mpool_mblock_commit(ds, objid);
 		if (err) {
 			mpool_strinfo(err, errbuf, sizeof(errbuf));
 			eprint("mb_mblock_commit failed:"
@@ -579,7 +575,7 @@ test_start(void *arg)
 			iov[0].iov_base = rbuf;
 			iov[0].iov_len = wcc + wobble;
 
-			err = mpool_mblock_read(ds, handle, iov, 1, 0);
+			err = mpool_mblock_read(ds, objid, iov, 1, 0);
 			if (err) {
 				mpool_strinfo(err, errbuf, sizeof(errbuf));
 				eprint("mpool_mblock_read: %d objid=0x%lx"
@@ -605,21 +601,9 @@ test_start(void *arg)
 		 * the randomness of the test.
 		 */
 		if ((random() % 100) < mcverify)
-			if (verify_with_mcache(ds, handle, minfo, minfov,
+			if (verify_with_mcache(ds, objid, minfo, minfov,
 				wcc, wobble, stats, test, rss, vss))
 				break;
-
-
-		if ((random() % 100) < put_percent) {
-			err = mpool_mblock_put(ds, handle);
-			if (err) {
-				mpool_strinfo(err, errbuf, sizeof(errbuf));
-				eprint("mb_mblock_put failed:"
-				       " objid=0x%lx: %s\n",
-				       minfo->objid, errbuf);
-			}
-			minfo->handle = 0;
-		}
 
 		if (verbosity > 0) {
 			if ((__sync_fetch_and_add(&row, 1) % rows) == 0) {
@@ -696,22 +680,10 @@ test_start(void *arg)
 			       minfo->objid);
 		}
 
-		/* Do a get on the mblocks that were "put" */
-		if (!minfo->handle) {
-			err = mpool_mblock_find_get(ds, minfo->objid,
-					    &minfo->handle, NULL);
-			if (err) {
-				mpool_strinfo(err, errbuf, sizeof(errbuf));
-				eprint("mpool_mblock_get: objid=0x%lx: %s\n",
-				       minfo->objid, errbuf);
-				break;
-			}
-		}
-
 #if 0
 		/* Read loop wasn't using mcache before */
 		if ((random() % 100) < mcverify && !sigint && !sigalrm)
-			if (verify_with_mcache(ds, minfo->handle, minfo, minfov,
+			if (verify_with_mcache(ds, minfo->objid, minfo, minfov,
 					       wcc, wobble, stats, test,
 					       rss, vss))
 				break;
@@ -755,7 +727,7 @@ test_start(void *arg)
 			++stats->mapdestroy;
 		}
 
-		err = mpool_mblock_delete(ds, minfo->handle);
+		err = mpool_mblock_delete(ds, minfo->objid);
 		if (err) {
 			mpool_strinfo(err, errbuf, sizeof(errbuf));
 			eprint("%3d, %8d %8d %8zu %8zu %16lx"
@@ -914,14 +886,8 @@ prop_decode(
 			continue;
 		}
 
-		if (0 == strcmp(name, "put")) {
-			rc = cvt_strtoul(value, 0, &put_percent);
-			if (rc)
-				break;
-			if (put_percent > 100)
-				put_percent = 100;
+		if (0 == strcmp(name, "put"))
 			continue;
-		}
 
 		eprint("%s property '%s' ignored\n",
 		       valid ? "unhandled" : "invalid", name);
@@ -984,8 +950,6 @@ usage(void)
 	printf("    mcmaxmblocks  set max mblocks to map per verification");
 	printf(" (range: [%lu-%lu]  default: %lu)\n",
 	       mcmaxmblocks_min, mcmaxmblocks_max, mcmaxmblocks);
-	printf("    put           percent of time to put mblocks after alloc");
-	printf(" (range: [0-100]  default: %lu)\n", put_percent);
 	printf("\n");
 
 	printf("EXAMPLES:\n");

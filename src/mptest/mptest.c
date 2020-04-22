@@ -2186,23 +2186,18 @@ mmrd_command(
 
 		for (i = 0; i < argc; ++i) {
 			struct mblock_props props;
-			u64                 h;
 
 			mbidv[i] = strtoul(argv[i], NULL, 0);
 
-			err = mpool_mblock_find_get(ds, mbidv[i], &h, &props);
+			err = mpool_mblock_find(ds, mbidv[i], &props);
 			if (err) {
-				eprint("mpool_mblock_get(%lx): %s",
+				eprint("mpool_mblock_find(%lx): %s",
 				       mbidv[i],
 				       mpool_strinfo(err, errbuf, sizeof(errbuf)));
 				exit(EX_DATAERR);
 			}
 
 			mblenv[i] = props.mpr_write_len;
-
-			/* What a nuisance...
-			 */
-			mpool_mblock_put(ds, h);
 		}
 
 		err = mpool_mcache_mmap(ds, argc, mbidv, MPC_VMA_WARM, &map);

@@ -2829,13 +2829,13 @@ mpool_mblock_alloc(
 	struct mpool                   *ds,
 	enum mp_media_classp            mclassp,
 	bool                            spare,
-	uint64_t                       *mbh,
+	uint64_t                       *mbid,
 	struct mblock_props            *props)
 {
 	struct mpioc_mblock mb = { .mb_mclassp = mclassp };
 	merr_t              err;
 
-	if (!ds || !mbh)
+	if (!ds || !mbid)
 		return merr(EINVAL);
 
 	mb.mb_spare = spare;
@@ -2844,7 +2844,7 @@ mpool_mblock_alloc(
 	if (err)
 		return err;
 
-	*mbh = mb.mb_objid;
+	*mbid = mb.mb_objid;
 
 	if (props)
 		*props = mb.mb_props.mbx_props;
@@ -2858,13 +2858,12 @@ uint64_t
 mpool_mblock_find(
 	struct mpool           *ds,
 	uint64_t                objid,
-	uint64_t               *mbh,
 	struct mblock_props    *props)
 {
 	struct mpioc_mblock mb = { .mb_objid = objid };
 	merr_t              err;
 
-	if (!ds || !mbh)
+	if (!ds)
 		return merr(EINVAL);
 
 	err = mpool_ioctl(ds->ds_fd, MPIOC_MB_FIND, &mb);
@@ -2874,8 +2873,6 @@ mpool_mblock_find(
 	if (props)
 		*props = mb.mb_props.mbx_props;
 
-	*mbh = mb.mb_objid;
-
 	return 0;
 }
 
@@ -2883,16 +2880,26 @@ uint64_t
 mpool_mblock_find_get(
 	struct mpool           *ds,
 	uint64_t                objid,
-	uint64_t               *mbh,
+	uint64_t               *mbid,
 	struct mblock_props    *props)
 {
-	return mpool_mblock_find(ds, objid, mbh, props);
+	merr_t err;
+
+	if (!ds || !mbid)
+		return merr(EINVAL);
+
+	err = mpool_mblock_find(ds, objid, props);
+
+	*mbid = err ? 0 : objid;
+
+	return err;
+
 }
 
 uint64_t
 mpool_mblock_put(
 	struct mpool   *mp,
-	uint64_t        mbh)
+	uint64_t        mbid)
 {
 	return 0;
 }
@@ -2900,9 +2907,9 @@ mpool_mblock_put(
 uint64_t
 mpool_mblock_commit(
 	struct mpool   *ds,
-	uint64_t        mbh)
+	uint64_t        mbid)
 {
-	struct mpioc_mblock_id  mi = { .mi_objid = mbh };
+	struct mpioc_mblock_id  mi = { .mi_objid = mbid };
 
 	if (!ds)
 		return merr(EINVAL);
@@ -2913,9 +2920,9 @@ mpool_mblock_commit(
 uint64_t
 mpool_mblock_abort(
 	struct mpool   *ds,
-	uint64_t        mbh)
+	uint64_t        mbid)
 {
-	struct mpioc_mblock_id  mi = { .mi_objid = mbh };
+	struct mpioc_mblock_id  mi = { .mi_objid = mbid };
 
 	if (!ds)
 		return merr(EINVAL);
@@ -2926,9 +2933,9 @@ mpool_mblock_abort(
 uint64_t
 mpool_mblock_delete(
 	struct mpool   *ds,
-	uint64_t        mbh)
+	uint64_t        mbid)
 {
-	struct mpioc_mblock_id  mi = { .mi_objid = mbh };
+	struct mpioc_mblock_id  mi = { .mi_objid = mbid };
 
 	if (!ds)
 		return merr(EINVAL);
@@ -2939,10 +2946,10 @@ mpool_mblock_delete(
 uint64_t
 mpool_mblock_getprops(
 	struct mpool           *ds,
-	uint64_t                mbh,
+	uint64_t                mbid,
 	struct mblock_props    *props)
 {
-	struct mpioc_mblock mb = { .mb_objid = mbh };
+	struct mpioc_mblock mb = { .mb_objid = mbid };
 
 	merr_t  err;
 
@@ -2960,29 +2967,29 @@ uint64_t
 mpool_mblock_write_data(
 	struct mpool           *ds,
 	bool                    sync_writes,
-	uint64_t                mbh,
+	uint64_t                mbid,
 	struct iovec           *iov,
 	int                     iov_cnt,
 	struct mp_asyncctx_ioc *pasyncio)
 {
 	/* Force synchronous writes */
-	return mpool_mblock_write(ds, mbh, iov, iov_cnt);
+	return mpool_mblock_write(ds, mbid, iov, iov_cnt);
 }
 
 uint64_t
 mpool_mblock_write(
 	struct mpool       *ds,
-	uint64_t            mbh,
+	uint64_t            mbid,
 	struct iovec       *iov,
 	int                 iovc)
 {
 	struct mpioc_mblock_rw mbrw = {
-		.mb_objid   = mbh,
+		.mb_objid   = mbid,
 		.mb_iov_cnt = iovc,
 		.mb_iov     = iov,
 	};
 
-	if (!ds || !mbh || !iov)
+	if (!ds || !iov)
 		return merr(EINVAL);
 
 	return mpool_ioctl(ds->ds_fd, MPIOC_MB_WRITE, &mbrw);
@@ -3008,7 +3015,7 @@ mpool_mblock_asyncio_flush(
 uint64_t
 I_WRAP_SONAME_FNNAME_ZU(NONE, mpool_mblock_read)(
 	struct mpool     *ds,
-	uint64_t          mbh,
+	uint64_t          mbid,
 	struct iovec     *iov,
 	int               iovc,
 	size_t            offset)
@@ -3027,7 +3034,7 @@ I_WRAP_SONAME_FNNAME_ZU(NONE, mpool_mblock_read)(
 		for (i = 0; i < iovc; i++)
 			memset(iov[i].iov_base, 0xaa, iov[i].iov_len);
 	}
-	CALL_FN_W_5W(result, fn, ds, mbh, iov, iovc, offset);
+	CALL_FN_W_5W(result, fn, ds, mbid, iov, iovc, offset);
 
 	return result;
 }
@@ -3036,19 +3043,19 @@ I_WRAP_SONAME_FNNAME_ZU(NONE, mpool_mblock_read)(
 uint64_t
 mpool_mblock_read(
 	struct mpool     *ds,
-	uint64_t          mbh,
+	uint64_t          mbid,
 	struct iovec     *iov,
 	int               iovc,
 	size_t            offset)
 {
 	struct mpioc_mblock_rw mbrw = {
-		.mb_objid   = mbh,
+		.mb_objid   = mbid,
 		.mb_offset  = offset,
 		.mb_iov_cnt = iovc,
 		.mb_iov     = iov,
 	};
 
-	if (!ds || !mbh || !iov)
+	if (!ds || !iov)
 		return merr(EINVAL);
 
 	return mpool_ioctl(ds->ds_fd, MPIOC_MB_READ, &mbrw);
