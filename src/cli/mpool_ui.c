@@ -1042,8 +1042,7 @@ mpool_get_func(
 
 
 			if (co.co_mutest > 0)
-				printf(" %8s %6s %6s",
-				       "CAPTGT", "OID1", "OID2");
+				printf(" %6s", "RMDCSZ");
 
 			if (co.co_verbose > 0)
 				printf(" %4s %s", "VMA", "TYPE");
@@ -1072,8 +1071,7 @@ mpool_get_func(
 		       params->mp_spare_stg, params->mp_spare_cap);
 
 		if (co.co_mutest > 0)
-			printf(" %8lu %6lx %6lx", params->mp_mdc_captgt,
-			       params->mp_oidv[0], params->mp_oidv[1]);
+			printf(" %6lu", params->mp_mdc_captgt >> 20);
 
 		if (co.co_verbose > 0) {
 			char uuidstr[64];
