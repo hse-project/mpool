@@ -669,6 +669,12 @@ mpool_scan_func(
 		return err;
 	}
 
+	if (allc == 0 && geteuid() != 0) {
+		printf("Run as root to scan and %sctivate all mpools\n",
+			co.co_activate ? "a" : "dea");
+		return merr(EPERM);
+	}
+
 	err = mpool_list(&actc, &actv, &ei);
 	if (err) {
 		emit_err(co.co_fp, err, errbuf, sizeof(errbuf),
