@@ -6,7 +6,7 @@
 
 message(STATUS "Configuring ui ${CMAKE_CURRENT_SOURCE_DIR}")
 
-MPOOL_EXECUTABLE2(
+MPOOL_EXECUTABLE(
   NAME
     mpool
 
@@ -28,9 +28,6 @@ MPOOL_EXECUTABLE2(
     ${MPOOL_UTIL_DIR}/include
     ${MPOOL_INCLUDE_DIRS}
 
-  DEPS
-    mpool-solib
-
-  LINK_LIBS
-    mpool-solib
+  DEP_LIBS
+    mpool-lib
 )

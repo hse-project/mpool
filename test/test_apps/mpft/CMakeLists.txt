@@ -6,7 +6,7 @@
 
 message(STATUS "Configuring ui ${CMAKE_CURRENT_SOURCE_DIR}")
 
-MPOOL_EXECUTABLE2(
+MPOOL_EXECUTABLE(
   NAME
     mpft
 
@@ -28,10 +28,8 @@ MPOOL_EXECUTABLE2(
 
   DEPS
     libblkid-pkg
-    mpool-solib
 
-  LINK_LIBS
-    ${LIBCURL_LIBS}
+  DEP_LIBS
     mpool-solib
 
   COMPONENT
