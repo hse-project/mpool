@@ -24,10 +24,6 @@ MPOOL_OBJECT_FILES(
   NAME
     util-objs
 
-  DEPS
-    pthread
-    uuid
-
   CFLAGS
     -DMPOOL_BUILD_LIBMPOOL
 
@@ -92,7 +88,6 @@ MPOOL_LIBRARY(
 
   LINK_LIBS
     ${LIBBLKID_LIBS}
-    ${LIBCURL_LIBS}
     ${MPOOL_LIBS}
 )
 
@@ -108,6 +103,5 @@ MPOOL_SHARED_LIBRARY(
 
   LINK_LIBS
     ${LIBBLKID_LIBS}
-    ${LIBCURL_LIBS}
     ${MPOOL_LIBS}
 )

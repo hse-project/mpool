@@ -451,9 +451,8 @@ set( CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION
   /etc/sysconfig
   /etc/sysconfig/modules
   /lib
+  /lib64
   /usr/lib
-  /usr/lib/mpool
-  /usr/lib/mpool/modules
   /usr/lib/tmpfiles.d
   /usr/lib/systemd
   /usr/lib/systemd/system
@@ -493,8 +492,6 @@ set( CPACK_RPM_RUNTIME_PRE_INSTALL_SCRIPT_FILE "${MPOOL_TREE_SCRIPTS_DIR}/packag
 set( CPACK_RPM_RUNTIME_POST_INSTALL_SCRIPT_FILE "${MPOOL_TREE_SCRIPTS_DIR}/package/rpm-post-install.sh" )
 set( CPACK_RPM_RUNTIME_PRE_UNINSTALL_SCRIPT_FILE "${MPOOL_TREE_SCRIPTS_DIR}/package/rpm-pre-uninstall.sh" )
 set( CPACK_RPM_RUNTIME_POST_UNINSTALL_SCRIPT_FILE "${MPOOL_TREE_SCRIPTS_DIR}/package/rpm-post-uninstall.sh" )
-set( CPACK_RPM_RUNTIME_USER_FILELIST
-)
 
 #
 # Devel/SDK - currently contains static libs--see "Libs" above.
