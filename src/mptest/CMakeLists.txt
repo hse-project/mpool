@@ -6,7 +6,7 @@
 
 message(STATUS "Configuring mpool in ${CMAKE_CURRENT_SOURCE_DIR}")
 
-MPOOL_EXECUTABLE2(
+MPOOL_EXECUTABLE(
   NAME
     mptest
 
@@ -17,8 +17,8 @@ MPOOL_EXECUTABLE2(
     ${MPOOL_INCLUDE_DIRS}
     ${MPOOL_UTIL_DIR}/include
 
-  LINK_LIBS
-    mpool-solib
+  DEP_LIBS
+    mpool-lib
 
   COMPONENT
     test

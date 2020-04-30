@@ -363,103 +363,6 @@ FUNCTION(MPOOL_PANDOC)
 ENDFUNCTION()
 
 #----------------------------------------------------------------
-# MPOOL_EXECUTABLE : Function to build an executable.
-#
-# Usage:
-#
-#    MPOOL_EXECUTABLE(
-#        NAME      foobar
-#        SRCS      foo.c bar.c
-#        DEP_LIBS  mpool_platform
-#        LINK_LIBS m
-#        [OUTDIR dir]
-#        [DESTINATION dir]
-#        [COMPONENT component])
-#
-# DESTINATION is optional.  It defaults to "bin".
-# COMPONENT is optional.  It defaults to "runtime".
-#----------------------------------------------------------------
-
-FUNCTION(MPOOL_EXECUTABLE)
-    SET(one_value_opts
-        NAME            # (required) name for collection of object files
-        COMPONENT       # (optional) installation component
-        DESTINATION     # (optional) installation directory
-        OUTDIR          # (optional) output directory
-        )
-
-    SET(multi_value_opts
-        SRCS            # (required) list of source files
-        DEPS
-        DEP_LIBS
-        LINK_LIBS
-        )
-
-    CMAKE_PARSE_ARGUMENTS(
-        param
-        "" "${one_value_opts}" "${multi_value_opts}"
-        ${ARGN})
-
-    IF("${param_NAME}" STREQUAL "")
-        MESSAGE(FATAL_ERROR "MPOOL_EXECUTABLE: Must set NAME")
-    ENDIF()
-
-    IF("${param_SRCS}" STREQUAL "")
-        MESSAGE(FATAL_ERROR "MPOOL_EXECUTABLE: Must set SRCS")
-    ENDIF()
-
-    # Optional DESTINATION defaults to "bin"
-    IF("${param_DESTINATION}" STREQUAL "")
-        SET(param_DESTINATION "bin")
-    ENDIF()
-
-    # Optional COMPONENT defaults to "runtime"
-    IF("${param_COMPONENT}" STREQUAL "")
-        SET(param_COMPONENT "runtime")
-    ENDIF()
-
-    IF(NOT "${param_UNPARSED_ARGUMENTS}" STREQUAL "")
-        MESSAGE(
-            FATAL_ERROR
-            "MPOOL_EXECUTABLE: Unknown args: ${param_UNPARSED_ARGUMENTS}")
-    ENDIF()
-
-    # All make targets that produce executables are suffixed with "-bin".  The
-    # target property named "OUTPUT_NAME" defines the name of the executable file.
-    ADD_EXECUTABLE(${param_NAME}-bin ${param_SRCS})
-    SET_TARGET_PROPERTIES(${param_NAME}-bin PROPERTIES OUTPUT_NAME ${param_NAME})
-
-    IF (NOT "${param_OUTDIR}" STREQUAL "")
-        SET_PROPERTY(TARGET ${param_NAME}-bin PROPERTY RUNTIME_OUTPUT_DIRECTORY ${param_OUTDIR})
-    ENDIF()
-
-    IF(NOT "${param_DEPS}" STREQUAL "")
-        ADD_DEPENDENCIES(${param_NAME}-bin ${param_DEPS})
-    ENDIF()
-
-    IF(NOT "${param_DEP_LIBS}" STREQUAL "")
-        ADD_DEPENDENCIES(      ${param_NAME}-bin ${param_DEP_LIBS}  )
-        TARGET_LINK_LIBRARIES( ${param_NAME}-bin ${param_DEP_LIBS} rt  )
-    ENDIF()
-
-    IF(NOT "${param_LINK_LIBS}" STREQUAL "")
-        TARGET_LINK_LIBRARIES( ${param_NAME}-bin ${param_LINK_LIBS} rt )
-    ENDIF()
-
-    #
-    # Some executables are entirely private; e.g., test-builds of the
-    # KVDB API example code.  Do not install them lest CPack find them.
-    #
-    IF(NOT "${param_COMPONENT}" STREQUAL "private")
-      INSTALL(
-        TARGETS ${param_NAME}-bin
-        DESTINATION ${param_DESTINATION}
-        COMPONENT ${param_COMPONENT})
-    ENDIF()
-ENDFUNCTION()
-
-
-#----------------------------------------------------------------
 #
 # MPOOL_OBJECT_FILES : Function to build a collection of object files
 #
@@ -571,7 +474,7 @@ FUNCTION(MPOOL_LIBRARY)
     IF(NOT "${param_COMPONENT}" STREQUAL "private")
       INSTALL(
         TARGETS ${param_NAME}-lib
-        DESTINATION lib
+        DESTINATION lib64
         COMPONENT ${param_COMPONENT}
       )
     ENDIF()
@@ -645,7 +548,7 @@ FUNCTION(MPOOL_SHARED_LIBRARY)
     IF(NOT "${param_COMPONENT}" STREQUAL "private")
       INSTALL(
         TARGETS ${param_NAME}-solib
-        DESTINATION lib
+        DESTINATION lib64
         COMPONENT ${param_COMPONENT}
       )
     ENDIF()
@@ -653,10 +556,10 @@ ENDFUNCTION()
 
 #----------------------------------------------------------------
 #
-# MPOOL_EXECUTABLE2 : Function to build a binary executable
+# MPOOL_EXECUTABLE : Function to build a binary executable
 #
 #----------------------------------------------------------------
-FUNCTION(MPOOL_EXECUTABLE2)
+FUNCTION(MPOOL_EXECUTABLE)
     SET(one_value_opts
         NAME            # (required) name for collection of object files
         COMPONENT       # (optional) installation component, default "runtime"
@@ -669,6 +572,7 @@ FUNCTION(MPOOL_EXECUTABLE2)
         CFLAGS          # Additional CFLAGS
         INCLUDES        # Directories to search for #include
         LINK_LIBS       # Libraries to use when linking
+        DEP_LIBS        # DEPS and LINK_LIBS combined
         )
 
     CMAKE_PARSE_ARGUMENTS(
@@ -704,13 +608,24 @@ FUNCTION(MPOOL_EXECUTABLE2)
     SET_TARGET_PROPERTIES(${param_NAME}-bin PROPERTIES OUTPUT_NAME ${param_NAME})
     TARGET_INCLUDE_DIRECTORIES(${param_NAME}-bin PRIVATE ${param_INCLUDES})
     TARGET_COMPILE_OPTIONS(${param_NAME}-bin PRIVATE ${param_CFLAGS})
-     TARGET_LINK_LIBRARIES(${param_NAME}-bin ${param_LINK_LIBS} rt)
+
     IF(NOT "${param_DEPS}" STREQUAL "")
-        ADD_DEPENDENCIES(      ${param_NAME}-bin ${param_DEPS}  )
+        ADD_DEPENDENCIES( ${param_NAME}-bin ${param_DEPS} )
     ENDIF()
 
-    INSTALL(
-      TARGETS ${param_NAME}-bin
-      DESTINATION ${param_DESTINATION}
-      COMPONENT ${param_COMPONENT})
+    IF(NOT "${param_LINK_LIBS}" STREQUAL "")
+        TARGET_LINK_LIBRARIES(${param_NAME}-bin ${param_LINK_LIBS} rt)
+    ENDIF()
+
+    IF(NOT "${param_DEP_LIBS}" STREQUAL "")
+        ADD_DEPENDENCIES( ${param_NAME}-bin ${param_DEP_LIBS} )
+        TARGET_LINK_LIBRARIES( ${param_NAME}-bin ${param_DEP_LIBS} rt )
+    ENDIF()
+
+    IF(NOT "${param_COMPONENT}" STREQUAL "private")
+      INSTALL(
+        TARGETS ${param_NAME}-bin
+        DESTINATION ${param_DESTINATION}
+        COMPONENT ${param_COMPONENT})
+    ENDIF()
 ENDFUNCTION()

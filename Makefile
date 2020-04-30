@@ -412,7 +412,10 @@ help:
 	@true
 	$(info $(HELP_TEXT))
 
-install-pre: config
+libs-clean:
+	@rm -f /usr/lib/libmpool.*
+
+install-pre: libs-clean config
 	@$(MAKE) --no-print-directory -C "$(BUILD_DIR)" install
 
 install: install-pre

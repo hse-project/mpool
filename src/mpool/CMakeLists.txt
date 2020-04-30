@@ -9,7 +9,6 @@ message(STATUS "Configuring mpool in ${CMAKE_CURRENT_SOURCE_DIR}")
 set(MPOOL_LIBS
   ${MPOOL_LIBS}
   uuid
-  crypto
   pthread
 )
 
@@ -24,10 +23,6 @@ set(LIBMPOOL_INCLUDE_DIRS
 MPOOL_OBJECT_FILES(
   NAME
     util-objs
-
-  DEPS
-    pthread
-    uuid
 
   CFLAGS
     -DMPOOL_BUILD_LIBMPOOL
@@ -93,7 +88,6 @@ MPOOL_LIBRARY(
 
   LINK_LIBS
     ${LIBBLKID_LIBS}
-    ${LIBCURL_LIBS}
     ${MPOOL_LIBS}
 )
 
@@ -109,6 +103,5 @@ MPOOL_SHARED_LIBRARY(
 
   LINK_LIBS
     ${LIBBLKID_LIBS}
-    ${LIBCURL_LIBS}
     ${MPOOL_LIBS}
 )
