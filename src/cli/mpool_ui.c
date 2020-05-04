@@ -485,7 +485,7 @@ mpool_add_func(
 		return merr(EINVAL);
 	}
 
-	sz = params.mp_mblocksz[MP_MED_STAGING];
+	sz = aparams.mp_mblocksz[MP_MED_STAGING];
 	if (sz > 0 && (!powerof2(sz) ||
 		       sz < MPOOL_MBSIZE_MB_MIN ||
 		       sz > MPOOL_MBSIZE_MB_MAX)) {
