@@ -6,10 +6,19 @@
 # Copyright (C) 2015-2020 Micron Technology, Inc.  All rights reserved.
 #
 
-#doc: run all of the mpft correctness tests
+#doc: run mpiotest to stress test all mblock operations
 
 mp=$(new_mpool) || err
 
-mpiotest -T 30 $mp
+# Start mpiotest in the background...
+mpiotest -T 30 $mp &
+
+# Attempt to concurrently open $mp exclusively should fail...
+mpiotest -T 10 -x $mp && err
+
+# Should be able to run another instance concurrently...
+mpiotest -T 10 $mp &
+
+wait
 
 cmd $sudo ${MPOOL_BIN}/mpool destroy "$mp"

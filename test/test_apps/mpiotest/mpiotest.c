@@ -972,7 +972,7 @@ main(int argc, char **argv)
 {
 	struct stats        stats;
 	struct test        *testv;
-	struct mpool       *ds;
+	struct mpool       *ds, *ds2;
 	struct mp_errinfo   ei;
 	struct mpool_params params;
 	sigset_t        sigmask_block;
@@ -1142,6 +1142,28 @@ main(int argc, char **argv)
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
 		eprint("mpool_open(%s): %s\n", mpname, errbuf);
 		exit(1);
+	}
+
+	/* If the mpool was originally opened exclusively a second
+	 * open should fail, otherwise it should succeed.
+	 */
+	err = mpool_open(mpname, 0, &ds2, &ei);
+	if ((oflags & O_EXCL) && !err) {
+		eprint("mpool_open(%s): re-open exclusive didn't fail\n",
+		       mpname);
+		exit(1);
+	} else if (!(oflags & O_EXCL) && err) {
+		mpool_strinfo(err, errbuf, sizeof(errbuf));
+		eprint("mpool_open(%s): re-open failed: %s\n", mpname, errbuf);
+		exit(1);
+	} else {
+		err = mpool_close(ds2);
+		if (err) {
+			mpool_strinfo(err, errbuf, sizeof(errbuf));
+			eprint("mpool_close(%s): ds2 close failed: %s\n",
+			       mpname, errbuf);
+			exit(1);
+		}
 	}
 
 	err = mpool_params_get(ds, &params, &ei);
