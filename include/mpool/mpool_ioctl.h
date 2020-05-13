@@ -97,35 +97,25 @@ enum mp_mgmt_flags {
 
 /**
  * mp_media_classp = Media classes
+ *
  * @MP_MED_STAGING:  Initial data ingest, hot data storage, or similar.
  * @MP_MED_CAPACITY: Primary data storage, cold data, or similar.
- * @MP_MED_NUMBER:   Number of media classes
- * @MP_MED_ANY:	     Any media class
- * @MP_MED_ALL:	     All media classes
- *
- * @MP_MED_BEST_EFFORT:	      Pick media class on a best-effort basis,
- *                            used ONLY during object allocation.
- * @MP_MED_STAGING_OR_BELOW:  Allocate objects from STAGING or below.
- * @MP_MED_CAPACITY_OR_BELOW: Allocate objects from CAPACITY or below.
- *
- * @MP_MED_INVALID:           Invalid media class
- *
- * Note: The enum ordering of the best effort media class must match with
- * the actual media class ordering.
  */
 enum mp_media_classp {
-	MP_MED_BASE                = 0,
-	MP_MED_STAGING             = MP_MED_BASE,
-	MP_MED_CAPACITY	           = 1,
-	MP_MED_NUMBER,
-	MP_MED_ANY	           = MP_MED_NUMBER,
-	MP_MED_ALL,
-	MP_MED_BEST_EFFORT,
-	MP_MED_STAGING_OR_BELOW    = MP_MED_BEST_EFFORT,
-	MP_MED_CAPACITY_OR_BELOW,
-	MP_MED_INVALID
+	MP_MED_STAGING   = 0,
+	MP_MED_CAPACITY	 = 1,
 };
-#define MCLASS_ALL MP_MED_ALL
+
+#define MP_MED_NUMBER      (MP_MED_CAPACITY + 1)
+#define MP_MED_ALL         MP_MED_NUMBER
+#define MP_MED_INVALID     U8_MAX
+
+/* TODO: Remove the following usage from HSE. */
+#define MP_MED_BASE                MP_MED_STAGING
+#define MP_MED_CAPACITY_OR_BELOW   MP_MED_CAPACITY
+#define MP_MED_STAGING_OR_BELOW    MP_MED_STAGING
+#define MP_MED_ANY                 MP_MED_NUMBER
+#define MP_MED_BEST_EFFORT         MP_MED_CAPACITY
 
 /**
  * struct mp_devprops -

@@ -194,8 +194,6 @@ mpool_mdc_alloc(
 	struct mpool_mlog      *mlh[2];
 
 	merr_t err;
-	merr_t err2;
-	bool   beffort;
 
 	if (!ds || !logid1 || !logid2 || !capreq)
 		return merr(EINVAL);
@@ -207,40 +205,17 @@ mpool_mdc_alloc(
 	mlcap.lcp_captgt = capreq->mdt_captgt;
 	mlcap.lcp_spare  = capreq->mdt_spare;
 
-	beffort = mpool_mc_isbe(mclassp);
-	mclassp = mpool_mc_first_get(mclassp);
-	assert(mclassp < MP_MED_NUMBER);
+	err = mpool_mlog_alloc(ds, &mlcap, mclassp, &mlprops, &mlh[0]);
+	if (err)
+		return err;
+	*logid1 = mlprops.lpr_objid;
 
-	err2 = 0;
-	do {
-		if (err2 && ++mclassp >= MP_MED_NUMBER)
-			return err2;
-
-		err = mpool_mlog_alloc(ds, &mlcap, mclassp, &mlprops, &mlh[0]);
-		if (err && (!beffort || (merr_errno(err) != ENOENT &&
-					 merr_errno(err) != ENOSPC)))
-			return err;
-
-		err2 = err;
-		if (!err)
-			*logid1 = mlprops.lpr_objid;
-		else
-			continue;
-
-		err = mpool_mlog_alloc(ds, &mlcap, mclassp, &mlprops, &mlh[1]);
-		if (err)
-			mpool_mlog_abort(ds, mlh[0]);
-
-		if (err && (!beffort || (merr_errno(err) != ENOENT &&
-					 merr_errno(err) != ENOSPC)))
-			return err;
-
-		err2 = err;
-		if (!err) {
-			*logid2 = mlprops.lpr_objid;
-			break;
-		}
-	} while (beffort);
+	err = mpool_mlog_alloc(ds, &mlcap, mclassp, &mlprops, &mlh[1]);
+	if (err) {
+		mpool_mlog_abort(ds, mlh[0]);
+		return err;
+	}
+	*logid2 = mlprops.lpr_objid;
 
 	if (props) {
 		props->mdc_objid1    = *logid1;

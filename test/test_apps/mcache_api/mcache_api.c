@@ -40,6 +40,7 @@
 
 #define COMPNAME "mcache_api"
 
+#include <util/inttypes.h>
 #include <util/uuid.h>
 #include <util/page.h>
 #include <mpool/mpool.h>

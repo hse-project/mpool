@@ -201,23 +201,9 @@ struct mpool_descriptor *mpool_user_desc_alloc(char *mpname);
  */
 void mpool_user_desc_free(struct mpool_descriptor *mp);
 
-static inline enum mp_media_classp
-mpool_mc_first_get(enum mp_media_classp mclassp)
-{
-	return (mclassp < MP_MED_BEST_EFFORT) ? mclassp :
-		mclassp - MP_MED_BEST_EFFORT;
-}
-
-static inline bool mpool_mc_isbe(enum mp_media_classp mclassp)
-{
-	return mclassp >= MP_MED_BEST_EFFORT &&
-		mclassp < MP_MED_BEST_EFFORT + MP_MED_NUMBER;
-}
-
 static inline bool mpool_mc_isvalid(enum mp_media_classp mclassp)
 {
-	return (mclassp >= 0 &&
-		(mclassp < MP_MED_NUMBER || mpool_mc_isbe(mclassp)));
+	return mclassp >= 0 && mclassp < MP_MED_NUMBER;
 }
 
 #endif /* MPOOL_MPOOL_MPCORE_H */
