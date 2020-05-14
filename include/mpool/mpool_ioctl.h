@@ -96,26 +96,26 @@ enum mp_mgmt_flags {
 };
 
 /**
- * mp_media_classp = Media classes
+ * mp_media_classp - Media classes
  *
- * @MP_MED_STAGING:  Initial data ingest, hot data storage, or similar.
  * @MP_MED_CAPACITY: Primary data storage, cold data, or similar.
+ * @MP_MED_STAGING:  Initial data ingest, hot data storage, or similar.
  */
 enum mp_media_classp {
-	MP_MED_STAGING   = 0,
-	MP_MED_CAPACITY	 = 1,
+	MP_MED_CAPACITY	 = 0,
+	MP_MED_STAGING   = 1,
 };
 
-#define MP_MED_NUMBER      (MP_MED_CAPACITY + 1)
+#define MP_MED_NUMBER      (MP_MED_STAGING + 1)
 #define MP_MED_ALL         MP_MED_NUMBER
 #define MP_MED_INVALID     U8_MAX
 
 /* TODO: Remove the following usage from HSE. */
-#define MP_MED_BASE                MP_MED_STAGING
+#define MP_MED_BASE                MP_MED_CAPACITY
 #define MP_MED_CAPACITY_OR_BELOW   MP_MED_CAPACITY
 #define MP_MED_STAGING_OR_BELOW    MP_MED_STAGING
-#define MP_MED_ANY                 MP_MED_NUMBER
 #define MP_MED_BEST_EFFORT         MP_MED_CAPACITY
+#define MP_MED_ANY                 MP_MED_ALL
 
 /**
  * struct mp_devprops -

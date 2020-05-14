@@ -59,8 +59,8 @@ const char *mp_cksum_type_strv[] = {
 };
 
 const char *mp_media_classp_strv[] = {
-	[MP_MED_STAGING]   = "ingest",
 	[MP_MED_CAPACITY]  = "capacity",
+	[MP_MED_STAGING]   = "ingest",
 	"invalid" /* must be last item */
 };
 
