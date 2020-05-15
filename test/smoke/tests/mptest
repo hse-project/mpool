@@ -33,7 +33,7 @@ X=$($sudo mptest list -H $mp1 $mp2 floobie |wc -l)
 [ $X -eq 2 ] || err
 
 mptest testerr $mp1 0 |grep Success || err
-mptest testerr $mp2 1 |egrep '/mpctl.c:[0-9]+:' || err
+mptest testerr $mp2 1 |egrep 'mpctl[.c]{0,2}:[0-9]+:' || err
 mptest testerr $mp3 1 |grep 'Operation not permitted' || err
 
 cmd $sudo ${MPOOL_BIN}/mpool destroy "$mp1"
