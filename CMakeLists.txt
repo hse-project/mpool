@@ -394,7 +394,8 @@ add_subdirectory( test )
 add_subdirectory( include )
 add_subdirectory( scripts/tmpfiles.d )
 add_subdirectory( scripts/systemd )
-
+add_subdirectory( scripts/udev/rules.d )
+add_subdirectory( scripts/sysctl.d )
 
 # NOTE: The package name and version values are configured at "make config"
 # time.  If changes are made in the tree (thereby changing the last commit SHA),
@@ -450,6 +451,9 @@ set( CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION
   /usr/lib/tmpfiles.d
   /usr/lib/systemd
   /usr/lib/systemd/system
+  /usr/lib/sysctl.d
+  /usr/lib/udev
+  /usr/lib/udev/rules.d
   ${MPOOL_PYTHON_BASE_DIR}
   ${MPOOL_PYTHON_PKG_DIR}
   ${MPOOL_PYTHON_SOS_DIR}

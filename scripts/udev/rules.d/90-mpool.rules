@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# Copyright (C) 2015-2020 Micron Technology, Inc.  All rights reserved.
+
+SUBSYSTEM=="mpool", ACTION=="change", OWNER="%E{DEVUID}", GROUP="%E{DEVGID}", MODE="%E{DEVMODE}"

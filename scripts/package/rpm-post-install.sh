@@ -13,8 +13,20 @@ modprobe mpool
 
 /sbin/ldconfig
 
+# sysctl config
+echo
+echo "*** NOTE ***"
+echo
+echo "This package configures the vm.max_map_count sysctl parameter."
+echo "This is required for normal operation of mpool."
+echo
+sysctl -p /usr/lib/sysctl.d/90-mpool.conf
+
 # create mpool related tmpfiles
 systemd-tmpfiles --create /usr/lib/tmpfiles.d/mpool.conf
+
+# reload udev rules
+udevadm control --reload-rules
 
 # Enable mpool systemd service
 systemctl enable mpool.service --now

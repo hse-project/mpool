@@ -11,6 +11,9 @@
 if [[ $1 -eq 0 ]]; then
     # remove mpool related tmpfiles
     rm -fr /run/mpool
+
+    # reload udev rules
+    udevadm control --reload-rules
 fi
 
 exit 0

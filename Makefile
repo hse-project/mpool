@@ -422,6 +422,7 @@ install: install-pre
 	-modprobe mpool
 	ldconfig
 	systemd-tmpfiles --create /usr/lib/tmpfiles.d/mpool.conf
+	udevadm control --reload-rules
 	-systemctl enable mpool.service --now
 	-systemctl restart mpool.service
 
