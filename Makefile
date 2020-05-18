@@ -351,8 +351,8 @@ endif
 CONFIG = $(BUILD_DIR)/mpool_config.cmake
 
 .PHONY: all allv allq allqv allvq ${BTYPES}
-.PHONY: checkfiles chkconfig clean config config-preview
-.PHONY: distclean etags help install install-pre maintainer-clean
+.PHONY: chkconfig clean config config-preview
+.PHONY: distclean help install install-pre maintainer-clean
 .PHONY: load package rebuild scrub smoke smokev sub_clone unload
 
 
@@ -390,7 +390,6 @@ config-preview:
 
 ${CONFIG}:
 	@test -d "$(BUILD_DIR)" || mkdir -p "$(BUILD_DIR)"
-	@echo "prune: true" > "$(BUILD_DIR)"/.checkfiles.yml
 	@$(config-show) > $(BUILD_DIR)/config.sh
 	@$(config-gen) > $@.tmp
 	@cmp -s $@ $@.tmp || (cd "$(BUILD_DIR)" && cmake $(DEPGRAPH) -C $@.tmp $(CMAKE_FLAGS) "$(MPOOL_SRC_DIR)")
@@ -402,11 +401,6 @@ distclean scrub:
 	@if test -f ${CONFIG} ; then \
 		rm -rf "$(BUILD_DIR)" ;\
 	fi
-
-etags:
-	@echo "Making emacs TAGS file"
-	@find src include 3rdparty test \
-	        -type f -name "*.[ch]" -print | etags -
 
 help:
 	@true
