@@ -396,6 +396,7 @@ add_subdirectory( scripts/tmpfiles.d )
 add_subdirectory( scripts/systemd )
 add_subdirectory( scripts/udev/rules.d )
 add_subdirectory( scripts/sysctl.d )
+add_subdirectory( scripts/modules-load.d )
 
 # NOTE: The package name and version values are configured at "make config"
 # time.  If changes are made in the tree (thereby changing the last commit SHA),
