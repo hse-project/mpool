@@ -2849,8 +2849,6 @@ mpool_mblock_alloc(
 	if (props)
 		*props = mb.mb_props.mbx_props;
 
-	/* TODO: add arg for handle, and store */
-
 	return 0;
 }
 
@@ -2873,34 +2871,6 @@ mpool_mblock_find(
 	if (props)
 		*props = mb.mb_props.mbx_props;
 
-	return 0;
-}
-
-uint64_t
-mpool_mblock_find_get(
-	struct mpool           *ds,
-	uint64_t                objid,
-	uint64_t               *mbid,
-	struct mblock_props    *props)
-{
-	merr_t err;
-
-	if (!ds || !mbid)
-		return merr(EINVAL);
-
-	err = mpool_mblock_find(ds, objid, props);
-
-	*mbid = err ? 0 : objid;
-
-	return err;
-
-}
-
-uint64_t
-mpool_mblock_put(
-	struct mpool   *mp,
-	uint64_t        mbid)
-{
 	return 0;
 }
 

@@ -861,15 +861,6 @@ mpool_mblock_alloc(
 	uint64_t                       *mbid,
 	struct mblock_props            *props);
 
-/* deprecated, do not use */
-/* MTF_MOCK */
-uint64_t
-mpool_mblock_find_get(
-	struct mpool           *mp,
-	uint64_t                objid,
-	uint64_t               *mbid,
-	struct mblock_props    *props);
-
 /**
  * mpool_mblock_find() - look up an mblock by object ID
  * @mp:     mpool
@@ -883,13 +874,6 @@ mpool_mblock_find(
 	struct mpool           *mp,
 	uint64_t                objid,
 	struct mblock_props    *props);
-
-/* deprecated, do not use */
-/* MTF_MOCK */
-uint64_t
-mpool_mblock_put(
-	struct mpool   *mp,
-	uint64_t        mbh);
 
 /**
  * mpool_mblock_commit() - commit an mblock
