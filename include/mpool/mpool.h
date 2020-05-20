@@ -975,6 +975,7 @@ mpool_mblock_write_data(
  * Return:
  *   %0 on success, <%0 on error
  */
+/* MTF_MOCK */
 uint64_t
 mpool_mblock_write(
 	struct mpool     *mp,
