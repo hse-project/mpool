@@ -11,7 +11,6 @@
 #include <mpool/mpool.h>
 
 #include <mpctl/impool.h>
-#include <mpctl/imblock.h>
 
 #include <stdarg.h>
 #include <sysexits.h>
@@ -59,8 +58,8 @@ const char *mp_cksum_type_strv[] = {
 };
 
 const char *mp_media_classp_strv[] = {
-	[MP_MED_CAPACITY]  = "capacity",
 	[MP_MED_STAGING]   = "ingest",
+	[MP_MED_CAPACITY]  = "capacity",
 	"invalid" /* must be last item */
 };
 
@@ -140,7 +139,7 @@ eprint(
 static
 const char *
 strerrinfo(
-	struct mp_errinfo  *ei,
+	struct mpool_devrpt  *ei,
 	mpool_err_t              err)
 {
 	static char errbuf[128];
@@ -872,7 +871,7 @@ create_command(
 
 		if (create) {
 			struct mpool_params     params;
-			struct mp_errinfo       ei;
+			struct mpool_devrpt       ei;
 
 			mpool_params_init(&params);
 
@@ -890,7 +889,7 @@ create_command(
 			}
 		} else {
 			struct mpool_params    params;
-			struct mp_errinfo      ei;
+			struct mpool_devrpt      ei;
 
 			mpool_params_init(&params);
 
@@ -1644,7 +1643,7 @@ mb_command(
 
 			mbh = strtoul(argv[i], NULL, 0);
 
-			err = mpool_mblock_getprops(ds, mbh, &props);
+			err = mpool_mblock_props_get(ds, mbh, &props);
 			if (err) {
 				eprint("%s 0x%lx failed: %s",
 				       subcmd, mbh,
@@ -1868,7 +1867,7 @@ mbrw_command(
 
 			mbh = strtoul(argv[i], NULL, 0);
 
-			err = mpool_mblock_getprops(ds, mbh, &props);
+			err = mpool_mblock_props_get(ds, mbh, &props);
 			if (err) {
 				eprint("%s mp_mb_lookup(0x%lx) failed: %s",
 				       subcmd, mbh,
@@ -1957,7 +1956,7 @@ err_ok:
 
 			mbh = strtoul(argv[i], NULL, 0);
 
-			err = mpool_mblock_getprops(ds, mbh, &props);
+			err = mpool_mblock_props_get(ds, mbh, &props);
 			if (err) {
 				eprint("%s mp_mb_lookup(0x%lx) failed: %s",
 				       subcmd, mbh,

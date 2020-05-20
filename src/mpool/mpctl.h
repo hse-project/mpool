@@ -8,7 +8,7 @@
 
 #include "mpool_err.h"
 
-struct mp_errinfo;
+struct mpool_devrpt;
 
 /**
  * Current status of the mpool

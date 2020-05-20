@@ -382,7 +382,7 @@ mcache_boundary_test(
 
 	mpool_err_t              err;
 	struct mpool       *ds;
-	struct mp_errinfo   ei;
+	struct mpool_devrpt   ei;
 
 	err = mpool_open(mpname, O_RDWR, &ds, &ei);
 	if (err) {

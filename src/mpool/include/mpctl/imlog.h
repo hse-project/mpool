@@ -18,7 +18,7 @@ struct mpool_mlog;
 struct mpool_obj_layout;
 
 /**
- * mpool_mlog_getprops_ex() - Get extended properties of an mlog
+ * mpool_mlog_xprops_get() - Get extended properties of an mlog
  *
  * @ds:    dataset handle
  * @mlh:   mlog handle
@@ -28,7 +28,7 @@ struct mpool_obj_layout;
  *   %0 on success, <%0 on error
  */
 merr_t
-mpool_mlog_getprops_ex(
+mpool_mlog_xprops_get(
 	struct mpool               *ds,
 	struct mpool_mlog          *mlh,
 	struct mlog_props_ex       *props_ex);

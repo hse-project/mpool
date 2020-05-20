@@ -822,16 +822,16 @@ mpool_mdc_usage(struct mpool_mdc *mdc, size_t *usage)
 uint64_t
 mpool_mdc_get_root(struct mpool *ds, u64 *oid1, u64 *oid2)
 {
-	struct mp_props    props;
-	merr_t             err;
+	struct mpool_params    params;
+	merr_t                 err;
 
 	if (!ds || !oid1 || !oid2)
 		return merr(EINVAL);
 
-	err = mpool_props_get(ds, &props, NULL);
+	err = mpool_params_get(ds, &params, NULL);
 	if (!err) {
-		*oid1 = props.mp_oidv[0];
-		*oid2 = props.mp_oidv[1];
+		*oid1 = params.mp_oidv[0];
+		*oid2 = params.mp_oidv[1];
 	}
 
 	return err;

@@ -619,8 +619,8 @@ mpool_scan_func(
 	int             argc,
 	char           **argv)
 {
-	struct mpool_devrpt ei = { };
-	struct mp_props    *allv, *actv;
+	struct mpool_devrpt     ei = { };
+	struct mpool_params    *allv, *actv;
 
 	char        uuidstr[MPOOL_UUID_SIZE * 3];
 	char        errbuf[128];
@@ -889,7 +889,7 @@ mpool_set_func(
 	int              argc,
 	char           **argv)
 {
-	struct mp_errinfo   ei = { };
+	struct mpool_devrpt   ei = { };
 	struct mpool       *ds;
 	const char         *mpname;
 
@@ -966,7 +966,7 @@ mpool_get_func(
 	char           **argv)
 {
 	struct mpool_params    *paramsv, *params;
-	struct mp_errinfo       ei;
+	struct mpool_devrpt       ei;
 
 	char    uidstr[32], gidstr[32];
 	char    errbuf[128];

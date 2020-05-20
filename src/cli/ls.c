@@ -679,7 +679,7 @@ mpool_list_func(
 	int             argc,
 	char           **argv)
 {
-	struct mp_errinfo   ei;
+	struct mpool_devrpt   ei;
 
 	char    errbuf[128];
 	char   *buf;

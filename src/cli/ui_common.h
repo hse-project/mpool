@@ -41,6 +41,6 @@ emit_err(
 	size_t             errbufsz,
 	const char        *verb,
 	const char        *object,
-	struct mp_errinfo *ei);
+	struct mpool_devrpt *ei);
 
 #endif /* UI_COMMON_H */

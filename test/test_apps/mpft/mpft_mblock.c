@@ -549,7 +549,7 @@ perf_seq_writes(
 	struct mpft_thread_resp   *tresp = NULL;
 	struct mpool              *mp_ds;
 	struct mp_usage            usage;
-	struct mp_props            props;
+	struct mpool_params        params;
 	u64                        mblocksz;
 
 	err = process_params(argc, argv, perf_seq_writes_params, &next_arg, 0);
@@ -581,15 +581,23 @@ perf_seq_writes(
 		goto free_tresp;
 	}
 
-	err = mpool_props_get(mp_ds, &props, &usage);
+	err = mpool_params_get(mp_ds, &params, NULL);
 	if (err) {
-		fprintf(stderr, "%s: Error getting props. %s\n", test_name,
+		fprintf(stderr, "%s: Error getting params. %s\n", test_name,
 			mpool_strinfo(err, err_str, sizeof(err_str)));
 		mpool_close(mp_ds);
 		return err;
 	}
 
-	mblocksz = props.mp_mblocksz[MP_MED_CAPACITY] << 20;
+	err = mpool_usage_get(mp_ds, &usage);
+	if (err) {
+		fprintf(stderr, "%s: Error getting usage. %s\n", test_name,
+			mpool_strinfo(err, err_str, sizeof(err_str)));
+		mpool_close(mp_ds);
+		return err;
+	}
+
+	mblocksz = params.mp_mblocksz[MP_MED_CAPACITY] << 20;
 	if (perf_seq_writes_write_size > mblocksz) {
 		fprintf(stderr,
 			"%s: write size cannot be greater than mblock size\n",

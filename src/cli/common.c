@@ -115,8 +115,8 @@ flags_set_common(
 static
 const match_table_t
 media_classp_table = {
-	{ MP_MED_CAPACITY, "CAPACITY" },
 	{ MP_MED_STAGING,  "STAGING" },
+	{ MP_MED_CAPACITY, "CAPACITY" },
 	{ -1, NULL }
 };
 

@@ -973,7 +973,7 @@ main(int argc, char **argv)
 	struct stats        stats;
 	struct test        *testv;
 	struct mpool       *ds, *ds2;
-	struct mp_errinfo   ei;
+	struct mpool_devrpt   ei;
 	struct mpool_params params;
 	sigset_t        sigmask_block;
 	sigset_t        sigmask_old;

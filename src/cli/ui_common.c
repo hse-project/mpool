@@ -13,7 +13,7 @@ emit_err(
 	size_t             errbufsz,
 	const char        *verb,
 	const char         *object,
-	struct mp_errinfo *ei)
+	struct mpool_devrpt *ei)
 {
 	const char *entity = NULL;
 	const char *msg    = NULL;

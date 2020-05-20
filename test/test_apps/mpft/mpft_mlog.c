@@ -640,9 +640,9 @@ perf_seq_writes(
 	if (perf_seq_writes_total_size == 0) {
 		struct mp_usage    usage;
 
-		err = mpool_props_get(mp_ds, NULL, &usage);
+		err = mpool_usage_get(mp_ds, &usage);
 		if (err) {
-			fprintf(stderr, "%s: Error getting props. %s\n",
+			fprintf(stderr, "%s: Error getting usage. %s\n",
 				test_name,
 				mpool_strinfo(err, err_str, sizeof(err_str)));
 			goto free_tresp;
@@ -1576,7 +1576,7 @@ mlog_correctness_basicio(
 		goto close_mlog;
 	}
 
-	err = mpool_mlog_getprops(ds, mlog1, &props);
+	err = mpool_mlog_props_get(ds, mlog1, &props);
 	if (err || props.lpr_gen != gen2) {
 		if (err)
 			original_err = err;

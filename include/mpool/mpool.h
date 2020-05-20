@@ -29,8 +29,6 @@ struct iovec;
 
 /* MTF_MOCK_DECL(mpool) */
 
-#define mp_errinfo              mpool_devrpt
-
 /**
  * mpool_strerror() - Format errno description from merr_t
  */
@@ -253,25 +251,23 @@ mpool_params_set(
 	struct mpool_devrpt    *ei);
 
 /**
- * mpool_props_get() - Get properties of an mpool
+ * mpool_usage_get() - Get mpool usage
  * @mp:    mpool handle
- * @props: mpool props (output)
  * @usage: mpool usage (output)
  */
 uint64_t
-mpool_props_get(
+mpool_usage_get(
 	struct mpool       *mp,
-	struct mp_props    *props,
 	struct mp_usage    *usage);
 
 /**
- * mpool_devprops_get() - Get properties of a device within an mpool
+ * mpool_dev_props_get() - Get properties of a device within an mpool
  * @mp:      mpool handle
  * @devname: device name
  * @dprops:  device props (output)
  */
 uint64_t
-mpool_devprops_get(
+mpool_dev_props_get(
 	struct mpool       *mp,
 	const char         *devname,
 	struct mp_devprops *dprops);
@@ -615,7 +611,7 @@ mpool_mlog_erase(
 	uint64_t            mingen);
 
 /**
- * mpool_mlog_getprops() - Get properties of an mlog
+ * mpool_mlog_props_get() - Get properties of an mlog
  * @mp:        mpool handle
  * @mlh:       mlog handle
  * @props:     mlog properties (output)
@@ -624,7 +620,7 @@ mpool_mlog_erase(
  *   %0 on success, <%0 on error
  */
 uint64_t
-mpool_mlog_getprops(
+mpool_mlog_props_get(
 	struct mpool           *mp,
 	struct mpool_mlog      *mlh,
 	struct mlog_props      *props);
@@ -922,7 +918,7 @@ mpool_mblock_delete(
 	uint64_t        mbid);
 
 /**
- * mpool_mblock_getprops() - get properties of an mblock
+ * mpool_mblock_props_get() - get properties of an mblock
  * @mp:     mpool
  * @mbid:   mblock ojbect ID
  * @props:  properties (output)
@@ -932,7 +928,7 @@ mpool_mblock_delete(
  */
 /* MTF_MOCK */
 uint64_t
-mpool_mblock_getprops(
+mpool_mblock_props_get(
 	struct mpool           *mp,
 	uint64_t                mbid,
 	struct mblock_props    *props);

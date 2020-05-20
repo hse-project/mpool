@@ -16,7 +16,6 @@
 
 #include <mpctl/impool.h>
 #include <mpctl/imlog.h>
-#include <mpctl/imblock.h>
 #include <mpctl/imdc.h>
 
 #include "discover.h"
@@ -371,7 +370,7 @@ mpool_strchk(
 	const char         *str,
 	size_t              minlen,
 	size_t              maxlen,
-	struct mp_errinfo  *ei)
+	struct mpool_devrpt  *ei)
 {
 	if (!str || strnlen(str, minlen) < minlen)
 		return merr(EINVAL);
@@ -451,7 +450,7 @@ discover(
 static void
 mpool_rundir_create(const char *mpname)
 {
-	struct mp_props     props;
+	struct mpool_params params;
 	struct mpool       *ds;
 
 	char    path[PATH_MAX];
@@ -470,12 +469,12 @@ mpool_rundir_create(const char *mpname)
 		return;
 	}
 
-	err = mpool_props_get(ds, &props, NULL);
+	err = mpool_params_get(ds, &params, NULL);
 
 	mpool_close(ds);
 
 	if (err) {
-		fprintf(stderr, "%s: mpool_props_get(%s): %s",
+		fprintf(stderr, "%s: mpool_params_get(%s): %s",
 			__func__, mpname,
 			mpool_strerror(err, errbuf, sizeof(errbuf)));
 		return;
@@ -483,26 +482,26 @@ mpool_rundir_create(const char *mpname)
 
 	snprintf(path, sizeof(path), "%s/%s", MPOOL_RUNDIR_ROOT, mpname);
 
-	props.mp_mode |= (props.mp_mode & 0700) ? 0100 : 0;
-	props.mp_mode |= (props.mp_mode & 0070) ? 0010 : 0;
-	props.mp_mode |= (props.mp_mode & 0007) ? 0001 : 0;
-	props.mp_mode &= 0777;
+	params.mp_mode |= (params.mp_mode & 0700) ? 0100 : 0;
+	params.mp_mode |= (params.mp_mode & 0070) ? 0010 : 0;
+	params.mp_mode |= (params.mp_mode & 0007) ? 0001 : 0;
+	params.mp_mode &= 0777;
 
-	rc = mkdir(path, props.mp_mode);
+	rc = mkdir(path, params.mp_mode);
 	if (rc && errno != EEXIST) {
 		err = merr(errno);
 		fprintf(stderr, "%s: mkdir(%s, %04o): %s\n",
-			__func__, path, props.mp_mode,
+			__func__, path, params.mp_mode,
 			mpool_strerror(err, errbuf, sizeof(errbuf)));
 		return;
 	}
 
-	rc = chown(path, props.mp_uid, props.mp_gid);
+	rc = chown(path, params.mp_uid, params.mp_gid);
 	if (rc) {
 		err = merr(errno);
 		fprintf(stderr, "%s: chown(%s, %u, %u): %s\n",
 			__func__, path,
-			props.mp_uid, props.mp_gid,
+			params.mp_uid, params.mp_gid,
 			mpool_strerror(err, errbuf, sizeof(errbuf)));
 		remove(path);
 	}
@@ -910,7 +909,7 @@ uint64_t
 mpool_scan(
 	int                    *propscp,
 	struct mpool_params   **propsvp,
-	struct mp_errinfo      *ei)
+	struct mpool_devrpt      *ei)
 {
 	struct imp_entry       *entryv = NULL;
 	struct mpool_params    *propsv, *props;
@@ -1080,9 +1079,8 @@ mpool_params_set(
 }
 
 uint64_t
-mpool_props_get(
+mpool_usage_get(
 	struct mpool           *ds,
-	struct mpool_params    *props,
 	struct mp_usage        *usage)
 {
 	struct mpioc_prop   prop = { };
@@ -1094,24 +1092,20 @@ mpool_props_get(
 
 	merr_t  err;
 
-	if (!ds)
+	if (!ds || !usage)
 		return merr(EINVAL);
 
 	err = mpool_ioctl(ds->ds_fd, MPIOC_PROP_GET, &ls);
 	if (err)
 		return err;
 
-	if (props)
-		*props = prop.pr_xprops.ppx_params;
-
-	if (usage)
-		*usage = prop.pr_usage;
+	*usage = prop.pr_usage;
 
 	return 0;
 }
 
 uint64_t
-mpool_devprops_get(
+mpool_dev_props_get(
 	struct mpool       *mp_ds,
 	const char         *devname,
 	struct mp_devprops *props)
@@ -1461,7 +1455,7 @@ mpool_open(
 	const char         *mp_name,
 	uint32_t            flags,
 	struct mpool      **dsp,
-	struct mp_errinfo  *ei)
+	struct mpool_devrpt  *ei)
 {
 	struct mpool   *ds;
 
@@ -2578,7 +2572,7 @@ exit:
 }
 
 uint64_t
-mpool_mlog_getprops(
+mpool_mlog_props_get(
 	struct mpool           *ds,
 	struct mpool_mlog      *mlh,
 	struct mlog_props      *props)
@@ -2590,7 +2584,7 @@ mpool_mlog_getprops(
 	if (!ds || !mlh || !props)
 		return merr(EINVAL);
 
-	err = mpool_mlog_getprops_ex(ds, mlh, &props_ex);
+	err = mpool_mlog_xprops_get(ds, mlh, &props_ex);
 	if (err)
 		return err;
 
@@ -2647,7 +2641,7 @@ exit:
  * Internal interfaces not exported to apps
  */
 merr_t
-mpool_mlog_getprops_ex(
+mpool_mlog_xprops_get(
 	struct mpool               *ds,
 	struct mpool_mlog          *mlh,
 	struct mlog_props_ex       *props_ex)
@@ -2914,7 +2908,7 @@ mpool_mblock_delete(
 }
 
 uint64_t
-mpool_mblock_getprops(
+mpool_mblock_props_get(
 	struct mpool           *ds,
 	uint64_t                mbid,
 	struct mblock_props    *props)
