@@ -933,21 +933,7 @@ mpool_mblock_props_get(
 	uint64_t                mbid,
 	struct mblock_props    *props);
 
-/**
- * mpool_mblock_write_data() - write data to an mblock (wrapper)
- * @mp:              mpool
- * @sync_writes      flag to use sync writes only
- * @mbid:            mblock object Id
- * @iov, @iov_cnt:   iovec containing data to be written
- * @pasyncio:        Async IO context
- *
- * Mblock writes are all or nothing.  Either all data is written to media, or
- * no data is written to media.  Hence, return code is success/fail instead of
- * the usual number of bytes written.
- *
- * Return:
- *   %0 on success, <%0 on error
- */
+/* deprecated, do not use */
 /* MTF_MOCK */
 uint64_t
 mpool_mblock_write_data(
@@ -979,43 +965,7 @@ mpool_mblock_write(
 	struct iovec     *iov,
 	int               iov_cnt);
 
-/**
- * mpool_mblock_write_async() - write data to an mblock asynchronously
- * @mp:              mpool
- * @mbid:            mblock object ID
- * @iov:             iovec containing data to be written
- * @iov_cnt:         length of iov[]
- * @pasyncio:        Async IO context
- *
- * Mblock writes are all or nothing.  Either all data is written to media, or
- * no data is written to media.  Hence, return code is success/fail instead of
- * the usual number of bytes written.
- * Async writes issues IO in 1MB chunks.  Pending buffers are
- * stored in a list. On first IO, the kernel allocates a context
- * object, the same context object is passed to the kernel for
- * subsequent IO. Periodically the flush routine is called
- * to make sure all pending IO are persisted and the list is
- * freed.
- * Return: %0 on success, <%0 on error
- */
-uint64_t
-mpool_mblock_write_async(
-	struct mpool           *mp,
-	uint64_t                mbid,
-	struct iovec           *iov,
-	int                     iov_cnt,
-	struct mp_asyncctx_ioc *pasyncio);
-
-/**
- * mpool_mblock_asyncio_flush() - Wait for pending IO persisted on IO
- * @mp:              mpool
- * @pasyncctx:       Context object holding IO.
- *
- * All the IO issued with the context are persisted on disk.
- *
- * Return:
- *   %0 on success, <%0 on error
- */
+/* deprecated, do not use */
 /* MTF_MOCK */
 uint64_t
 mpool_mblock_asyncio_flush(
