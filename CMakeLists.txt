@@ -43,11 +43,6 @@ set( MPOOL_STAGE_INSTALL_PREFIX      ${PROJECT_BINARY_DIR}/stage)
 set( CMAKE_RUNTIME_OUTPUT_DIRECTORY  ${MPOOL_STAGE_INSTALL_PREFIX}/bin)
 set( MPOOL_TREE_SCRIPTS_DIR          ${PROJECT_SOURCE_DIR}/scripts)
 
-# A kmod that should always be present in MPOOL_KERNEL_DIR from which we
-# can obtain the value of uname -r.
-set( MPOOL_KERNEL_DIR      /lib/modules/${MPOOL_REL_KERNEL}/build )
-set( MPOOL_MODINFO_FILE    virtio_blk.ko )
-
 set( MPOOL_UTIL_DIR
     ${PROJECT_SOURCE_DIR}/src/util)
 
@@ -233,34 +228,6 @@ file(WRITE ${CMAKE_BINARY_DIR}/mpool_version.cmake
     OUTPUT_VARIABLE MPOOL_BUILDSERVER
     OUTPUT_STRIP_TRAILING_WHITESPACE
  )
- execute_process(
-    COMMAND dirname ${MPOOL_KERNEL_DIR}
-    OUTPUT_VARIABLE MPOOL_KERNEL_PARENT_DIR
-    OUTPUT_STRIP_TRAILING_WHITESPACE
- )
- find_file(
-   MPOOL_MODINFO_FILE_PATH
-   NAMES ${MPOOL_MODINFO_FILE} ${MPOOL_MODINFO_FILE}.xz
-   PATHS
-     \${MPOOL_KERNEL_PARENT_DIR}/kernel/drivers/block
-     \${MPOOL_KERNEL_DIR}/drivers/block
-   NO_DEFAULT_PATH
- )
- execute_process(
-	 COMMAND bash -c \"/sbin/modinfo \${MPOOL_MODINFO_FILE_PATH} | grep vermagic | awk '{print $2}'\"
-  OUTPUT_VARIABLE MPOOL_KMOD_VERSION
-  OUTPUT_STRIP_TRAILING_WHITESPACE
- )
-
- #
- # cmake DIST doesn't work in 3.6.2.
- #
- execute_process(
-   COMMAND rpm --eval %{dist}
-  OUTPUT_VARIABLE PACKAGE_DIST
-  OUTPUT_STRIP_TRAILING_WHITESPACE
- )
- set( MPOOL_KMOD_DIST \${PACKAGE_DIST})
 
  #
  # In 3.6.x, for some reason, CPACK_RPM_PACKAGE_ARCHITECTURE is an
@@ -292,44 +259,7 @@ file(WRITE ${CMAKE_BINARY_DIR}/mpool_version.cmake
   set( MPOOL_RELEASE ${MPOOL_BUILD_TYPE_FLAG}${BUILD_NUMBER}.\${MPOOL_DATESTAMP} )
  endif()
 
- set( MPOOL_KMOD_RELEASE ${MPOOL_BUILD_TYPE_FLAG}${BUILD_NUMBER}.\${MPOOL_DATESTAMP}.\${MPOOL_SHA}\${MPOOL_DIRTYTAG}.\${MPOOL_KMOD_VERSION} )
-
- #
- # If the kernel version string includes the machine architecture,
- # strip it out of MPOOL_KMOD_VERSION, which we only use to generate the
- # package file name.  If we do not do this, we end up with stuff like
- # 'x86_64.x86_64.rpm'.
- #
- if( \${MPOOL_KMOD_RELEASE} MATCHES \${PACKAGE_ARCH})
-  string(LENGTH \${MPOOL_KMOD_RELEASE} MPOOL_KMOD_RELEASE_LENGTH)
-  string(LENGTH \${PACKAGE_ARCH} PACKAGE_ARCH_LENGTH)
-  math(EXPR SUBSTRING_END_POS \"\${MPOOL_KMOD_RELEASE_LENGTH} - \${PACKAGE_ARCH_LENGTH} - 1\")
-  string(SUBSTRING \${MPOOL_KMOD_RELEASE} 0 \${SUBSTRING_END_POS} MPOOL_KMOD_RELEASE)
- endif()
-
- #
- # Similar deal with dist.
- #
- if( \${MPOOL_KMOD_VERSION} MATCHES \${PACKAGE_DIST})
-   unset( MPOOL_KMOD_DIST )
- endif()
-
- #
- # There's a little bit of horribleness in that Fedora/RedHat do not
- # permit hyphens in release strings.  We want the kernel version in
- # the release string in any RPM that contains a kernel module.  Our
- # compromise will be to substitute dots for hyphens in the kernel
- # module for the Release: field of the RPM, but for ease of scripting,
- # we'll leave the hyphen in the RPM file name.
- #
- execute_process(
-  COMMAND bash -c \"echo \${MPOOL_KMOD_RELEASE} | sed 's/\-/./g'\"
-  OUTPUT_VARIABLE MPOOL_KMOD_RPM_RELEASE
-  OUTPUT_STRIP_TRAILING_WHITESPACE
- )
-
  set( MPOOL_VERSION \${MPOOL_MAJORMINORPATCH}-\${MPOOL_RELEASE} )
- set( MPOOL_KMOD_VERSION \${MPOOL_MAJORMINORPATCH}-\${MPOOL_KMOD_RELEASE} )
 
  if( NOT MPOOL_VERSION_CMAKE_INCLUDEONLY )
    if (EXISTS \${DST})

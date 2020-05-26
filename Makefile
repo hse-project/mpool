@@ -166,10 +166,7 @@ S=$(MPOOL_SRC_DIR)/scripts
 # Can override detection by passing DISTRO=el6.9 (where el6.9 is a
 # specifically recognized by the get_distro.sh script)
 MPOOL_DISTRO_CMD_OUTPUT := $(shell scripts/dev/get_distro.sh $(DISTRO))
-MPOOL_DISTRO_PREFIX     := $(word 1,$(MPOOL_DISTRO_CMD_OUTPUT))
 MPOOL_DISTRO            := $(word 2,$(MPOOL_DISTRO_CMD_OUTPUT))
-MPOOL_DISTRO_MAJOR      := $(word 3,$(MPOOL_DISTRO_CMD_OUTPUT))
-MPOOL_DISTRO_MINOR      := $(word 4,$(MPOOL_DISTRO_CMD_OUTPUT))
 MPOOL_DISTRO_SUPPORTED  := $(word 5,$(MPOOL_DISTRO_CMD_OUTPUT))
 
 ifeq ($(MPOOL_DISTRO_SUPPORTED),unsupported)
@@ -203,8 +200,6 @@ endif
 
 BTOPDIR_DEFAULT       := $(MPOOL_SRC_DIR)/builds
 BUILD_DIR_DEFAULT     := $(BTOPDIR_DEFAULT)/$(BDIR_DEFAULT)
-MPOOL_REL_KERNEL      := $(shell uname -r)
-MPOOL_DBG_KERNEL      := $(MPOOL_REL_KERNEL)+debug
 BUILD_NUMBER_DEFAULT  := 0
 UBSAN                 := 0
 ASAN                  := 0
@@ -289,12 +284,7 @@ define config-show
 	(echo 'BUILD_DIR="$(BUILD_DIR)"';\
 	  echo 'CFILE="$(CFILE)"';\
 	  echo 'BUILD_NUMBER="$(BUILD_NUMBER)"';\
-	  echo 'MPOOL_REL_KERNEL="$(MPOOL_REL_KERNEL)"';\
-	  echo 'MPOOL_DISTRO_PREFIX="$(MPOOL_DISTRO_PREFIX)"';\
 	  echo 'MPOOL_DISTRO="$(MPOOL_DISTRO)"';\
-	  echo 'MPOOL_DISTRO_MAJOR="$(MPOOL_DISTRO_MAJOR)"';\
-	  echo 'MPOOL_DISTRO_MINOR="$(MPOOL_DISTRO_MINOR)"';\
-	  echo 'MPOOL_DISTRO_SUPPORTED="$(MPOOL_DISTRO_SUPPORTED)"';\
 	  echo 'UBSAN="$(UBSAN)"';\
 	  echo 'ASAN="$(ASAN)"';\
 	  echo 'REL_CANDIDATE="$(REL_CANDIDATE)"')
@@ -304,23 +294,16 @@ define config-gen =
 	(echo '# Note: When a variable is set multiple times in this file,' ;\
 	echo '#       it is the *first* setting that sticks!' ;\
 	echo '' ;\
-	echo '# building userspace binaries' ;\
 	echo 'Set( UBSAN "$(UBSAN)" CACHE BOOL "" )' ;\
 	echo 'Set( ASAN "$(ASAN)" CACHE BOOL "" )' ;\
 	echo 'Set( BUILD_NUMBER "$(BUILD_NUMBER)" CACHE STRING "" )' ;\
+	echo 'Set( MPOOL_DISTRO "$(MPOOL_DISTRO)" CACHE STRING "" )' ;\
 	echo 'Set( REL_CANDIDATE "$(REL_CANDIDATE)" CACHE STRING "" )' ;\
 	if test "$(BUILD_SHA)" ; then \
 		echo '' ;\
 		echo '# Use input SHA' ;\
 		echo 'Set( MPOOL_SHA "$(BUILD_SHA)" CACHE STRING "")' ;\
 	fi ;\
-	echo '' ;\
-	echo '# Linux distro detection' ;\
-	echo 'Set( MPOOL_REL_KERNEL "$(MPOOL_REL_KERNEL)" CACHE STRING "" )' ;\
-	echo 'Set( MPOOL_DISTRO_PREFIX "$(MPOOL_DISTRO_PREFIX)" CACHE STRING "" )' ;\
-	echo 'Set( MPOOL_DISTRO "$(MPOOL_DISTRO)" CACHE STRING "" )' ;\
-	echo 'Set( MPOOL_DISTRO_MAJOR "$(MPOOL_DISTRO_MAJOR)" CACHE STRING "" )' ;\
-	echo 'Set( MPOOL_DISTRO_MINOR "$(MPOOL_DISTRO_MINOR)" CACHE STRING "" )' ;\
 	echo '' ;\
 	echo '# BEGIN: $(CFILE)' ;\
 	cat  "$(CFILE)" ;\
