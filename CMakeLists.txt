@@ -136,12 +136,6 @@ if( ${YCSB} )
     add_compile_options( -fPIC )
 endif()
 
-# Edit these lines when we cut a release branch.
-set( MPOOL_VERSION_MAJOR 0 )
-set( MPOOL_VERSION_MINOR 0 )
-set( MPOOL_VERSION_PATCH 0 )
-
-#
 # Set-up what kind of build this is
 #
 if( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
@@ -206,12 +200,6 @@ file(WRITE ${CMAKE_BINARY_DIR}/mpool_version.cmake
       OUTPUT_STRIP_TRAILING_WHITESPACE
    )
  endif()
- execute_process(
-    COMMAND ${GIT_EXECUTABLE} describe --dirty --always --tags
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    OUTPUT_VARIABLE MPOOL_TAG
-    OUTPUT_STRIP_TRAILING_WHITESPACE
- )
  execute_process(
     COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}

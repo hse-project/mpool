@@ -156,6 +156,17 @@ endef
 .NOTPARALLEL:
 
 
+# Edit these lines when we cut a release branch.
+MPOOL_VERSION_MAJOR := 1
+MPOOL_VERSION_MINOR := 8
+MPOOL_VERSION_PATCH := 0
+MPOOL_VERSION := ${MPOOL_VERSION_MAJOR}.${MPOOL_VERSION_MINOR}.${MPOOL_VERSION_PATCH}
+
+MPOOL_TAG := $(shell test -d ".git" && git describe --dirty --always --tags)
+ifeq (${MPOOL_TAG},)
+MPOOL_TAG := ${MPOOL_VERSION}
+endif
+
 # MPOOL_SRC_DIR is set to the top of the mpool source tree.
 MPOOL_SRC_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
@@ -168,10 +179,6 @@ S=$(MPOOL_SRC_DIR)/scripts
 MPOOL_DISTRO_CMD_OUTPUT := $(shell scripts/dev/get_distro.sh $(DISTRO))
 MPOOL_DISTRO            := $(word 2,$(MPOOL_DISTRO_CMD_OUTPUT))
 MPOOL_DISTRO_SUPPORTED  := $(word 5,$(MPOOL_DISTRO_CMD_OUTPUT))
-
-ifeq ($(MPOOL_DISTRO_SUPPORTED),unsupported)
-  $(error invalid MPOOL_DISTRO ($(MPOOL_DISTRO_CMD_OUTPUT)) )
-endif
 
 ################################################################
 #
@@ -284,10 +291,15 @@ define config-show
 	(echo 'BUILD_DIR="$(BUILD_DIR)"';\
 	  echo 'CFILE="$(CFILE)"';\
 	  echo 'BUILD_NUMBER="$(BUILD_NUMBER)"';\
-	  echo 'MPOOL_DISTRO="$(MPOOL_DISTRO)"';\
 	  echo 'UBSAN="$(UBSAN)"';\
 	  echo 'ASAN="$(ASAN)"';\
-	  echo 'REL_CANDIDATE="$(REL_CANDIDATE)"')
+	  echo 'REL_CANDIDATE="$(REL_CANDIDATE)"' ;\
+	  echo 'MPOOL_VERSION_MAJOR="$(MPOOL_VERSION_MAJOR)"' ;\
+	  echo 'MPOOL_VERSION_MINOR="$(MPOOL_VERSION_MINOR)"' ;\
+	  echo 'MPOOL_VERSION_PATCH="$(MPOOL_VERSION_PATCH)"' ;\
+	  echo 'MPOOL_TAG="$(MPOOL_TAG)"' ;\
+	  echo 'MPOOL_DISTRO="$(MPOOL_DISTRO)"';\
+	)
 endef
 
 define config-gen =
@@ -299,6 +311,10 @@ define config-gen =
 	echo 'Set( BUILD_NUMBER "$(BUILD_NUMBER)" CACHE STRING "" )' ;\
 	echo 'Set( MPOOL_DISTRO "$(MPOOL_DISTRO)" CACHE STRING "" )' ;\
 	echo 'Set( REL_CANDIDATE "$(REL_CANDIDATE)" CACHE STRING "" )' ;\
+	echo 'Set( MPOOL_VERSION_MAJOR "$(MPOOL_VERSION_MAJOR)" CACHE STRING "" )' ;\
+	echo 'Set( MPOOL_VERSION_MINOR "$(MPOOL_VERSION_MINOR)" CACHE STRING "" )' ;\
+	echo 'Set( MPOOL_VERSION_PATCH "$(MPOOL_VERSION_PATCH)" CACHE STRING "" )' ;\
+	echo 'Set( MPOOL_TAG "$(MPOOL_TAG)" CACHE STRING "" )' ;\
 	if test "$(BUILD_SHA)" ; then \
 		echo '' ;\
 		echo '# Use input SHA' ;\
