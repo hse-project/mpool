@@ -215,16 +215,6 @@ file( WRITE ${CMAKE_BINARY_DIR}/mpool_version.cmake
     OUTPUT_STRIP_TRAILING_WHITESPACE
  )
 
- #
- # In 3.6.x, for some reason, CPACK_RPM_PACKAGE_ARCHITECTURE is an
- # empty string when this CMakeLists.txt gets processed.
- #
- execute_process(
-  COMMAND uname -m
-  OUTPUT_VARIABLE PACKAGE_ARCH
-  OUTPUT_STRIP_TRAILING_WHITESPACE
- )
-
  if( \${MPOOL_TAG} MATCHES \"dirty$\" )
    set( MPOOL_DIRTYTAG \".dirty\" )
  endif( )
@@ -340,7 +330,7 @@ set( CPACK_PACKAGE_VERSION_PATCH  "${MPOOL_VERSION_PATCH}" )
 set( CPACK_PACKAGE_VERSION
     "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}" )
 
-include( ${MPOOL_SCRIPTS_DIR}/package/CMakeLists.txt )
+include( ${MPOOL_SCRIPTS_DIR}/${BUILD_PKG_TYPE}/CMakeLists.txt )
 include( CPack )
 
 

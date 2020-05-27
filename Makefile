@@ -40,9 +40,7 @@ Configuration Variables:
 
   Used only by 'config':
     ASAN          -- Enable the gcc address/leak sanitizer
-    BUILD_NUMBER  -- Build job number; defaults to 0 if not set.
-                     Deliberately named to inherit the BUILD_NUMBER
-                     environment variable in Jenkins.
+    BUILD_NUMBER  -- Build job number (as set by Jenkins)
     BUILD_SHA     -- abbreviated git SHA to use in packaging
     CFILE         -- Name of file containing mpool config parameters.
     DEPGRAPH      -- Set to "--graphviz=<filename_prefix>" to generate
@@ -60,16 +58,17 @@ Configuration Variables:
       as their values are retrieved from BUILD_DIR/mpool_config.cmake.
 
   Defaults:
-    ASAN           = $(ASAN_DEFAULT)
-    BDIR           = $(BDIR_DEFAULT)      # note MPOOL_DISTRO is appended
-    BUILD_DIR      = $$(BTOPDIR)/$$(BDIR)
-    BUILD_NUMBER   = $(BUILD_NUMBER_DEFAULT)
-    BUILD_SHA      = <none>
-    BTOPDIR        = $(BTOPDIR_DEFAULT)
-    CFILE          = $(CFILE_DEFAULT)
-    EFENCE         = $(EFENCE_DEFAULT)
-    UBSAN          = $(UBSAN_DEFAULT)
-    REL_CANDIDATE  = $(REL_CANDIDATE_DEFAULT)
+    ASAN           = $(ASAN)
+    BDIR           = $(BDIR)
+    BUILD_DIR      = $(BUILD_DIR)
+    BUILD_NUMBER   = $(BUILD_NUMBER)
+    BUILD_SHA      = $(BUILD_SHA)
+    BUILD_PKG_TYPE = ${BUILD_PKG_TYPE}
+    BUILD_PKG_ARCH = ${BUILD_PKG_ARCH}
+    BTOPDIR        = $(BTOPDIR)
+    CFILE          = $(CFILE)
+    UBSAN          = $(UBSAN)
+    REL_CANDIDATE  = $(REL_CANDIDATE)
 
 
 Customizations:
@@ -167,6 +166,19 @@ ifeq (${MPOOL_TAG},)
 MPOOL_TAG := ${MPOOL_VERSION}
 endif
 
+ifneq ($(shell egrep -i 'id=(ubuntu|debian)' /etc/os-release),)
+BUILD_PKG_TYPE ?= deb
+BUILD_PKG_ARCH ?= $(shell dpkg-architecture -q DEB_HOST_ARCH)
+else
+BUILD_PKG_TYPE ?= rpm
+BUILD_PKG_ARCH ?= $(shell uname -m)
+endif
+
+ifeq ($(wildcard scripts/${BUILD_PKG_TYPE}/CMakeLists.txt),)
+$(error "Unable to create a ${BUILD_PKG} package, try rpm or deb")
+endif
+
+
 # MPOOL_SRC_DIR is set to the top of the mpool source tree.
 MPOOL_SRC_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
@@ -205,37 +217,24 @@ else
 	BUILD_STYPE := r
 endif
 
-BTOPDIR_DEFAULT       := $(MPOOL_SRC_DIR)/builds
-BUILD_DIR_DEFAULT     := $(BTOPDIR_DEFAULT)/$(BDIR_DEFAULT)
-BUILD_NUMBER_DEFAULT  := 0
-UBSAN                 := 0
-ASAN                  := 0
-REL_CANDIDATE_DEFAULT := false
-BDIR_DEFAULT          := ${BUILD_TYPE}.$(MPOOL_DISTRO)
-CFILE_DEFAULT         := $(S)/cmake/${BUILD_TYPE}.cmake
 
+BTOPDIR       ?= $(MPOOL_SRC_DIR)/builds
+BDIR          ?= ${BUILD_TYPE}.$(MPOOL_DISTRO)
+BUILD_DIR     ?= $(BTOPDIR)/$(BDIR)
+CFILE         ?= $(S)/cmake/${BUILD_TYPE}.cmake
+UBSAN         ?= 0
+ASAN          ?= 0
+BUILD_NUMBER  ?= 0
+REL_CANDIDATE ?= false
 
 ifeq ($(findstring ubsan,$(MAKECMDGOALS)),ubsan)
-  UBSAN := 1
+UBSAN := 1
 endif
 
 ifeq ($(findstring asan,$(MAKECMDGOALS)),asan)
-  ASAN := 1
+ASAN := 1
 endif
 
-################################################################
-#
-# Set config var from defaults unless set by user on the command line.
-#
-################################################################
-BTOPDIR       ?= $(BTOPDIR_DEFAULT)
-BDIR          ?= $(BDIR_DEFAULT)
-BUILD_DIR     ?= $(BTOPDIR)/$(BDIR)
-CFILE         ?= $(CFILE_DEFAULT)
-UBSAN         ?= $(UBSAN_DEFAULT)
-ASAN          ?= $(ASAN_DEFAULT)
-BUILD_NUMBER  ?= $(BUILD_NUMBER_DEFAULT)
-REL_CANDIDATE ?= $(REL_CANDIDATE_DEFAULT)
 
 ################################################################
 # Git and external repos
@@ -296,6 +295,8 @@ define config-show
 	  echo 'BUILD_NUMBER="$(BUILD_NUMBER)"';\
 	  echo 'BUILD_TYPE="$(BUILD_TYPE)"';\
 	  echo 'BUILD_STYPE="$(BUILD_STYPE)"';\
+	  echo 'BUILD_PKG_TYPE="$(BUILD_PKG_TYPE)"';\
+	  echo 'BUILD_PKG_ARCH="$(BUILD_PKG_ARCH)"';\
 	  echo 'UBSAN="$(UBSAN)"';\
 	  echo 'ASAN="$(ASAN)"';\
 	  echo 'REL_CANDIDATE="$(REL_CANDIDATE)"' ;\
@@ -316,6 +317,8 @@ define config-gen =
 	echo 'Set( BUILD_NUMBER "$(BUILD_NUMBER)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_TYPE "$(BUILD_TYPE)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_STYPE "$(BUILD_STYPE)" CACHE STRING "" )' ;\
+	echo 'Set( BUILD_PKG_TYPE "$(BUILD_PKG_TYPE)" CACHE STRING "" )' ;\
+	echo 'Set( BUILD_PKG_ARCH "$(BUILD_PKG_ARCH)" CACHE STRING "" )' ;\
 	echo 'Set( REL_CANDIDATE "$(REL_CANDIDATE)" CACHE STRING "" )' ;\
 	echo 'Set( MPOOL_VERSION_MAJOR "$(MPOOL_VERSION_MAJOR)" CACHE STRING "" )' ;\
 	echo 'Set( MPOOL_VERSION_MINOR "$(MPOOL_VERSION_MINOR)" CACHE STRING "" )' ;\
@@ -387,17 +390,18 @@ chkconfig:
 
 clean: MAKEFLAGS += --no-print-directory
 clean:
-	@if test -f ${BUILD_DIR}/src/Makefile ; then \
+	if test -f ${BUILD_DIR}/src/Makefile ; then \
 		$(MAKE) -C "$(BUILD_DIR)/src" clean ;\
 		$(MAKE) -C "$(BUILD_DIR)/test" clean ;\
-		rm -rf "$(BUILD_DIR)"/*.rpm ;\
+		find ${BUILD_DIR} -name *.${BUILD_PKG_TYPE} -exec rm -f {} \; ;\
 	fi
 
 config-preview:
 	@$(config-show)
 
 ${CONFIG}:
-	@test -d "$(BUILD_DIR)" || mkdir -p "$(BUILD_DIR)"
+	@mkdir -p $(BUILD_DIR)
+	@rm -rf $(BUILD_DIR)/*
 	@$(config-show) > $(BUILD_DIR)/config.sh
 	@$(config-gen) > $@.tmp
 	@cmp -s $@ $@.tmp || (cd "$(BUILD_DIR)" && cmake $(DEPGRAPH) -C $@.tmp $(CMAKE_FLAGS) "$(MPOOL_SRC_DIR)")
@@ -406,9 +410,7 @@ ${CONFIG}:
 config: sub_clone ${CONFIG}
 
 distclean scrub:
-	@if test -f ${CONFIG} ; then \
-		rm -rf "$(BUILD_DIR)" ;\
-	fi
+	rm -rf ${BUILD_DIR}
 
 help:
 	@true
@@ -440,8 +442,9 @@ endif
 
 package: MAKEFLAGS += --no-print-directory
 package: config
-	-rm -f "$(BUILD_DIR)"/mpool*.rpm
-	$(MAKE) -C "$(BUILD_DIR)" package
+	-find ${BUILD_DIR} -name *.${BUILD_PKG_TYPE} -exec rm -f {} \;
+	$(MAKE) -C ${BUILD_DIR} package
+	cp ${BUILD_DIR}/*.${BUILD_PKG_TYPE} .
 
 print-%:
 	$(info $*="$($*)")
