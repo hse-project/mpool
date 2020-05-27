@@ -393,7 +393,7 @@ clean:
 	if test -f ${BUILD_DIR}/src/Makefile ; then \
 		$(MAKE) -C "$(BUILD_DIR)/src" clean ;\
 		$(MAKE) -C "$(BUILD_DIR)/test" clean ;\
-		find ${BUILD_DIR} -name *.${BUILD_PKG_TYPE} -exec rm -f {} \; ;\
+		find ${BUILD_DIR} -name \*.${BUILD_PKG_TYPE} -exec rm -f {} \; ;\
 	fi
 
 config-preview:
@@ -442,7 +442,7 @@ endif
 
 package: MAKEFLAGS += --no-print-directory
 package: config
-	-find ${BUILD_DIR} -name *.${BUILD_PKG_TYPE} -exec rm -f {} \;
+	-find ${BUILD_DIR} -name \*.${BUILD_PKG_TYPE} -exec rm -f {} \;
 	$(MAKE) -C ${BUILD_DIR} package
 	cp ${BUILD_DIR}/*.${BUILD_PKG_TYPE} .
 
