@@ -14,7 +14,7 @@ set( LIBBLKID_CONFIG_OPTS
 
 ExternalProject_Add(libblkid-pkg
   PREFIX "${CMAKE_CURRENT_BINARY_DIR}"
-  DOWNLOAD_COMMAND  rsync -axSH --info=progress2,misc1,remove,symsafe,stats,del --exclude .git ${MPOOL_SUB_REPOS}/util-linux/ ./libblkid-pkg/
+  DOWNLOAD_COMMAND  rsync -axSH --info=progress2,misc1,remove,symsafe,stats,del --exclude '.git' --exclude '.rpm' --exclude '.deb' ${MPOOL_SUB_REPOS}/util-linux/ ./libblkid-pkg/
   UPDATE_COMMAND ""
   CONFIGURE_COMMAND  pwd && ./autogen.sh && ./configure -q --prefix=${MPOOL_EXT_INSTALL_PREFIX} ${LIBBLKID_CONFIG_OPTS} CFLAGS=${LIBBLKID_CFLAGS}
 

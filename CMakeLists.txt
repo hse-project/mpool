@@ -319,16 +319,35 @@ set( MPOOL_VERSION_CMAKE_INCLUDEONLY "OFF" )
 # Common package options...
 #
 set( CPACK_PACKAGE_NAME           "mpool" )
-set( CPACK_PACKAGE_RELOCATABLE    "ON" )
+set( CPACK_PACKAGE_LICENSE        "MIT" )
+set( CPACK_PACKAGE_HOMEPAGE_URL   "https://github.com/hse-project/mpool" )
+
 set( CPACK_PACKAGE_VERSION_MAJOR  "${MPOOL_VERSION_MAJOR}" )
 set( CPACK_PACKAGE_VERSION_MINOR  "${MPOOL_VERSION_MINOR}" )
 set( CPACK_PACKAGE_VERSION_PATCH  "${MPOOL_VERSION_PATCH}" )
 
-# Explicitly set CPACK_PACKAGE_VERSION first, otherwise CMake may generate
-# nonsense version strings within generated spec files
-
 set( CPACK_PACKAGE_VERSION
     "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}" )
+
+# If it's a managed build (e.g, Jenkins) or a dirty git clone
+# then include the build number and git describe tag in the
+# package file name.  Otherwise, the file name will contain
+# only the simple version and no build type/number.
+#
+if( BUILD_NUMBER GREATER 0 OR "${MPOOL_TAG}" MATCHES "dirty$" )
+    set( BUILD_STYPE "-${BUILD_STYPE}${BUILD_NUMBER}" )
+else()
+    set( MPOOL_TAG "${CPACK_PACKAGE_VERSION}" )
+    set( BUILD_STYPE  "" )
+endif()
+
+set( CPACK_PACKAGE_DESCRIPTION_SUMMARY
+    "Object Storage Media Pool (mpool) ${BUILD_TYPE} runtime" )
+
+set( CPACK_PACKAGE_DESCRIPTION
+    "${CPACK_PACKAGE_DESCRIPTION_SUMMARY} ${MPOOL_TAG}" )
+
+set( CPACK_PACKAGE_FILE_NAME  "${MPOOL_TAG}${BUILD_STYPE}.${BUILD_PKG_ARCH}" )
 
 include( ${MPOOL_SCRIPTS_DIR}/${BUILD_PKG_TYPE}/CMakeLists.txt )
 include( CPack )
