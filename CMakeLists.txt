@@ -9,13 +9,11 @@ if(${CMAKE_MAJOR_VERSION} GREATER 2)
 cmake_policy(SET CMP0046 OLD)
 endif()
 
-set (CMAKE_C_STANDARD 99)
-
-message(STATUS "Configuring mpool project")
-
-# used to generate RPM package names
 project( mpool )
 
+message( STATUS "Configuring ${PROJECT_NAME} common..." )
+
+set( CMAKE_C_STANDARD 99 )
 set( CMAKE_INSTALL_PREFIX /usr )
 
 set( MPOOL_SUB_REPOS              ${PROJECT_SOURCE_DIR}/sub)
@@ -29,7 +27,7 @@ set( MPOOL_SUB_REPOS              ${PROJECT_SOURCE_DIR}/sub)
 #   MPOOL_STAGE_INSTALL_PREFIX
 #     - used by mpool code.
 #
-#   MPOOL_TREE_SCRIPTS_DIR
+#   MPOOL_SCRIPTS_DIR
 #     - Scripts related to the mpool source tree (building it, working
 #       with git, etc.)
 #
@@ -40,8 +38,9 @@ set( MPOOL_SUB_REPOS              ${PROJECT_SOURCE_DIR}/sub)
 
 set( MPOOL_EXT_INSTALL_PREFIX        ${PROJECT_BINARY_DIR}/ext_install)
 set( MPOOL_STAGE_INSTALL_PREFIX      ${PROJECT_BINARY_DIR}/stage)
+set( MPOOL_SCRIPTS_DIR               ${PROJECT_SOURCE_DIR}/scripts )
+
 set( CMAKE_RUNTIME_OUTPUT_DIRECTORY  ${MPOOL_STAGE_INSTALL_PREFIX}/bin)
-set( MPOOL_TREE_SCRIPTS_DIR          ${PROJECT_SOURCE_DIR}/scripts)
 
 set( MPOOL_UTIL_DIR
     ${PROJECT_SOURCE_DIR}/src/util)
@@ -179,18 +178,17 @@ find_package(Git)
 #
 # Create our template for the header file
 #
-file(WRITE ${CMAKE_BINARY_DIR}/mpool_version.h.in
-"#define MPOOL_VERSION_LEN 61\n"
-"static const char mpool_version[MPOOL_VERSION_LEN] = \"@MPOOL_VERSION@\";\n"
-"static const char mpool_branch[] = \"@MPOOL_BRANCH@\";\n"
-"static const char mpool_tag[] = \"@MPOOL_TAG@\";\n"
-"static const char mpool_buildserver[] = \"@MPOOL_BUILDSERVER@\";\n"
+file( WRITE ${CMAKE_BINARY_DIR}/mpool_version.h.in
+    "static const char mpool_version[] = \"@MPOOL_VERSION@\";\n"
+    "static const char mpool_branch[] = \"@MPOOL_BRANCH@\";\n"
+    "static const char mpool_tag[] = \"@MPOOL_TAG@\";\n"
+    "static const char mpool_buildserver[] = \"@MPOOL_BUILDSERVER@\";\n"
 )
 
 #
 # Create cmake code to transform input template into target header file.
 #
-file(WRITE ${CMAKE_BINARY_DIR}/mpool_version.cmake
+file( WRITE ${CMAKE_BINARY_DIR}/mpool_version.cmake
 "set(MPOOL_SHA ${MPOOL_SHA})
  if( NOT DEFINED MPOOL_SHA )
    execute_process(
@@ -327,124 +325,29 @@ set( MPOOL_VERSION_CMAKE_INCLUDEONLY "ON" )
 include( ${CMAKE_BINARY_DIR}/mpool_version.cmake )
 set( MPOOL_VERSION_CMAKE_INCLUDEONLY "OFF" )
 
-#
-# Package options
-#
 
-set( CPACK_GENERATOR "RPM" )
-set( CPACK_PACKAGE_NAME "mpool" )
-set( CPACK_PACKAGE_RELOCATABLE "ON" )
-set( CPACK_PACKAGE_VERSION_MAJOR "${MPOOL_VERSION_MAJOR}" )
-set( CPACK_PACKAGE_VERSION_MINOR "${MPOOL_VERSION_MINOR}" )
-set( CPACK_PACKAGE_VERSION_PATCH "${MPOOL_VERSION_PATCH}" )
-
+# Common package options...
+#
+set( CPACK_PACKAGE_NAME           "mpool" )
+set( CPACK_PACKAGE_RELOCATABLE    "ON" )
+set( CPACK_PACKAGE_VERSION_MAJOR  "${MPOOL_VERSION_MAJOR}" )
+set( CPACK_PACKAGE_VERSION_MINOR  "${MPOOL_VERSION_MINOR}" )
+set( CPACK_PACKAGE_VERSION_PATCH  "${MPOOL_VERSION_PATCH}" )
 
 # Explicitly set CPACK_PACKAGE_VERSION first, otherwise CMake may generate
 # nonsense version strings within generated spec files
 
-set( CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}" )
+set( CPACK_PACKAGE_VERSION
+    "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}" )
 
-set( CPACK_RPM_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}" )
-
-set( CPACK_RPM_PACKAGE_RELEASE "${MPOOL_RELEASE}${PACKAGE_DIST}" )
-set( CPACK_RPM_PACKAGE_RELEASE_DIST "OFF" )
-set( CPACK_RPM_PACKAGE_LICENSE "MIT" )
-set( CPACK_RPM_PACKAGE_VENDOR "Unspecified" )
-set( CPACK_RPM_PACKAGE_GROUP "Unspecified" )
-set( CPACK_RPM_PACKAGE_URL "https://github.com/hse-project/mpool" )
-set( CPACK_RPM_COMPONENT_INSTALL "ON" )
-set( CPACK_RPM_RELOCATION_PATHS /usr /opt/micron /etc )
-
-#
-# We don't want to claim ownership of these directories, lest there be
-# conflicts.
-#
-set( CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION
-  /etc
-  /etc/modules-load.d
-  /etc/sysconfig
-  /etc/sysconfig/modules
-  /lib
-  /lib64
-  /usr/lib
-  /usr/lib/tmpfiles.d
-  /usr/lib/systemd
-  /usr/lib/systemd/system
-  /usr/lib/sysctl.d
-  /usr/lib/udev
-  /usr/lib/udev/rules.d
-  ${MPOOL_PYTHON_BASE_DIR}
-  ${MPOOL_PYTHON_PKG_DIR}
-  ${MPOOL_PYTHON_SOS_DIR}
-  ${MPOOL_PYTHON_SOS_PLUGINS_DIR}
-)
-
-# Setting this keeps CMake 3.7+ from generating nonsense filenames
-set( CPACK_RPM_FILE_NAME "RPM-DEFAULT" )
-
-#
-# How to generate the RPM spec file template for your version of CMake, so it
-# can be passed to CPACK_RPM_RUNTIME_USER_BINARY_SPECFILE:
-#
-#   cd builds/release.fc25  # (or whatever build/dist you're working on)
-#   cpack -D CPACK_RPM_GENERATE_USER_BINARY_SPECFILE_TEMPLATE=1 -G RPM
-#
-# https://cmake.org/cmake/help/latest/cpack_gen/rpm.html#variable:CPACK_RPM_GENERATE_USER_BINARY_SPECFILE_TEMPLATE
-#
-
-#
-# Runtime
-#
-set( CPACK_RPM_RUNTIME_PACKAGE_NAME "${CPACK_PACKAGE_NAME}" )
-set(
-  CPACK_RPM_RUNTIME_PACKAGE_SUMMARY
-  "Object Storage Media Pool (mpool) runtime package")
-set(
-  CPACK_RPM_RUNTIME_PACKAGE_DESCRIPTION
-  "Object Storage Media Pool (mpool) runtime package")
-set( CPACK_RPM_RUNTIME_FILE_NAME "${CPACK_RPM_RUNTIME_PACKAGE_NAME}-${CPACK_RPM_PACKAGE_VERSION}-${CPACK_RPM_PACKAGE_RELEASE}.${PACKAGE_ARCH}.rpm" )
-set( CPACK_RPM_RUNTIME_PACKAGE_RELEASE "${CPACK_RPM_PACKAGE_RELEASE}")
-set( CPACK_RPM_RUNTIME_USER_BINARY_SPECFILE "${MPOOL_TREE_SCRIPTS_DIR}/package/mpool.spec.in")
-set( CPACK_RPM_RUNTIME_PRE_INSTALL_SCRIPT_FILE "${MPOOL_TREE_SCRIPTS_DIR}/package/rpm-pre-install.sh" )
-set( CPACK_RPM_RUNTIME_POST_INSTALL_SCRIPT_FILE "${MPOOL_TREE_SCRIPTS_DIR}/package/rpm-post-install.sh" )
-set( CPACK_RPM_RUNTIME_PRE_UNINSTALL_SCRIPT_FILE "${MPOOL_TREE_SCRIPTS_DIR}/package/rpm-pre-uninstall.sh" )
-set( CPACK_RPM_RUNTIME_POST_UNINSTALL_SCRIPT_FILE "${MPOOL_TREE_SCRIPTS_DIR}/package/rpm-post-uninstall.sh" )
-
-#
-# Devel/SDK - currently contains static libs--see "Libs" above.
-#
-set( CPACK_RPM_DEVEL_PACKAGE_NAME "${CPACK_PACKAGE_NAME}-devel" )
-set(
-  CPACK_RPM_DEVEL_PACKAGE_SUMMARY
-  "Object Storage Media Pool (mpool) software development kit")
-set(
-  CPACK_RPM_DEVEL_PACKAGE_DESCRIPTION
-  "Object Storage Media Pool (mpool) software development kit")
-set( CPACK_RPM_DEVEL_FILE_NAME "${CPACK_RPM_DEVEL_PACKAGE_NAME}-${CPACK_RPM_PACKAGE_VERSION}-${CPACK_RPM_PACKAGE_RELEASE}.${PACKAGE_ARCH}.rpm" )
-set( CPACK_RPM_DEVEL_POST_INSTALL_SCRIPT_FILE "${MPOOL_TREE_SCRIPTS_DIR}/package/rpm-devel-post-install.sh" )
-set( CPACK_RPM_DEVEL_USER_BINARY_SPECFILE "${MPOOL_TREE_SCRIPTS_DIR}/package/mpool-devel.spec.in")
-
-#
-# Tests - we won't want to ship our test applications in production.
-#
-set( CPACK_RPM_TEST_PACKAGE_NAME "${CPACK_PACKAGE_NAME}-test" )
-set(
-  CPACK_RPM_TEST_PACKAGE_SUMMARY
-  "Object Storage Media Pool (mpool) test package")
-set(
-  CPACK_RPM_TEST_PACKAGE_DESCRIPTION
-  "Object Storage Media Pool (mpool) test package")
-set( CPACK_RPM_DEVEL_FILE_NAME "${CPACK_RPM_DEVEL_PACKAGE_NAME}-${CPACK_RPM_PACKAGE_VERSION}-${CPACK_RPM_PACKAGE_RELEASE}.${PACKAGE_ARCH}.rpm" )
-set( CPACK_RPM_TEST_PACKAGE_RELEASE "${CPACK_RPM_PACKAGE_RELEASE}")
-set( CPACK_RPM_TEST_USER_BINARY_SPECFILE "${MPOOL_TREE_SCRIPTS_DIR}/package/mpool-test.spec.in")
-set( CPACK_COMPONENT_TEST_DEPENDS "runtime" )
-
+include( ${MPOOL_SCRIPTS_DIR}/package/CMakeLists.txt )
 include( CPack )
 
-#
+
 # CTest pretest script
 #
-configure_file("${MPOOL_TREE_SCRIPTS_DIR}/cmake/CTestCustom.cmake.in" ${CMAKE_BINARY_DIR}/CTestCustom.cmake)
+configure_file( "${MPOOL_SCRIPTS_DIR}/cmake/CTestCustom.cmake.in"
+    ${CMAKE_BINARY_DIR}/CTestCustom.cmake )
 
 get_directory_property( DirIncs INCLUDE_DIRECTORIES )
 get_directory_property( DirDefs COMPILE_DEFINITIONS )

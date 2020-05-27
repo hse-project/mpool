@@ -186,23 +186,23 @@ MPOOL_DISTRO_SUPPORTED  := $(word 5,$(MPOOL_DISTRO_CMD_OUTPUT))
 #
 ################################################################
 ifeq ($(findstring release,$(MAKECMDGOALS)),release)
-  BDIR_DEFAULT  := release.$(MPOOL_DISTRO)
-  CFILE_DEFAULT := $(S)/cmake/release.cmake
+	BUILD_TYPE := release
+	BUILD_STYPE := r
 else ifeq ($(findstring relwithdebug,$(MAKECMDGOALS)),relwithdebug)
-  BDIR_DEFAULT  := relwithdebug.$(MPOOL_DISTRO)
-  CFILE_DEFAULT := $(S)/cmake/relwithdebug.cmake
+	BUILD_TYPE := relwithdebug
+	BUILD_STYPE := i
 else ifeq ($(findstring relassert,$(MAKECMDGOALS)),relassert)
-  BDIR_DEFAULT  := relassert.$(MPOOL_DISTRO)
-  CFILE_DEFAULT := $(S)/cmake/relassert.cmake
+	BUILD_TYPE := relassert
+	BUILD_STYPE := a
 else ifeq ($(findstring optdebug,$(MAKECMDGOALS)),optdebug)
-  BDIR_DEFAULT  := optdebug.$(MPOOL_DISTRO)
-  CFILE_DEFAULT := $(S)/cmake/optdebug.cmake
+	BUILD_TYPE := optdebug
+	BUILD_STYPE := o
 else ifeq ($(findstring debug,$(MAKECMDGOALS)),debug)
-  BDIR_DEFAULT  := debug.$(MPOOL_DISTRO)
-  CFILE_DEFAULT := $(S)/cmake/debug.cmake
+	BUILD_TYPE := debug
+	BUILD_STYPE := d
 else
-  BDIR_DEFAULT  := release.$(MPOOL_DISTRO)
-  CFILE_DEFAULT := $(S)/cmake/release.cmake
+	BUILD_TYPE := release
+	BUILD_STYPE := r
 endif
 
 BTOPDIR_DEFAULT       := $(MPOOL_SRC_DIR)/builds
@@ -211,6 +211,9 @@ BUILD_NUMBER_DEFAULT  := 0
 UBSAN                 := 0
 ASAN                  := 0
 REL_CANDIDATE_DEFAULT := false
+BDIR_DEFAULT          := ${BUILD_TYPE}.$(MPOOL_DISTRO)
+CFILE_DEFAULT         := $(S)/cmake/${BUILD_TYPE}.cmake
+
 
 ifeq ($(findstring ubsan,$(MAKECMDGOALS)),ubsan)
   UBSAN := 1
@@ -291,6 +294,8 @@ define config-show
 	(echo 'BUILD_DIR="$(BUILD_DIR)"';\
 	  echo 'CFILE="$(CFILE)"';\
 	  echo 'BUILD_NUMBER="$(BUILD_NUMBER)"';\
+	  echo 'BUILD_TYPE="$(BUILD_TYPE)"';\
+	  echo 'BUILD_STYPE="$(BUILD_STYPE)"';\
 	  echo 'UBSAN="$(UBSAN)"';\
 	  echo 'ASAN="$(ASAN)"';\
 	  echo 'REL_CANDIDATE="$(REL_CANDIDATE)"' ;\
@@ -309,12 +314,14 @@ define config-gen =
 	echo 'Set( UBSAN "$(UBSAN)" CACHE BOOL "" )' ;\
 	echo 'Set( ASAN "$(ASAN)" CACHE BOOL "" )' ;\
 	echo 'Set( BUILD_NUMBER "$(BUILD_NUMBER)" CACHE STRING "" )' ;\
-	echo 'Set( MPOOL_DISTRO "$(MPOOL_DISTRO)" CACHE STRING "" )' ;\
+	echo 'Set( BUILD_TYPE "$(BUILD_TYPE)" CACHE STRING "" )' ;\
+	echo 'Set( BUILD_STYPE "$(BUILD_STYPE)" CACHE STRING "" )' ;\
 	echo 'Set( REL_CANDIDATE "$(REL_CANDIDATE)" CACHE STRING "" )' ;\
 	echo 'Set( MPOOL_VERSION_MAJOR "$(MPOOL_VERSION_MAJOR)" CACHE STRING "" )' ;\
 	echo 'Set( MPOOL_VERSION_MINOR "$(MPOOL_VERSION_MINOR)" CACHE STRING "" )' ;\
 	echo 'Set( MPOOL_VERSION_PATCH "$(MPOOL_VERSION_PATCH)" CACHE STRING "" )' ;\
 	echo 'Set( MPOOL_TAG "$(MPOOL_TAG)" CACHE STRING "" )' ;\
+	echo 'Set( MPOOL_DISTRO "$(MPOOL_DISTRO)" CACHE STRING "" )' ;\
 	if test "$(BUILD_SHA)" ; then \
 		echo '' ;\
 		echo '# Use input SHA' ;\
@@ -347,6 +354,12 @@ ifeq ($(filter-out ${BTYPES},${MAKECMDGOALS}),)
 BTYPESDEP := ${.DEFAULT_GOAL}
 endif
 
+ifneq (${BTYPES},)
+${BTYPES}: ${BTYPESDEP}
+	@true
+endif
+
+
 CONFIG = $(BUILD_DIR)/mpool_config.cmake
 
 .PHONY: all allv allq allqv allvq ${BTYPES}
@@ -369,18 +382,14 @@ allq: config
 allqv allvq: config
 	$(MAKE) -C "$(BUILD_DIR)" VERBOSE=1 $(MF) 2>&1 | $(PERL_CMAKE_NOISE_FILTER)
 
-ifneq (${BTYPES},)
-${BTYPES}: ${BTYPESDEP}
-	@true
-endif
-
 chkconfig:
 	@./scripts/dev/mpool-chkconfig
 
+clean: MAKEFLAGS += --no-print-directory
 clean:
 	@if test -f ${BUILD_DIR}/src/Makefile ; then \
-		$(MAKE) --no-print-directory -C "$(BUILD_DIR)/src" clean ;\
-		$(MAKE) --no-print-directory -C "$(BUILD_DIR)/test" clean ;\
+		$(MAKE) -C "$(BUILD_DIR)/src" clean ;\
+		$(MAKE) -C "$(BUILD_DIR)/test" clean ;\
 		rm -rf "$(BUILD_DIR)"/*.rpm ;\
 	fi
 
@@ -408,8 +417,9 @@ help:
 libs-clean:
 	@rm -f /usr/lib/libmpool.*
 
+install-pre: MAKEFLAGS += --no-print-directory
 install-pre: libs-clean config
-	@$(MAKE) --no-print-directory -C "$(BUILD_DIR)" install
+	@$(MAKE) -C "$(BUILD_DIR)" install
 
 install: install-pre
 	-modprobe mpool
@@ -428,9 +438,10 @@ ifneq ($(wildcard ${SUBREPO_PATH_LIST}),)
 	rm -rf ${SUBREPO_PATH_LIST}
 endif
 
+package: MAKEFLAGS += --no-print-directory
 package: config
 	-rm -f "$(BUILD_DIR)"/mpool*.rpm
-	$(MAKE) --no-print-directory -C "$(BUILD_DIR)" package
+	$(MAKE) -C "$(BUILD_DIR)" package
 
 print-%:
 	$(info $*="$($*)")
