@@ -56,16 +56,18 @@ Configuration Variables:
       as their values are retrieved from BUILD_DIR/mpool_config.cmake.
 
   Defaults (not all are customizable):
-    ASAN           = $(ASAN)
-    BDIR           = $(BDIR)
-    BUILD_DIR      = $(BUILD_DIR)
-    BUILD_NUMBER   = $(BUILD_NUMBER)
-    BUILD_PKG_TYPE = ${BUILD_PKG_TYPE}
-    BUILD_PKG_ARCH = ${BUILD_PKG_ARCH}
-    BUILD_PKG_REL  = ${BUILD_PKG_REL}
-    BTOPDIR        = $(BTOPDIR)
-    CFILE          = $(CFILE)
-    UBSAN          = $(UBSAN)
+    ASAN               $(ASAN)
+    BDIR               $(BDIR)
+    BUILD_DIR          $(BUILD_DIR)
+    BUILD_NUMBER       $(BUILD_NUMBER)
+    BUILD_PKG_ARCH     ${BUILD_PKG_ARCH}
+    BUILD_PKG_REL      ${BUILD_PKG_REL}
+    BUILD_PKG_TAG      ${BUILD_PKG_TAG}
+    BUILD_PKG_TYPE     ${BUILD_PKG_TYPE}
+    BUILD_PKG_VERSION  ${BUILD_PKG_VERSION}
+    BTOPDIR            $(BTOPDIR)
+    CFILE              $(CFILE)
+    UBSAN              $(UBSAN)
 
 
 Customizations:
@@ -154,13 +156,13 @@ endef
 
 # Edit when we cut a release branch.
 BUILD_PKG_VERSION := 1.8.0
+BUILD_PKG_REL := 0
 
-BUILD_PKG_TAG := $(shell test -d ".git" && git describe --always --tags)
+BUILD_PKG_TAG := $(shell test -d ".git" && git describe --always --tags --dirty)
 ifeq (${BUILD_PKG_TAG},)
 BUILD_PKG_TAG := ${BUILD_PKG_VERSION}
-BUILD_PKG_REL := 0
 else
-BUILD_PKG_REL := $(shell echo ${BUILD_PKG_TAG} | sed -En 's/.*-(.*)-.*$$/\1/p')
+BUILD_PKG_REL := $(shell echo ${BUILD_PKG_TAG} | sed -En 's/[^-]*-([0-9]*)-[a-z0-9]*[-dirty]*$$/\1/p')
 endif
 
 ifneq ($(shell egrep -i 'id=(ubuntu|debian)' /etc/os-release),)
