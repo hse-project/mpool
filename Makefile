@@ -28,44 +28,24 @@ Configuration Variables:
   These configuration variables can be set on the command line
   or in ~/mpool.mk to customize the build.
 
-  Used by 'config' as well as 'clean', 'all', etc:
-    BUILD_DIR -- The build output directory.  The default value is
-                 BTOPDIR/BDIR.  BUILD_DIR can be set directly, in which
-                 case BTOPDIR and BDIR are ignored, or BUILD_DIR can be
-                 set indirectly via BTOPDIR and BDIR.  A common use case
-                 is to set BTOPDIR in ~/mpool.mk and BDIR on the command
-                 line.
-    BTOPDIR   -- See BUILD_DIR.
-    BDIR      -- See BUILD_DIR.
-
-  Used only by 'config':
     ASAN          -- Enable the gcc address/leak sanitizer
+    BUILD_DIR     -- The top-level build output directory
     BUILD_NUMBER  -- Build job number (as set by Jenkins)
     CFILE         -- Name of file containing mpool config parameters.
     DEPGRAPH      -- Set to "--graphviz=<filename_prefix>" to generate
                      graphviz dependency graph files
     UBSAN         -- Enable the gcc undefined behavior sanitizer
 
-  Rules of use:
-    * The 'config' target uses CFILE, and BUILD_DIR.
-      It creates the build output directory (BUILD_DIR)
-      and stores the values of CFILE in
-      BUILD_DIR/mpool_config.cmake.
-    * Other build-related targets ('clean', 'all', etc.)
-      require BUILD_DIR and ignore CFILE
-      as their values are retrieved from BUILD_DIR/mpool_config.cmake.
-
   Defaults (not all are customizable):
     ASAN               $(ASAN)
-    BDIR               $(BDIR)
     BUILD_DIR          $(BUILD_DIR)
     BUILD_NUMBER       $(BUILD_NUMBER)
     BUILD_PKG_ARCH     ${BUILD_PKG_ARCH}
+    BUILD_PKG_DIR      ${BUILD_PKG_DIR}
     BUILD_PKG_REL      ${BUILD_PKG_REL}
     BUILD_PKG_TAG      ${BUILD_PKG_TAG}
     BUILD_PKG_TYPE     ${BUILD_PKG_TYPE}
     BUILD_PKG_VERSION  ${BUILD_PKG_VERSION}
-    BTOPDIR            $(BTOPDIR)
     CFILE              $(CFILE)
     UBSAN              $(UBSAN)
 
@@ -81,14 +61,6 @@ Customizations:
                   to extend existing targets or to create your own
                   custom targets
 
-Debug and Release Convenience Targets:
-
-  Convenience targets are keyboard shortcuts aimed at reducing the
-  incidence of carpal tunnel syndrome among our highly valued
-  development staff.  Including 'release' (or 'debug') on the command
-  line changes the defaults for CFILE, BDIR to produce a release (or
-  debug) build.
-
 Examples:
 
   Use 'config-preview' to preview a configuration without modifying any
@@ -97,7 +69,7 @@ Examples:
 
     make config-preview
     make config-preview release
-    make config-preview BTOPDIR=~/builds BDIR=yoyo
+    make config-preview
 
   Rebuild the bulk of mpool code, leaving the code in external repos alone:
 
@@ -118,11 +90,6 @@ Examples:
   Build against currently running kernel:
 
     make debug all
-
-  Custom everything:
-
-    make BDIR=mybuild config CFILE=mybuild.cmake
-    make BDIR=mybuild all
 
   Build with asan/lsan:
 
@@ -184,13 +151,6 @@ MPOOL_SRC_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 # Other dirs commonly accessed w/in this makefile:
 S=$(MPOOL_SRC_DIR)/scripts
 
-# Get some details about the distro environment
-# Can override detection by passing DISTRO=el6.9 (where el6.9 is a
-# specifically recognized by the get_distro.sh script)
-MPOOL_DISTRO_CMD_OUTPUT := $(shell scripts/dev/get_distro.sh $(DISTRO))
-MPOOL_DISTRO            := $(word 2,$(MPOOL_DISTRO_CMD_OUTPUT))
-MPOOL_DISTRO_SUPPORTED  := $(word 5,$(MPOOL_DISTRO_CMD_OUTPUT))
-
 ifeq ($(findstring release,$(MAKECMDGOALS)),release)
 	BUILD_TYPE := release
 	BUILD_STYPE := r
@@ -212,9 +172,9 @@ else
 endif
 
 
-BTOPDIR       ?= $(MPOOL_SRC_DIR)/builds
-BDIR          ?= ${BUILD_TYPE}.$(MPOOL_DISTRO)
-BUILD_DIR     ?= $(BTOPDIR)/$(BDIR)
+BUILD_DIR     ?= ${MPOOL_SRC_DIR}/builds
+BUILD_NODE    ?= $(shell uname -n)
+BUILD_PKG_DIR ?= ${BUILD_DIR}/${BUILD_NODE}/${BUILD_PKG_TYPE}/${BUILD_TYPE}
 CFILE         ?= $(S)/cmake/${BUILD_TYPE}.cmake
 UBSAN         ?= 0
 ASAN          ?= 0
@@ -227,6 +187,7 @@ endif
 ifeq ($(findstring asan,$(MAKECMDGOALS)),asan)
 ASAN := 1
 endif
+
 
 
 ################################################################
@@ -277,14 +238,8 @@ RUN_CTEST = export MPOOL_BUILD_DIR="$(BUILD_DIR)"; set -e -u; cd "$$MPOOL_BUILD_
 RUN_CTEST_SMOKE = ${RUN_CTEST} -L "smoke"
 
 
-# Config Inputs:
-#   BUILD_DIR
-#   CFILE
-#   DEPGRAPH
-#   BUILD_NUMBER
 define config-show
 	(echo 'BUILD_DIR="$(BUILD_DIR)"';\
-	  echo 'CFILE="$(CFILE)"';\
 	  echo 'BUILD_NUMBER="$(BUILD_NUMBER)"';\
 	  echo 'BUILD_TYPE="$(BUILD_TYPE)"';\
 	  echo 'BUILD_STYPE="$(BUILD_STYPE)"';\
@@ -293,6 +248,7 @@ define config-show
 	  echo 'BUILD_PKG_REL="$(BUILD_PKG_REL)"';\
 	  echo 'BUILD_PKG_TAG="$(BUILD_PKG_TAG)"' ;\
 	  echo 'BUILD_PKG_VERSION="$(BUILD_PKG_VERSION)"' ;\
+	  echo 'CFILE="$(CFILE)"';\
 	  echo 'UBSAN="$(UBSAN)"';\
 	  echo 'ASAN="$(ASAN)"';\
 	)
@@ -302,8 +258,6 @@ define config-gen =
 	(echo '# Note: When a variable is set multiple times in this file,' ;\
 	echo '#       it is the *first* setting that sticks!' ;\
 	echo '' ;\
-	echo 'Set( UBSAN "$(UBSAN)" CACHE BOOL "" )' ;\
-	echo 'Set( ASAN "$(ASAN)" CACHE BOOL "" )' ;\
 	echo 'Set( BUILD_NUMBER "$(BUILD_NUMBER)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_TYPE "$(BUILD_TYPE)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_STYPE "$(BUILD_STYPE)" CACHE STRING "" )' ;\
@@ -312,6 +266,8 @@ define config-gen =
 	echo 'Set( BUILD_PKG_REL "$(BUILD_PKG_REL)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_PKG_VERSION "$(BUILD_PKG_VERSION)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_PKG_TAG "$(BUILD_PKG_TAG)" CACHE STRING "" )' ;\
+	echo 'Set( UBSAN "$(UBSAN)" CACHE BOOL "" )' ;\
+	echo 'Set( ASAN "$(ASAN)" CACHE BOOL "" )' ;\
 	echo '' ;\
 	echo '# BEGIN: $(CFILE)' ;\
 	cat  "$(CFILE)" ;\
@@ -345,7 +301,7 @@ ${BTYPES}: ${BTYPESDEP}
 endif
 
 
-CONFIG = $(BUILD_DIR)/config-${BUILD_PKG_TAG}.cmake
+CONFIG = $(BUILD_PKG_DIR)/config-${BUILD_PKG_TAG}.cmake
 
 .PHONY: all allv allq allqv allvq ${BTYPES}
 .PHONY: chkconfig clean config config-preview
@@ -356,43 +312,43 @@ CONFIG = $(BUILD_DIR)/config-${BUILD_PKG_TAG}.cmake
 # Goals in mostly alphabetical order.
 #
 all: config
-	@$(MAKE) --no-print-directory -C "$(BUILD_DIR)" $(MF)
+	@$(MAKE) --no-print-directory -C "$(BUILD_PKG_DIR)" $(MF)
 
 allv: config
-	$(MAKE) -C "$(BUILD_DIR)" VERBOSE=1 $(MF)
+	$(MAKE) -C "$(BUILD_PKG_DIR)" VERBOSE=1 $(MF)
 
 allq: config
-	$(MAKE) -C "$(BUILD_DIR)" $(MF) 2>&1 | $(PERL_CMAKE_NOISE_FILTER)
+	$(MAKE) -C "$(BUILD_PKG_DIR)" $(MF) 2>&1 | $(PERL_CMAKE_NOISE_FILTER)
 
 allqv allvq: config
-	$(MAKE) -C "$(BUILD_DIR)" VERBOSE=1 $(MF) 2>&1 | $(PERL_CMAKE_NOISE_FILTER)
+	$(MAKE) -C "$(BUILD_PKG_DIR)" VERBOSE=1 $(MF) 2>&1 | $(PERL_CMAKE_NOISE_FILTER)
 
 chkconfig:
 	@./scripts/dev/mpool-chkconfig
 
 clean: MAKEFLAGS += --no-print-directory
 clean:
-	if test -f ${BUILD_DIR}/src/Makefile ; then \
-		$(MAKE) -C "$(BUILD_DIR)/src" clean ;\
-		$(MAKE) -C "$(BUILD_DIR)/test" clean ;\
-		find ${BUILD_DIR} -name \*.${BUILD_PKG_TYPE} -exec rm -f {} \; ;\
+	if test -f ${BUILD_PKG_DIR}/src/Makefile ; then \
+		$(MAKE) -C "$(BUILD_PKG_DIR)/src" clean ;\
+		$(MAKE) -C "$(BUILD_PKG_DIR)/test" clean ;\
+		find ${BUILD_PKG_DIR} -name \*.${BUILD_PKG_TYPE} -exec rm -f {} \; ;\
 	fi
 
 config-preview:
 	@$(config-show)
 
 ${CONFIG}: Makefile CMakeLists.txt $(wildcard scripts/${BUILD_PKG}/*)
-	@mkdir -p $(BUILD_DIR)
-	rm -rf $(BUILD_DIR)/*
-	@$(config-show) > $(BUILD_DIR)/config.sh
+	@mkdir -p $(BUILD_PKG_DIR)
+	rm -rf $(BUILD_PKG_DIR)/*
+	@$(config-show) > $(BUILD_PKG_DIR)/config.sh
 	@$(config-gen) > $@.tmp
-	(cd "$(BUILD_DIR)" && cmake $(DEPGRAPH) -C $@.tmp $(CMAKE_FLAGS) "$(MPOOL_SRC_DIR)")
+	(cd "$(BUILD_PKG_DIR)" && cmake $(DEPGRAPH) -C $@.tmp $(CMAKE_FLAGS) "$(MPOOL_SRC_DIR)")
 	mv $@.tmp $@
 
 config: sub_clone ${CONFIG}
 
 distclean scrub:
-	rm -rf ${BUILD_DIR} *.rpm *.deb
+	rm -rf ${BUILD_PKG_DIR} *.${BUILD_PKG_TYPE}
 
 help:
 	$(info $(HELP_TEXT))
@@ -403,7 +359,7 @@ libs-clean:
 
 install-pre: MAKEFLAGS += --no-print-directory
 install-pre: libs-clean config
-	@$(MAKE) -C "$(BUILD_DIR)" install
+	@$(MAKE) -C "$(BUILD_PKG_DIR)" install
 
 install: install-pre
 	-modprobe mpool
@@ -424,9 +380,9 @@ endif
 
 package: MAKEFLAGS += --no-print-directory
 package: config
-	-find ${BUILD_DIR} -name \*.${BUILD_PKG_TYPE} -exec rm -f {} \;
-	$(MAKE) -C ${BUILD_DIR} package
-	cp ${BUILD_DIR}/*.${BUILD_PKG_TYPE} .
+	-find ${BUILD_PKG_DIR} -name \*.${BUILD_PKG_TYPE} -exec rm -f {} \;
+	$(MAKE) -C ${BUILD_PKG_DIR} package
+	cp ${BUILD_PKG_DIR}/*.${BUILD_PKG_TYPE} .
 
 print-%:
 	$(info $*="$($*)")
