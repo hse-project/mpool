@@ -9,9 +9,9 @@ if(${CMAKE_MAJOR_VERSION} GREATER 2)
 cmake_policy(SET CMP0046 OLD)
 endif()
 
-project( mpool )
+project( mpool VERSION ${BUILD_PKG_VERSION} )
 
-message( STATUS "Configuring ${PROJECT_NAME} common..." )
+message( STATUS "Configuring project ${PROJECT_NAME} ${PROJECT_VERSION} ${BUILD_PKG_TAG} common..." )
 
 set( CMAKE_C_STANDARD 99 )
 set( CMAKE_INSTALL_PREFIX /usr )
@@ -138,30 +138,24 @@ endif()
 # Set-up what kind of build this is
 #
 if( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
-  add_definitions( -DMPOOL_BUILD_DEBUG )
-  add_definitions( -DDEBUG_RCU )
-  set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector-all")
-  set( MPOOL_BUILD_TYPE_FLAG "d" )
+    add_definitions( -DMPOOL_BUILD_DEBUG )
+    add_definitions( -DDEBUG_RCU )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector-all")
 
 elseif( "${CMAKE_BUILD_TYPE}" STREQUAL "OptDebug" )
-  add_definitions( -DMPOOL_BUILD_DEBUG )
-  set( MPOOL_BUILD_TYPE_FLAG "od" )
+    add_definitions( -DMPOOL_BUILD_DEBUG )
 
 elseif( "${CMAKE_BUILD_TYPE}" STREQUAL "Release" )
-  add_definitions( -DMPOOL_BUILD_RELEASE )
-  set( MPOOL_BUILD_TYPE_FLAG "r" )
+    add_definitions( -DMPOOL_BUILD_RELEASE )
 
 elseif( "${CMAKE_BUILD_TYPE}" STREQUAL "RelAssert" )
-  add_definitions( -DMPOOL_BUILD_RELASSERT )
-  add_definitions( -D_FORTIFY_SOURCE )
-  set( MPOOL_BUILD_TYPE_FLAG "ra" )
+    add_definitions( -DMPOOL_BUILD_RELASSERT )
+    add_definitions( -D_FORTIFY_SOURCE )
 
 elseif( "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo" )
-  add_definitions( -DMPOOL_BUILD_RELEASE )
-  set( MPOOL_BUILD_TYPE_FLAG "rd" )
-
+    add_definitions( -DMPOOL_BUILD_RELEASE )
 else()
-  message( FATAL_ERROR "Invalid build type [${CMAKE_BUILD_TYPE}]" )
+    message( FATAL_ERROR "Invalid build type [${CMAKE_BUILD_TYPE}]" )
 endif()
 
 ################################################################
@@ -170,22 +164,19 @@ endif()
 #
 ################################################################
 
-#
 # We use git
 #
 find_package(Git)
 
-#
 # Create our template for the header file
 #
 file( WRITE ${CMAKE_BINARY_DIR}/mpool_version.h.in
-    "static const char mpool_version[] = \"@MPOOL_VERSION@\";\n"
+    "static const char mpool_version[] = \"@BUILD_PKG_VERSION@\";\n"
     "static const char mpool_branch[] = \"@MPOOL_BRANCH@\";\n"
-    "static const char mpool_tag[] = \"@MPOOL_TAG@\";\n"
+    "static const char mpool_tag[] = \"@BUILD_PKG_TAG@\";\n"
     "static const char mpool_buildserver[] = \"@MPOOL_BUILDSERVER@\";\n"
 )
 
-#
 # Create cmake code to transform input template into target header file.
 #
 file( WRITE ${CMAKE_BINARY_DIR}/mpool_version.cmake
@@ -194,11 +185,6 @@ file( WRITE ${CMAKE_BINARY_DIR}/mpool_version.cmake
     COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     OUTPUT_VARIABLE MPOOL_BRANCH
-    OUTPUT_STRIP_TRAILING_WHITESPACE
- )
- execute_process(
-    COMMAND date +%Y%m%d
-    OUTPUT_VARIABLE MPOOL_DATESTAMP
     OUTPUT_STRIP_TRAILING_WHITESPACE
  )
  execute_process(
@@ -224,7 +210,6 @@ file( WRITE ${CMAKE_BINARY_DIR}/mpool_version.cmake
 "
 )
 
-#
 # Set up custom target
 #
 add_custom_target(
@@ -285,20 +270,13 @@ set( CPACK_PACKAGE_NAME           "${PROJECT_NAME}" )
 set( CPACK_PACKAGE_LICENSE        "MIT" )
 set( CPACK_PACKAGE_HOMEPAGE_URL   "https://github.com/hse-project/mpool" )
 
-set( CPACK_PACKAGE_VERSION_MAJOR  "${MPOOL_VERSION_MAJOR}" )
-set( CPACK_PACKAGE_VERSION_MINOR  "${MPOOL_VERSION_MINOR}" )
-set( CPACK_PACKAGE_VERSION_PATCH  "${MPOOL_VERSION_PATCH}" )
-
-set( CPACK_PACKAGE_VERSION
-    "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}" )
-
 set( CPACK_PACKAGE_DESCRIPTION_SUMMARY
     "Object Storage Media Pool (mpool) ${BUILD_TYPE}" )
 
 set( CPACK_PACKAGE_DESCRIPTION
-    "${CPACK_PACKAGE_DESCRIPTION_SUMMARY} ${MPOOL_TAG}" )
+    "${CPACK_PACKAGE_DESCRIPTION_SUMMARY} ${BUILD_PKG_TAG}" )
 
-set( CPACK_PACKAGE_FILE_NAME  "${MPOOL_TAG}.${BUILD_PKG_ARCH}" )
+set( CPACK_PACKAGE_FILE_NAME  "${BUILD_PKG_TAG}.${BUILD_PKG_ARCH}" )
 
 include( ${MPOOL_SCRIPTS_DIR}/${BUILD_PKG_TYPE}/CMakeLists.txt )
 include( CPack )

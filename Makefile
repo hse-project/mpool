@@ -55,13 +55,14 @@ Configuration Variables:
       require BUILD_DIR and ignore CFILE
       as their values are retrieved from BUILD_DIR/mpool_config.cmake.
 
-  Defaults:
+  Defaults (not all are customizable):
     ASAN           = $(ASAN)
     BDIR           = $(BDIR)
     BUILD_DIR      = $(BUILD_DIR)
     BUILD_NUMBER   = $(BUILD_NUMBER)
     BUILD_PKG_TYPE = ${BUILD_PKG_TYPE}
     BUILD_PKG_ARCH = ${BUILD_PKG_ARCH}
+    BUILD_PKG_REL  = ${BUILD_PKG_REL}
     BTOPDIR        = $(BTOPDIR)
     CFILE          = $(CFILE)
     UBSAN          = $(UBSAN)
@@ -151,15 +152,15 @@ endef
 .NOTPARALLEL:
 
 
-# Edit these lines when we cut a release branch.
-MPOOL_VERSION_MAJOR := 1
-MPOOL_VERSION_MINOR := 8
-MPOOL_VERSION_PATCH := 0
-MPOOL_VERSION := ${MPOOL_VERSION_MAJOR}.${MPOOL_VERSION_MINOR}.${MPOOL_VERSION_PATCH}
+# Edit when we cut a release branch.
+BUILD_PKG_VERSION := 1.8.0
 
-MPOOL_TAG := $(shell test -d ".git" && git describe --always --tags)
-ifeq (${MPOOL_TAG},)
-MPOOL_TAG := ${MPOOL_VERSION}
+BUILD_PKG_TAG := $(shell test -d ".git" && git describe --always --tags)
+ifeq (${BUILD_PKG_TAG},)
+BUILD_PKG_TAG := ${BUILD_PKG_VERSION}
+BUILD_PKG_REL := 0
+else
+BUILD_PKG_REL := $(shell echo ${BUILD_PKG_TAG} | sed -En 's/.*-(.*)-.*$$/\1/p')
 endif
 
 ifneq ($(shell egrep -i 'id=(ubuntu|debian)' /etc/os-release),)
@@ -171,7 +172,7 @@ BUILD_PKG_ARCH ?= $(shell uname -m)
 endif
 
 ifeq ($(wildcard scripts/${BUILD_PKG_TYPE}/CMakeLists.txt),)
-$(error "Unable to create a ${BUILD_PKG} package, try rpm or deb")
+$(error "Unable to create a ${BUILD_PKG_TYPE} package, try rpm or deb")
 endif
 
 
@@ -287,13 +288,11 @@ define config-show
 	  echo 'BUILD_STYPE="$(BUILD_STYPE)"';\
 	  echo 'BUILD_PKG_TYPE="$(BUILD_PKG_TYPE)"';\
 	  echo 'BUILD_PKG_ARCH="$(BUILD_PKG_ARCH)"';\
+	  echo 'BUILD_PKG_REL="$(BUILD_PKG_REL)"';\
+	  echo 'BUILD_PKG_TAG="$(BUILD_PKG_TAG)"' ;\
+	  echo 'BUILD_PKG_VERSION="$(BUILD_PKG_VERSION)"' ;\
 	  echo 'UBSAN="$(UBSAN)"';\
 	  echo 'ASAN="$(ASAN)"';\
-	  echo 'MPOOL_VERSION_MAJOR="$(MPOOL_VERSION_MAJOR)"' ;\
-	  echo 'MPOOL_VERSION_MINOR="$(MPOOL_VERSION_MINOR)"' ;\
-	  echo 'MPOOL_VERSION_PATCH="$(MPOOL_VERSION_PATCH)"' ;\
-	  echo 'MPOOL_TAG="$(MPOOL_TAG)"' ;\
-	  echo 'MPOOL_DISTRO="$(MPOOL_DISTRO)"';\
 	)
 endef
 
@@ -308,11 +307,9 @@ define config-gen =
 	echo 'Set( BUILD_STYPE "$(BUILD_STYPE)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_PKG_TYPE "$(BUILD_PKG_TYPE)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_PKG_ARCH "$(BUILD_PKG_ARCH)" CACHE STRING "" )' ;\
-	echo 'Set( MPOOL_VERSION_MAJOR "$(MPOOL_VERSION_MAJOR)" CACHE STRING "" )' ;\
-	echo 'Set( MPOOL_VERSION_MINOR "$(MPOOL_VERSION_MINOR)" CACHE STRING "" )' ;\
-	echo 'Set( MPOOL_VERSION_PATCH "$(MPOOL_VERSION_PATCH)" CACHE STRING "" )' ;\
-	echo 'Set( MPOOL_TAG "$(MPOOL_TAG)" CACHE STRING "" )' ;\
-	echo 'Set( MPOOL_DISTRO "$(MPOOL_DISTRO)" CACHE STRING "" )' ;\
+	echo 'Set( BUILD_PKG_REL "$(BUILD_PKG_REL)" CACHE STRING "" )' ;\
+	echo 'Set( BUILD_PKG_VERSION "$(BUILD_PKG_VERSION)" CACHE STRING "" )' ;\
+	echo 'Set( BUILD_PKG_TAG "$(BUILD_PKG_TAG)" CACHE STRING "" )' ;\
 	echo '' ;\
 	echo '# BEGIN: $(CFILE)' ;\
 	cat  "$(CFILE)" ;\
@@ -346,7 +343,7 @@ ${BTYPES}: ${BTYPESDEP}
 endif
 
 
-CONFIG = $(BUILD_DIR)/config.cmake-${MPOOL_TAG}
+CONFIG = $(BUILD_DIR)/config-${BUILD_PKG_TAG}.cmake
 
 .PHONY: all allv allq allqv allvq ${BTYPES}
 .PHONY: chkconfig clean config config-preview
@@ -384,11 +381,11 @@ config-preview:
 
 ${CONFIG}: Makefile CMakeLists.txt $(wildcard scripts/${BUILD_PKG}/*)
 	@mkdir -p $(BUILD_DIR)
-	@rm -rf $(BUILD_DIR)/*
+	rm -rf $(BUILD_DIR)/*
 	@$(config-show) > $(BUILD_DIR)/config.sh
 	@$(config-gen) > $@.tmp
-	@cmp -s $@ $@.tmp || (cd "$(BUILD_DIR)" && cmake $(DEPGRAPH) -C $@.tmp $(CMAKE_FLAGS) "$(MPOOL_SRC_DIR)")
-	@cp $@.tmp $@
+	(cd "$(BUILD_DIR)" && cmake $(DEPGRAPH) -C $@.tmp $(CMAKE_FLAGS) "$(MPOOL_SRC_DIR)")
+	mv $@.tmp $@
 
 config: sub_clone ${CONFIG}
 
