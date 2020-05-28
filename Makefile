@@ -41,12 +41,10 @@ Configuration Variables:
   Used only by 'config':
     ASAN          -- Enable the gcc address/leak sanitizer
     BUILD_NUMBER  -- Build job number (as set by Jenkins)
-    BUILD_SHA     -- abbreviated git SHA to use in packaging
     CFILE         -- Name of file containing mpool config parameters.
     DEPGRAPH      -- Set to "--graphviz=<filename_prefix>" to generate
                      graphviz dependency graph files
     UBSAN         -- Enable the gcc undefined behavior sanitizer
-    REL_CANDIDATE -- When set builds a release candidate.
 
   Rules of use:
     * The 'config' target uses CFILE, and BUILD_DIR.
@@ -62,13 +60,11 @@ Configuration Variables:
     BDIR           = $(BDIR)
     BUILD_DIR      = $(BUILD_DIR)
     BUILD_NUMBER   = $(BUILD_NUMBER)
-    BUILD_SHA      = $(BUILD_SHA)
     BUILD_PKG_TYPE = ${BUILD_PKG_TYPE}
     BUILD_PKG_ARCH = ${BUILD_PKG_ARCH}
     BTOPDIR        = $(BTOPDIR)
     CFILE          = $(CFILE)
     UBSAN          = $(UBSAN)
-    REL_CANDIDATE  = $(REL_CANDIDATE)
 
 
 Customizations:
@@ -161,7 +157,7 @@ MPOOL_VERSION_MINOR := 8
 MPOOL_VERSION_PATCH := 0
 MPOOL_VERSION := ${MPOOL_VERSION_MAJOR}.${MPOOL_VERSION_MINOR}.${MPOOL_VERSION_PATCH}
 
-MPOOL_TAG := $(shell test -d ".git" && git describe --dirty --always --tags)
+MPOOL_TAG := $(shell test -d ".git" && git describe --always --tags)
 ifeq (${MPOOL_TAG},)
 MPOOL_TAG := ${MPOOL_VERSION}
 endif
@@ -192,11 +188,6 @@ MPOOL_DISTRO_CMD_OUTPUT := $(shell scripts/dev/get_distro.sh $(DISTRO))
 MPOOL_DISTRO            := $(word 2,$(MPOOL_DISTRO_CMD_OUTPUT))
 MPOOL_DISTRO_SUPPORTED  := $(word 5,$(MPOOL_DISTRO_CMD_OUTPUT))
 
-################################################################
-#
-# Set config var defaults.
-#
-################################################################
 ifeq ($(findstring release,$(MAKECMDGOALS)),release)
 	BUILD_TYPE := release
 	BUILD_STYPE := r
@@ -225,7 +216,6 @@ CFILE         ?= $(S)/cmake/${BUILD_TYPE}.cmake
 UBSAN         ?= 0
 ASAN          ?= 0
 BUILD_NUMBER  ?= 0
-REL_CANDIDATE ?= false
 
 ifeq ($(findstring ubsan,$(MAKECMDGOALS)),ubsan)
 UBSAN := 1
@@ -299,7 +289,6 @@ define config-show
 	  echo 'BUILD_PKG_ARCH="$(BUILD_PKG_ARCH)"';\
 	  echo 'UBSAN="$(UBSAN)"';\
 	  echo 'ASAN="$(ASAN)"';\
-	  echo 'REL_CANDIDATE="$(REL_CANDIDATE)"' ;\
 	  echo 'MPOOL_VERSION_MAJOR="$(MPOOL_VERSION_MAJOR)"' ;\
 	  echo 'MPOOL_VERSION_MINOR="$(MPOOL_VERSION_MINOR)"' ;\
 	  echo 'MPOOL_VERSION_PATCH="$(MPOOL_VERSION_PATCH)"' ;\
@@ -319,17 +308,11 @@ define config-gen =
 	echo 'Set( BUILD_STYPE "$(BUILD_STYPE)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_PKG_TYPE "$(BUILD_PKG_TYPE)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_PKG_ARCH "$(BUILD_PKG_ARCH)" CACHE STRING "" )' ;\
-	echo 'Set( REL_CANDIDATE "$(REL_CANDIDATE)" CACHE STRING "" )' ;\
 	echo 'Set( MPOOL_VERSION_MAJOR "$(MPOOL_VERSION_MAJOR)" CACHE STRING "" )' ;\
 	echo 'Set( MPOOL_VERSION_MINOR "$(MPOOL_VERSION_MINOR)" CACHE STRING "" )' ;\
 	echo 'Set( MPOOL_VERSION_PATCH "$(MPOOL_VERSION_PATCH)" CACHE STRING "" )' ;\
 	echo 'Set( MPOOL_TAG "$(MPOOL_TAG)" CACHE STRING "" )' ;\
 	echo 'Set( MPOOL_DISTRO "$(MPOOL_DISTRO)" CACHE STRING "" )' ;\
-	if test "$(BUILD_SHA)" ; then \
-		echo '' ;\
-		echo '# Use input SHA' ;\
-		echo 'Set( MPOOL_SHA "$(BUILD_SHA)" CACHE STRING "")' ;\
-	fi ;\
 	echo '' ;\
 	echo '# BEGIN: $(CFILE)' ;\
 	cat  "$(CFILE)" ;\
@@ -363,7 +346,7 @@ ${BTYPES}: ${BTYPESDEP}
 endif
 
 
-CONFIG = $(BUILD_DIR)/mpool_config.cmake
+CONFIG = $(BUILD_DIR)/config.cmake-${MPOOL_TAG}
 
 .PHONY: all allv allq allqv allvq ${BTYPES}
 .PHONY: chkconfig clean config config-preview
@@ -399,7 +382,7 @@ clean:
 config-preview:
 	@$(config-show)
 
-${CONFIG}:
+${CONFIG}: Makefile CMakeLists.txt $(wildcard scripts/${BUILD_PKG}/*)
 	@mkdir -p $(BUILD_DIR)
 	@rm -rf $(BUILD_DIR)/*
 	@$(config-show) > $(BUILD_DIR)/config.sh
@@ -410,11 +393,11 @@ ${CONFIG}:
 config: sub_clone ${CONFIG}
 
 distclean scrub:
-	rm -rf ${BUILD_DIR}
+	rm -rf ${BUILD_DIR} *.rpm *.deb
 
 help:
-	@true
 	$(info $(HELP_TEXT))
+	@true
 
 libs-clean:
 	@rm -f /usr/lib/libmpool.*

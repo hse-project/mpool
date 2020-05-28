@@ -7,28 +7,46 @@ set( LIBBLKID_LIBS ${MPOOL_EXT_INSTALL_PREFIX}/lib/libmpool-blkid.so PARENT_SCOP
 set( LIBBLKID_CFLAGS "-O2 -fPIC" )
 
 # Build a minimal libblkid for our minimal needs
-set( LIBBLKID_CONFIG_OPTS
+set( LIBBLKID_CONFIGURE_OPTS
      --disable-all-programs
      --enable-libblkid
    )
 
+set( LIBBLKID_CONFIGURE_CMD
+    ./configure -q --prefix=${MPOOL_EXT_INSTALL_PREFIX} ${LIBBLKID_CONFIGURE_OPTS} CFLAGS=${LIBBLKID_CFLAGS} )
+
+set( LIBBLKID_DOWNLOAD_OPTS
+    -axSH --info=progress2,misc1,remove,symsafe,stats,del --exclude '.git' --exclude '.rpm' --exclude '.deb' )
+
+set( LIBBLKID_DOWNLOAD_CMD
+    rsync ${LIBBLKID_DOWNLOAD_OPTS} ${MPOOL_SUB_REPOS}/util-linux/ ./libblkid-pkg/ )
+
 ExternalProject_Add(libblkid-pkg
-  PREFIX "${CMAKE_CURRENT_BINARY_DIR}"
-  DOWNLOAD_COMMAND  rsync -axSH --info=progress2,misc1,remove,symsafe,stats,del --exclude '.git' --exclude '.rpm' --exclude '.deb' ${MPOOL_SUB_REPOS}/util-linux/ ./libblkid-pkg/
-  UPDATE_COMMAND ""
-  CONFIGURE_COMMAND  pwd && ./autogen.sh && ./configure -q --prefix=${MPOOL_EXT_INSTALL_PREFIX} ${LIBBLKID_CONFIG_OPTS} CFLAGS=${LIBBLKID_CFLAGS}
+    PREFIX "${CMAKE_CURRENT_BINARY_DIR}"
 
-  BUILD_COMMAND
-      COMMAND make
+    DOWNLOAD_COMMAND
+        COMMAND echo ${LIBBLKID_DOWNLOAD_CMD}
+	COMMAND ${LIBBLKID_DOWNLOAD_CMD}
 
-  INSTALL_COMMAND
-      # Syntax for multiple commands under INSTALL_COMMAND
-      COMMAND mkdir -p ${MPOOL_EXT_INSTALL_PREFIX}/lib
-      COMMAND mkdir -p ${MPOOL_EXT_INSTALL_PREFIX}/include/mpool_blkid
-      COMMAND pwd && cp ./libblkid/src/blkid.h ${MPOOL_EXT_INSTALL_PREFIX}/include/mpool_blkid/blkid.h
-      COMMAND cp -p ./.libs/libblkid.so ${MPOOL_EXT_INSTALL_PREFIX}/lib/libmpool-blkid.so
+    CONFIGURE_COMMAND
+	COMMAND ./autogen.sh
+        COMMAND echo ${LIBBLKID_CONFIGURE_CMD}
+        COMMAND ${LIBBLKID_CONFIGURE_CMD}
 
-  BUILD_IN_SOURCE   1)
+    UPDATE_COMMAND ""
+
+    BUILD_COMMAND
+    COMMAND make
+
+    # Syntax for multiple commands under INSTALL_COMMAND
+    INSTALL_COMMAND
+        COMMAND mkdir -p ${MPOOL_EXT_INSTALL_PREFIX}/lib
+        COMMAND mkdir -p ${MPOOL_EXT_INSTALL_PREFIX}/include/mpool_blkid
+        COMMAND pwd && cp ./libblkid/src/blkid.h ${MPOOL_EXT_INSTALL_PREFIX}/include/mpool_blkid/blkid.h
+        COMMAND cp -p ./.libs/libblkid.so ${MPOOL_EXT_INSTALL_PREFIX}/lib/libmpool-blkid.so
+
+    BUILD_IN_SOURCE   1
+    )
 
 install(
   FILES "${MPOOL_EXT_INSTALL_PREFIX}/lib/libmpool-blkid.so"

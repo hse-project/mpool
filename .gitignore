@@ -17,3 +17,5 @@ bull.cov
 *.swp
 \#*
 .#*
+*.rpm
+*.deb

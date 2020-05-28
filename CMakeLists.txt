@@ -189,15 +189,7 @@ file( WRITE ${CMAKE_BINARY_DIR}/mpool_version.h.in
 # Create cmake code to transform input template into target header file.
 #
 file( WRITE ${CMAKE_BINARY_DIR}/mpool_version.cmake
-"set(MPOOL_SHA ${MPOOL_SHA})
- if( NOT DEFINED MPOOL_SHA )
-   execute_process(
-      COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
-      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-      OUTPUT_VARIABLE MPOOL_SHA
-      OUTPUT_STRIP_TRAILING_WHITESPACE
-   )
- endif()
+"
  execute_process(
     COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
@@ -214,28 +206,6 @@ file( WRITE ${CMAKE_BINARY_DIR}/mpool_version.cmake
     OUTPUT_VARIABLE MPOOL_BUILDSERVER
     OUTPUT_STRIP_TRAILING_WHITESPACE
  )
-
- if( \${MPOOL_TAG} MATCHES \"dirty$\" )
-   set( MPOOL_DIRTYTAG \".dirty\" )
- endif( )
-
- set( MPOOL_MAJORMINORPATCH ${MPOOL_VERSION_MAJOR}.${MPOOL_VERSION_MINOR}.${MPOOL_VERSION_PATCH} )
-
- set( MPOOL_RELEASE ${MPOOL_BUILD_TYPE_FLAG}${BUILD_NUMBER}.\${MPOOL_DATESTAMP}.\${MPOOL_SHA}\${MPOOL_DIRTYTAG} )
-
- #
- # MPOOL_SHA varibale may not be populated when user is downloading
- # source code from tarball on the github website instead of cloning the repo
- #
- if( NOT MPOOL_SHA )
-   set( MPOOL_RELEASE ${MPOOL_BUILD_TYPE_FLAG}${BUILD_NUMBER}.\${MPOOL_DATESTAMP}\${MPOOL_DIRTYTAG} )
- endif( )
-
- if (REL_CANDIDATE)
-  set( MPOOL_RELEASE ${MPOOL_BUILD_TYPE_FLAG}${BUILD_NUMBER}.\${MPOOL_DATESTAMP} )
- endif()
-
- set( MPOOL_VERSION \${MPOOL_MAJORMINORPATCH}-\${MPOOL_RELEASE} )
 
  if( NOT MPOOL_VERSION_CMAKE_INCLUDEONLY )
    if (EXISTS \${DST})
@@ -304,13 +274,6 @@ add_subdirectory( scripts/udev/rules.d )
 add_subdirectory( scripts/sysctl.d )
 add_subdirectory( scripts/modules-load.d )
 
-# NOTE: The package name and version values are configured at "make config"
-# time.  If changes are made in the tree (thereby changing the last commit SHA),
-# the configured package name won't change until the next make config.
-#
-# This *should* be OK for a while, since we expect our build server to clone a
-# a fresh tree before every build.
-
 set( MPOOL_VERSION_CMAKE_INCLUDEONLY "ON" )
 include( ${CMAKE_BINARY_DIR}/mpool_version.cmake )
 set( MPOOL_VERSION_CMAKE_INCLUDEONLY "OFF" )
@@ -318,7 +281,7 @@ set( MPOOL_VERSION_CMAKE_INCLUDEONLY "OFF" )
 
 # Common package options...
 #
-set( CPACK_PACKAGE_NAME           "mpool" )
+set( CPACK_PACKAGE_NAME           "${PROJECT_NAME}" )
 set( CPACK_PACKAGE_LICENSE        "MIT" )
 set( CPACK_PACKAGE_HOMEPAGE_URL   "https://github.com/hse-project/mpool" )
 
@@ -329,25 +292,13 @@ set( CPACK_PACKAGE_VERSION_PATCH  "${MPOOL_VERSION_PATCH}" )
 set( CPACK_PACKAGE_VERSION
     "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}" )
 
-# If it's a managed build (e.g, Jenkins) or a dirty git clone
-# then include the build number and git describe tag in the
-# package file name.  Otherwise, the file name will contain
-# only the simple version and no build type/number.
-#
-if( BUILD_NUMBER GREATER 0 OR "${MPOOL_TAG}" MATCHES "dirty$" )
-    set( BUILD_STYPE "-${BUILD_STYPE}${BUILD_NUMBER}" )
-else()
-    set( MPOOL_TAG "${CPACK_PACKAGE_VERSION}" )
-    set( BUILD_STYPE  "" )
-endif()
-
 set( CPACK_PACKAGE_DESCRIPTION_SUMMARY
-    "Object Storage Media Pool (mpool) ${BUILD_TYPE} runtime" )
+    "Object Storage Media Pool (mpool) ${BUILD_TYPE}" )
 
 set( CPACK_PACKAGE_DESCRIPTION
     "${CPACK_PACKAGE_DESCRIPTION_SUMMARY} ${MPOOL_TAG}" )
 
-set( CPACK_PACKAGE_FILE_NAME  "${MPOOL_TAG}${BUILD_STYPE}.${BUILD_PKG_ARCH}" )
+set( CPACK_PACKAGE_FILE_NAME  "${MPOOL_TAG}.${BUILD_PKG_ARCH}" )
 
 include( ${MPOOL_SCRIPTS_DIR}/${BUILD_PKG_TYPE}/CMakeLists.txt )
 include( CPack )
