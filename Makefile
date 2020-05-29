@@ -352,7 +352,8 @@ load:
 	modprobe -r mpool
 	modprobe mpool
 
-maintainer-clean: distclean
+maintainer-clean:
+	rm -rf ${BUILD_DIR} *.rpm *.deb
 ifneq ($(wildcard ${SUBREPO_PATH_LIST}),)
 	rm -rf ${SUBREPO_PATH_LIST}
 endif
