@@ -309,8 +309,11 @@ clean:
 		find ${BUILD_PKG_DIR} -name \*.${BUILD_PKG_TYPE} -exec rm -f {} \; ;\
 	fi
 
-config-preview: ${CONFIG}
+config-preview:
+ifneq ($(wildcard ${CONFIG}),)
 	@sed -En 's/^[^#]*\((.*)CACHE.*/\1/p' ${CONFIG}
+endif
+	@true
 
 ${CONFIG}: MAKEFLAGS += --no-print-directory
 ${CONFIG}: Makefile CMakeLists.txt $(wildcard scripts/${BUILD_PKG_TYPE}/*)
