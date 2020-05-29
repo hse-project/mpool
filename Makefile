@@ -10,9 +10,6 @@
 
 define HELP_TEXT
 
-mpool Makefile Help
--------------------
-
 Primary Targets:
 
     all       -- Build binaries, libraries, tests, etc.
@@ -20,7 +17,7 @@ Primary Targets:
     config    -- Create build output directory and run cmake config.
     distclean -- Delete all build outputs (i.e., start over).
     install   -- Install build artifacts locally
-    package   -- Build "all" and generate RPMs
+    package   -- Build "all" and generate deb/rpm packages
     help      -- Print this message.
 
 Configuration Variables:
@@ -31,13 +28,12 @@ Configuration Variables:
     ASAN          -- Enable the gcc address/leak sanitizer
     BUILD_DIR     -- The top-level build output directory
     BUILD_NUMBER  -- Build job number (as set by Jenkins)
-    CFILE         -- Name of file containing mpool config parameters.
+    CFILE         -- Name of file containing cmake config parameters.
     DEPGRAPH      -- Set to "--graphviz=<filename_prefix>" to generate
                      graphviz dependency graph files
     UBSAN         -- Enable the gcc undefined behavior sanitizer
 
   Defaults (not all are customizable):
-    ASAN               $(ASAN)
     BUILD_DIR          $(BUILD_DIR)
     BUILD_NUMBER       $(BUILD_NUMBER)
     BUILD_PKG_ARCH     ${BUILD_PKG_ARCH}
@@ -48,7 +44,7 @@ Configuration Variables:
     BUILD_PKG_VERSION  ${BUILD_PKG_VERSION}
     CFILE              $(CFILE)
     UBSAN              $(UBSAN)
-
+    ASAN               $(ASAN)
 
 Customizations:
 
@@ -63,33 +59,21 @@ Customizations:
 
 Examples:
 
-  Use 'config-preview' to preview a configuration without modifying any
-  files or directories.  This will show you which kernel is used, where
-  the build outputs are located, etc.
+  Create a 'release' package:
 
-    make config-preview
-    make config-preview release
+    make -j package
+
+  Show the current cmake configuration:
+
     make config-preview
 
   Rebuild the bulk of mpool code, leaving the code in external repos alone:
 
-    make clean all
-
-  Incremental rebuild after modifications to mpool code:
-
-    make
-
-  Create a 'release' build:
-
-    make release all
+    make -j clean all
 
   Work in the 'release' build output dir, but with your own configuration file:
 
-    make CFILE=myconfig.cmake all
-
-  Build against currently running kernel:
-
-    make debug all
+    make CFILE=myconfig.cmake
 
   Build with asan/lsan:
 
@@ -238,22 +222,6 @@ RUN_CTEST = export MPOOL_BUILD_DIR="$(BUILD_DIR)"; set -e -u; cd "$$MPOOL_BUILD_
 RUN_CTEST_SMOKE = ${RUN_CTEST} -L "smoke"
 
 
-define config-show
-	(echo 'BUILD_DIR="$(BUILD_DIR)"';\
-	  echo 'BUILD_NUMBER="$(BUILD_NUMBER)"';\
-	  echo 'BUILD_TYPE="$(BUILD_TYPE)"';\
-	  echo 'BUILD_STYPE="$(BUILD_STYPE)"';\
-	  echo 'BUILD_PKG_TYPE="$(BUILD_PKG_TYPE)"';\
-	  echo 'BUILD_PKG_ARCH="$(BUILD_PKG_ARCH)"';\
-	  echo 'BUILD_PKG_REL="$(BUILD_PKG_REL)"';\
-	  echo 'BUILD_PKG_TAG="$(BUILD_PKG_TAG)"' ;\
-	  echo 'BUILD_PKG_VERSION="$(BUILD_PKG_VERSION)"' ;\
-	  echo 'CFILE="$(CFILE)"';\
-	  echo 'UBSAN="$(UBSAN)"';\
-	  echo 'ASAN="$(ASAN)"';\
-	)
-endef
-
 define config-gen =
 	(echo '# Note: When a variable is set multiple times in this file,' ;\
 	echo '#       it is the *first* setting that sticks!' ;\
@@ -305,7 +273,9 @@ endif
 #
 CONFIG = $(BUILD_PKG_DIR)/config.cmake
 
+ifneq (${MAKECMDGOALS},config-preview)
 $(shell $(config-gen) | cmp -s - ${CONFIG} || rm -f ${CONFIG})
+endif
 
 
 .PHONY: all allv allq allqv allvq ${BTYPES}
@@ -339,13 +309,13 @@ clean:
 		find ${BUILD_PKG_DIR} -name \*.${BUILD_PKG_TYPE} -exec rm -f {} \; ;\
 	fi
 
-config-preview:
-	@$(config-show)
+config-preview: ${CONFIG}
+	@sed -En 's/^[^#]*\((.*)CACHE.*/\1/p' ${CONFIG}
 
 ${CONFIG}: MAKEFLAGS += --no-print-directory
 ${CONFIG}: Makefile CMakeLists.txt $(wildcard scripts/${BUILD_PKG_TYPE}/*)
 	mkdir -p $(BUILD_PKG_DIR)
-	@$(config-show) > $(BUILD_PKG_DIR)/config.sh
+	rm -f ${BUILD_PKG_DIR}/CMakeCache.txt
 	@$(config-gen) > $@.tmp
 	cmake $(DEPGRAPH) $(CMAKE_FLAGS) -B ${BUILD_PKG_DIR} -C $@.tmp -S ${MPOOL_SRC_DIR}
 	$(MAKE) -C $(BUILD_PKG_DIR) clean

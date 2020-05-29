@@ -9,14 +9,12 @@ if(${CMAKE_MAJOR_VERSION} GREATER 2)
 cmake_policy(SET CMP0046 OLD)
 endif()
 
-project( mpool VERSION ${BUILD_PKG_VERSION} )
+project( mpool VERSION ${BUILD_PKG_VERSION} LANGUAGES C )
 
 message( STATUS "Configuring project ${PROJECT_NAME} ${PROJECT_VERSION} ${BUILD_PKG_TAG} common..." )
 
 set( CMAKE_C_STANDARD 99 )
 set( CMAKE_INSTALL_PREFIX /usr )
-
-set( MPOOL_SUB_REPOS              ${PROJECT_SOURCE_DIR}/sub)
 
 ##################
 # The next three variables determine where the build outputs land:
@@ -39,6 +37,8 @@ set( MPOOL_SUB_REPOS              ${PROJECT_SOURCE_DIR}/sub)
 set( MPOOL_EXT_INSTALL_PREFIX        ${PROJECT_BINARY_DIR}/ext_install)
 set( MPOOL_STAGE_INSTALL_PREFIX      ${PROJECT_BINARY_DIR}/stage)
 set( MPOOL_SCRIPTS_DIR               ${PROJECT_SOURCE_DIR}/scripts )
+set( MPOOL_SUB_REPOS                 ${PROJECT_SOURCE_DIR}/sub)
+
 
 set( CMAKE_RUNTIME_OUTPUT_DIRECTORY  ${MPOOL_STAGE_INSTALL_PREFIX}/bin)
 
@@ -82,10 +82,8 @@ endif()
 #
 if ( ${CMAKE_C_COMPILER_VERSION} GREATER 7 )
     add_compile_options( -Wimplicit-fallthrough=0 )
-    set(CMAKE_KC_FLAGS "${CMAKE_KC_FLAGS} -Wimplicit-fallthrough=0" )
 endif()
 
-set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_KC_FLAGS}")
 
 # Define valgrind wrapper functions if valgrind-devel package
 # is installed (sudo dnf install valgrind-devel).
@@ -291,19 +289,9 @@ get_directory_property( DirIncs INCLUDE_DIRECTORIES )
 get_directory_property( DirDefs COMPILE_DEFINITIONS )
 get_directory_property( DirOpts COMPILE_OPTIONS )
 
-message(STATUS "Compiler flags:")
-message(STATUS "  INCLUDE_DIRECTORIES    = ${DirIncs}")
-message(STATUS "  COMPILE_DEFINITIONS    = ${DirDefs}")
-message(STATUS "  COMPILE_OPTIONS        = ${DirOpts}")
-message(STATUS "  CMAKE_C_FLAGS          = ${CMAKE_C_FLAGS}")
-message(STATUS "Add the following compiler flags based on build type:")
-message(STATUS "  CMAKE_C_FLAGS_DEBUG          = ${CMAKE_C_FLAGS_DEBUG}")
-message(STATUS "  CMAKE_C_FLAGS_RELEASE        = ${CMAKE_C_FLAGS_RELEASE}")
-message(STATUS "  CMAKE_C_FLAGS_RELASSERT      = ${CMAKE_C_FLAGS_RELASSERT}")
-message(STATUS "  CMAKE_C_FLAGS_RELWITHDEBINFO = ${CMAKE_C_FLAGS_RELWITHDEBINFO}")
-message(STATUS "  CMAKE_C_FLAGS_OPTDEBUG       = ${CMAKE_C_FLAGS_OPTDEBUG}")
-message(STATUS "  CMAKE_KC_FLAGS               = ${CMAKE_KC_FLAGS}")
-message(STATUS "Linker flags:")
-message(STATUS "  CMAKE_EXE_LINKER_FLAGS = ${CMAKE_EXE_LINKER_FLAGS}")
-message(STATUS "Notes:")
-message(STATUS "  * Build with: 'make VERBOSE=1' to verify compiler flags")
+message( STATUS "Compiler flags:" )
+message( STATUS "  INCLUDE_DIRECTORIES     ${DirIncs}" )
+message( STATUS "  COMPILE_DEFINITIONS     ${DirDefs}" )
+message( STATUS "  COMPILE_OPTIONS         ${DirOpts}" )
+message( STATUS "  CMAKE_C_FLAGS          ${CMAKE_C_FLAGS}" )
+message( STATUS "  CMAKE_EXE_LINKER_FLAGS  ${CMAKE_EXE_LINKER_FLAGS}" )
