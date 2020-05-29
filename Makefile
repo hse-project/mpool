@@ -113,7 +113,7 @@ BUILD_PKG_TAG := $(shell test -d ".git" && git describe --always --tags --dirty)
 ifeq (${BUILD_PKG_TAG},)
 BUILD_PKG_TAG := ${BUILD_PKG_VERSION}
 else
-BUILD_PKG_REL := $(shell echo ${BUILD_PKG_TAG} | sed -En 's/[^-]*-([0-9]{1,})-[a-z0-9]{6,}(-dirty){0,1}$$/\1/p')
+BUILD_PKG_REL := $(shell echo ${BUILD_PKG_TAG} | sed -En 's/.*-([0-9]{1,})-[a-z0-9]{6,}(-dirty){0,1}$$/\1/p')
 endif
 
 ifneq ($(shell egrep -i 'id=(ubuntu|debian)' /etc/os-release),)
