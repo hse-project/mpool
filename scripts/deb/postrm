@@ -7,30 +7,24 @@
 # https://www.debian.org/doc/debian-policy/ch-matainerscripts.html
 
 PROG=${0##*/}
-PKG=${0%.*}
+PKG=$(basename ${0%.*})
 
 echo "${PROG} [$*]"
 
-do_remove() {
-}
-
-
 case $1 in
-    remove)
-        do_remove
+    remove|purge)
+        # remove mpool related tmpfiles
+        rm -fr /run/mpool
+
+        # reload udev rules
+        udevadm control --reload-rules
         ;;
 
-    purge)
-        ;;
-
-    upgrade|disappear|failed-upgrade|abort-upgrade|abort-install)
-        echo "${PROG}: dont know how to handle $1 for ${PKG} ..." >&2
+    abort-upgrade)
+        mpool scan --activate >/dev/null 2>&1 || echo "Failed to activate mpool(s)"
         ;;
 
     *)
-        echo "invalid command '$1'" >&2
-        exit 1
-        ;;
 esac
 
 exit 0

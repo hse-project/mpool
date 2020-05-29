@@ -7,22 +7,18 @@
 # https://www.debian.org/doc/debian-policy/ch-matainerscripts.html
 
 PROG=${0##*/}
-PKG=${0%.*}
+PKG=$(basename ${0%.*})
 
 echo "${PROG} [$*]"
 
 case $1 in
-    install)
-        ;;
-
-    upgrade|abort-upgrade)
-        echo "${PROG}: dont know how to handle $1 for ${PKG} ..." >&2
+    install|upgrade)
+        if [ -d /dev/mpool ]; then
+            mpool scan --deactivate >/dev/null 2>&1 ||:
+        fi
         ;;
 
     *)
-        echo "invalid command '$1'" >&2
-        exit 1
-        ;;
 esac
 
 exit 0

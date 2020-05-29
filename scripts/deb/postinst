@@ -7,22 +7,40 @@
 # https://www.debian.org/doc/debian-policy/ch-matainerscripts.html
 
 PROG=${0##*/}
-PKG=${0%.*}
+PKG=$(basename ${0%.*})
 
 echo "${PROG} [$*]"
 
 case $1 in
     configure)
+        modprobe mpool
+
+        /sbin/ldconfig
+
+        echo
+        echo "*** NOTE ***"
+        echo
+        echo "${PKG} configures the vm.max_map_count sysctl parameter."
+        echo "This is required for normal operation of mpool."
+        echo
+        sysctl -p /usr/lib/sysctl.d/90-mpool.conf
+
+        # create mpool related tmpfiles
+        systemd-tmpfiles --create /usr/lib/tmpfiles.d/mpool.conf
+
+        # reload udev rules
+        udevadm control --reload-rules
+
+        # Enable mpool systemd service
+        systemctl enable mpool.service --now
         ;;
 
-    abort-upgrade|abort-remove|abort-deconfigure)
-        echo "${PROG}: dont know how to handle $1 for ${PKG}..." >&2
+    abort-remove)
+        mpool scan --activate >/dev/null 2>&1 || echo "Failed to activate mpool(s)"
+        systemctl enable mpool.service --now
         ;;
 
     *)
-        echo "invalid command '$1'" >&2;
-        exit 1
-        ;;
 esac
 
 exit 0
