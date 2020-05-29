@@ -11,7 +11,7 @@ INSTALL(
     mpool/mpool.h
 
   DESTINATION
-    include/mpool
+    ${CMAKE_INSTALL_INCLUDEDIR}/mpool
 
   COMPONENT
     devel

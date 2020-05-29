@@ -99,7 +99,6 @@ ENDMACRO()
 #   MPOOL_DOC(
 #       NAME        foobar
 #       SRCS        foo.c bar.c
-#       DESTINATION dir
 #       COMPONENT   component)
 #----------------------------------------------------------------
 
@@ -107,7 +106,6 @@ FUNCTION(MPOOL_DOC)
     SET(one_value_opts
         NAME            # (required) name for collection of object files
         COMPONENT       # (required) installation component
-        DESTINATION     # (required) installation directory
         )
 
     SET(multi_value_opts
@@ -131,10 +129,6 @@ FUNCTION(MPOOL_DOC)
         MESSAGE(FATAL_ERROR "MPOOL_DOC: Must set COMPONENT")
     ENDIF()
 
-    IF("${param_DESTINATION}" STREQUAL "")
-        MESSAGE(FATAL_ERROR "MPOOL_DOC: Must set DESTINATION")
-    ENDIF()
-
     #
     # Docs are unlikely to be private, but for consistency,
     # allow that special component here.
@@ -142,7 +136,7 @@ FUNCTION(MPOOL_DOC)
     IF(NOT "${param_COMPONENT}" STREQUAL "private")
       INSTALL(
         FILES ${param_SRCS}
-        DESTINATION ${param_DESTINATION}
+        DESTINATION ${CMAKE_INSTALL_DOCDIR}
         COMPONENT ${param_COMPONENT}
       )
     ENDIF()
@@ -158,7 +152,6 @@ ENDFUNCTION()
 #       NAME        foobar
 #       SRCDIR      foo
 #       OPTIONS     mkdocs_opts
-#       DESTINATION dir
 #       COMPONENT   component)
 #----------------------------------------------------------------
 
@@ -166,7 +159,6 @@ FUNCTION(MPOOL_MKDOCS)
     SET(one_value_opts
         NAME            # (required) name for document
         SRCDIR          # (required) directory containing docs and YAML cfg
-        DESTINATION     # (required) installation directory
         COMPONENT       # (required) installation component
         )
 
@@ -185,10 +177,6 @@ FUNCTION(MPOOL_MKDOCS)
 
     IF("${param_SRCDIR}" STREQUAL "")
         MESSAGE(FATAL_ERROR "MPOOL_MKDOCS: Must set SRCDIR")
-    ENDIF()
-
-    IF("${param_DESTINATION}" STREQUAL "")
-        MESSAGE(FATAL_ERROR "MPOOL_MKDOCS: Must set DESTINATION")
     ENDIF()
 
     IF("${param_COMPONENT}" STREQUAL "")
@@ -249,7 +237,7 @@ FUNCTION(MPOOL_MKDOCS)
     IF(NOT "${param_COMPONENT}" STREQUAL "private")
       INSTALL(
         DIRECTORY "${BUILD_SRCDIR}/site/"
-        DESTINATION ${param_DESTINATION}
+        DESTINATION ${CMAKE_INSTALL_DOCDIR}
         COMPONENT ${param_COMPONENT})
     ENDIF()
 
@@ -266,7 +254,6 @@ ENDFUNCTION()
 #       SRCS        foo.md
 #       STYLESHEET  bar.css
 #       OPTIONS     pandoc_opts
-#       DESTINATION dir
 #       COMPONENT   component)
 #----------------------------------------------------------------
 
@@ -275,7 +262,6 @@ FUNCTION(MPOOL_PANDOC)
         NAME            # (required) name for document
         STYLESHEET      # (optional) stylesheet for HTML output
         OPTIONS         # (optional) pandoc options to override defaults
-        DESTINATION     # (required) installation directory
         COMPONENT       # (required) installation component
         )
 
@@ -311,10 +297,6 @@ FUNCTION(MPOOL_PANDOC)
           pandoc_html_opts "${pandoc_html_opts}" "--css" "${param_STYLESHEET}")
         SET(
           pandoc_html_opts "${pandoc_html_opts}" "${pandoc_common_opts}")
-    ENDIF()
-
-    IF("${param_DESTINATION}" STREQUAL "")
-        MESSAGE(FATAL_ERROR "MPOOL_PANDOC: Must set DESTINATION")
     ENDIF()
 
     IF("${param_COMPONENT}" STREQUAL "")
@@ -357,7 +339,7 @@ FUNCTION(MPOOL_PANDOC)
     IF(NOT "${param_COMPONENT}" STREQUAL "private")
       INSTALL(
         FILES ${pdf_output_file} ${html_output_file}
-        DESTINATION ${param_DESTINATION}
+        DESTINATION ${CMAKE_INSTALL_DOCDIR}
         COMPONENT ${param_COMPONENT})
     ENDIF()
 ENDFUNCTION()
@@ -474,7 +456,7 @@ FUNCTION(MPOOL_LIBRARY)
     IF(NOT "${param_COMPONENT}" STREQUAL "private")
       INSTALL(
         TARGETS ${param_NAME}-lib
-        DESTINATION lib64
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}
         COMPONENT ${param_COMPONENT}
       )
     ENDIF()
@@ -548,7 +530,7 @@ FUNCTION(MPOOL_SHARED_LIBRARY)
     IF(NOT "${param_COMPONENT}" STREQUAL "private")
       INSTALL(
         TARGETS ${param_NAME}-solib
-        DESTINATION lib64
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}
         COMPONENT ${param_COMPONENT}
       )
     ENDIF()
@@ -563,7 +545,6 @@ FUNCTION(MPOOL_EXECUTABLE)
     SET(one_value_opts
         NAME            # (required) name for collection of object files
         COMPONENT       # (optional) installation component, default "runtime"
-        DESTINATION     # (optional) installation directory
         )
 
     SET(multi_value_opts
@@ -586,11 +567,6 @@ FUNCTION(MPOOL_EXECUTABLE)
 
     IF("${param_SRCS}" STREQUAL "")
         MESSAGE(FATAL_ERROR "MPOOL_EXECUTABLE: Must set SRCS")
-    ENDIF()
-
-    # Optional DESTINATION defaults to "bin"
-    IF("${param_DESTINATION}" STREQUAL "")
-        SET(param_DESTINATION "bin")
     ENDIF()
 
     # Optional COMPONENT defaults to "runtime"
@@ -625,7 +601,7 @@ FUNCTION(MPOOL_EXECUTABLE)
     IF(NOT "${param_COMPONENT}" STREQUAL "private")
       INSTALL(
         TARGETS ${param_NAME}-bin
-        DESTINATION ${param_DESTINATION}
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
         COMPONENT ${param_COMPONENT})
     ENDIF()
 ENDFUNCTION()

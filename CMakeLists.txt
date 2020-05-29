@@ -16,6 +16,8 @@ message( STATUS "Configuring project ${PROJECT_NAME} ${PROJECT_VERSION} ${BUILD_
 set( CMAKE_C_STANDARD 99 )
 set( CMAKE_INSTALL_PREFIX /usr )
 
+include(GNUInstallDirs)
+
 ##################
 # The next three variables determine where the build outputs land:
 #
@@ -112,7 +114,6 @@ execute_process( COMMAND ${MPOOL_PYTHON} -c "from distutils.sysconfig import get
 get_filename_component( MPOOL_PYTHON_BASE_DIR ${MPOOL_PYTHON_PKG_DIR}/.. ABSOLUTE )
 set ( MPOOL_PYTHON_SOS_DIR ${MPOOL_PYTHON_PKG_DIR}/sos )
 set ( MPOOL_PYTHON_SOS_PLUGINS_DIR ${MPOOL_PYTHON_PKG_DIR}/sos/plugins )
-
 
 include(CMakeLists.macros)
 
