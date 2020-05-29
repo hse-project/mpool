@@ -109,7 +109,7 @@ endef
 BUILD_PKG_VERSION := 1.8.0
 BUILD_PKG_REL := 0
 
-BUILD_PKG_TAG := $(shell test -d ".git" && git describe --always --tags --dirty)
+BUILD_PKG_TAG := $(shell test -d ".git" && git describe --always --tags --dirty --abbrev=10)
 ifeq (${BUILD_PKG_TAG},)
 BUILD_PKG_TAG := ${BUILD_PKG_VERSION}
 else
