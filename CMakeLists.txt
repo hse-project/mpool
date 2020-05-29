@@ -156,66 +156,21 @@ else()
     message( FATAL_ERROR "Invalid build type [${CMAKE_BUILD_TYPE}]" )
 endif()
 
-################################################################
-#
-# Create the version header file
-#
-################################################################
 
-# We use git
-#
 find_package(Git)
 
-# Create our template for the header file
+# Create the version header file.
 #
-file( WRITE ${CMAKE_BINARY_DIR}/mpool_version.h.in
-    "static const char mpool_version[] = \"@BUILD_PKG_VERSION@\";\n"
-    "static const char mpool_branch[] = \"@MPOOL_BRANCH@\";\n"
-    "static const char mpool_tag[] = \"@BUILD_PKG_TAG@\";\n"
-    "static const char mpool_buildserver[] = \"@MPOOL_BUILDSERVER@\";\n"
-)
-
-# Create cmake code to transform input template into target header file.
-#
-file( WRITE ${CMAKE_BINARY_DIR}/mpool_version.cmake
-"
- execute_process(
-    COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    OUTPUT_VARIABLE MPOOL_BRANCH
-    OUTPUT_STRIP_TRAILING_WHITESPACE
- )
- execute_process(
-    COMMAND hostname -f
-    OUTPUT_VARIABLE MPOOL_BUILDSERVER
-    OUTPUT_STRIP_TRAILING_WHITESPACE
- )
-
- if( NOT MPOOL_VERSION_CMAKE_INCLUDEONLY )
-   if (EXISTS \${DST})
-       configure_file(\${SRC} \${CMAKE_BINARY_DIR}/mpool_version.h.tmp @ONLY)
-       file(SHA256 \${CMAKE_BINARY_DIR}/mpool_version.h.tmp NEWSHA)
-       file(SHA256 \${DST} OLDSHA)
-       # Replace mpool_version.h file with a newer only if the content changed.
-       if (NOT \${OLDSHA} EQUAL \${NEWSHA})
-           configure_file(\${SRC} \${DST} @ONLY)
-       endif()
-   else()
-     	configure_file(\${SRC} \${DST} @ONLY)
-   endif()
-
- endif( )
-"
+file( WRITE ${CMAKE_BINARY_DIR}/mpool_version.h
+    "static const char mpool_version[] = \"${BUILD_PKG_TAG}\";\n"
 )
 
 # Set up custom target
 #
 add_custom_target(
     mpool_version
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${MPOOL_STAGE_INSTALL_PREFIX}/install
-    COMMAND ${CMAKE_COMMAND} -D SRC=${CMAKE_BINARY_DIR}/mpool_version.h.in
-                     -D DST=${MPOOL_STAGE_INSTALL_PREFIX}/include/mpool_version.h
-                     -P ${CMAKE_BINARY_DIR}/mpool_version.cmake
+    COMMAND mkdir -p ${MPOOL_STAGE_INSTALL_PREFIX}/include
+    COMMAND cp -fuv ${CMAKE_BINARY_DIR}/mpool_version.h ${MPOOL_STAGE_INSTALL_PREFIX}/include/mpool_version.h
 )
 
 
@@ -256,10 +211,6 @@ add_subdirectory( scripts/systemd )
 add_subdirectory( scripts/udev/rules.d )
 add_subdirectory( scripts/sysctl.d )
 add_subdirectory( scripts/modules-load.d )
-
-set( MPOOL_VERSION_CMAKE_INCLUDEONLY "ON" )
-include( ${CMAKE_BINARY_DIR}/mpool_version.cmake )
-set( MPOOL_VERSION_CMAKE_INCLUDEONLY "OFF" )
 
 
 # Common package options...
