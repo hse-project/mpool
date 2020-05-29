@@ -16,7 +16,7 @@ set( LIBBLKID_CONFIGURE_CMD
     ./configure -q --prefix=${MPOOL_EXT_INSTALL_PREFIX} ${LIBBLKID_CONFIGURE_OPTS} CFLAGS=${LIBBLKID_CFLAGS} )
 
 set( LIBBLKID_DOWNLOAD_OPTS
-    -axSH --info=progress2,misc1,remove,symsafe,stats,del --exclude '.git' --exclude '.rpm' --exclude '.deb' )
+    -axSH --info=progress2,misc1,remove,symsafe,stats --exclude '.git' --exclude '.rpm' --exclude '.deb' --delete )
 
 set( LIBBLKID_DOWNLOAD_CMD
     rsync ${LIBBLKID_DOWNLOAD_OPTS} ${MPOOL_SUB_REPOS}/util-linux/ ./libblkid-pkg/ )
