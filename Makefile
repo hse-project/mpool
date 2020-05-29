@@ -301,7 +301,12 @@ ${BTYPES}: ${BTYPESDEP}
 endif
 
 
-CONFIG = $(BUILD_PKG_DIR)/config-${BUILD_PKG_TAG}.cmake
+# Delete the cmake config file if it has changed.
+#
+CONFIG = $(BUILD_PKG_DIR)/config.cmake
+
+$(shell $(config-gen) | cmp -s - ${CONFIG} || rm -f ${CONFIG})
+
 
 .PHONY: all allv allq allqv allvq ${BTYPES}
 .PHONY: chkconfig clean config config-preview
@@ -337,12 +342,13 @@ clean:
 config-preview:
 	@$(config-show)
 
-${CONFIG}: Makefile CMakeLists.txt $(wildcard scripts/${BUILD_PKG}/*)
-	@mkdir -p $(BUILD_PKG_DIR)
-	rm -rf $(BUILD_PKG_DIR)/*
+${CONFIG}: MAKEFLAGS += --no-print-directory
+${CONFIG}: Makefile CMakeLists.txt $(wildcard scripts/${BUILD_PKG_TYPE}/*)
+	mkdir -p $(BUILD_PKG_DIR)
 	@$(config-show) > $(BUILD_PKG_DIR)/config.sh
 	@$(config-gen) > $@.tmp
-	(cd "$(BUILD_PKG_DIR)" && cmake $(DEPGRAPH) -C $@.tmp $(CMAKE_FLAGS) "$(MPOOL_SRC_DIR)")
+	cmake $(DEPGRAPH) $(CMAKE_FLAGS) -B ${BUILD_PKG_DIR} -C $@.tmp -S ${MPOOL_SRC_DIR}
+	$(MAKE) -C $(BUILD_PKG_DIR) clean
 	mv $@.tmp $@
 
 config: sub_clone ${CONFIG}
