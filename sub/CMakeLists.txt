@@ -1,5 +1,7 @@
 include(ExternalProject)
 
+if( NOT "${HAVE_LIBBLKID_2_32}" )
+
 # libblkid
 #
 set( LIBBLKID_LIBS ${MPOOL_EXT_INSTALL_PREFIX}/lib/libmpool-blkid.so PARENT_SCOPE)
@@ -52,3 +54,13 @@ install(
   FILES "${MPOOL_EXT_INSTALL_PREFIX}/lib/libmpool-blkid.so"
   DESTINATION lib
   COMPONENT runtime)
+
+else()
+
+set( LIBBLKID_LIBS blkid PARENT_SCOPE)
+
+file( MAKE_DIRECTORY ${MPOOL_EXT_INSTALL_PREFIX}/include/mpool_blkid )
+file( COPY /usr/include/blkid/blkid.h
+    DESTINATION ${MPOOL_EXT_INSTALL_PREFIX}/include/mpool_blkid )
+
+endif()

@@ -107,11 +107,11 @@ endef
 
 # Edit when we cut a release branch.
 BUILD_PKG_VERSION := 1.8.0
-BUILD_PKG_REL := 0
 
 BUILD_PKG_TAG := $(shell test -d ".git" && git describe --always --tags --dirty --abbrev=10)
 ifeq (${BUILD_PKG_TAG},)
 BUILD_PKG_TAG := ${BUILD_PKG_VERSION}
+BUILD_PKG_REL := 0
 else
 BUILD_PKG_REL := $(shell echo ${BUILD_PKG_TAG} | sed -En 's/.*-([0-9]{1,})-[a-z0-9]{6,}(-dirty){0,1}$$/\1/p')
 endif
@@ -173,30 +173,21 @@ ASAN := 1
 endif
 
 
+# Developers can set HAVE_LIBBLKID_2_32=1 in their environment to avoid
+# building libblkid for one-off builds not intended for distribution.
+#
+HAVE_LIBBLKID_2_32 ?= 0
+SUBREPO_PATH_LIST :=
 
-################################################################
-# Git and external repos
-################################################################
+ifeq (${HAVE_LIBBLKID_2_32},0)
 
-SUBREPO_PATH=sub
+blkid_repo := util-linux
+${blkid_repo}_url := https://github.com/hse-project/util-linux
+${blkid_repo}_tag := v2.32
 
-mpool_repo=.
-mpool_branch=master
+SUBREPO_PATH_LIST := sub/$(blkid_repo)
+endif
 
-# External repos & branches or tags
-# The Makefile code depends on the following naming pattern:
-# zot_branch=$(zot_repo)_branch, with any '-' in $(zot_repo) converted to '_'
-
-blkid_repo=util-linux
-blkid_repo_url=https://github.com/hse-project/util-linux
-#blkid_repo_url=https://git.kernel.org/pub/scm/utils/util-linux/util-linux
-blkid_tag=v2.32
-
-SUB_LIST= \
-	$(blkid_repo)
-
-SUBREPO_PATH_LIST= \
-	$(SUBREPO_PATH)/$(blkid_repo)
 
 PERL_CMAKE_NOISE_FILTER := \
     perl -e '$$|=1;\
@@ -236,6 +227,7 @@ define config-gen =
 	echo 'Set( BUILD_PKG_TAG "$(BUILD_PKG_TAG)" CACHE STRING "" )' ;\
 	echo 'Set( UBSAN "$(UBSAN)" CACHE BOOL "" )' ;\
 	echo 'Set( ASAN "$(ASAN)" CACHE BOOL "" )' ;\
+	echo 'Set( HAVE_LIBBLKID_2_32 "$(HAVE_LIBBLKID_2_32)" CACHE BOOL "" )' ;\
 	echo '' ;\
 	echo '# BEGIN: $(CFILE)' ;\
 	cat  "$(CFILE)" ;\
@@ -281,7 +273,7 @@ endif
 .PHONY: all allv allq allqv allvq ${BTYPES}
 .PHONY: chkconfig clean config config-preview
 .PHONY: distclean help install install-pre maintainer-clean
-.PHONY: load package rebuild scrub smoke smokev sub_clone unload
+.PHONY: load package rebuild scrub smoke smokev unload
 
 
 # Goals in mostly alphabetical order.
@@ -324,7 +316,7 @@ ${CONFIG}: Makefile CMakeLists.txt $(wildcard scripts/${BUILD_PKG_TYPE}/*)
 	$(MAKE) -C $(BUILD_PKG_DIR) clean
 	mv $@.tmp $@
 
-config: sub_clone ${CONFIG}
+config: ${SUBREPO_PATH_LIST} ${CONFIG}
 
 distclean scrub:
 	rm -rf ${BUILD_PKG_DIR} *.${BUILD_PKG_TYPE}
@@ -380,14 +372,12 @@ smoke:
 smokev:
 	$(RUN_CTEST_SMOKE) -V
 
-$(SUBREPO_PATH):
-	mkdir -p $(SUBREPO_PATH)
-
-$(SUBREPO_PATH)/$(blkid_repo):
-	git clone $(blkid_repo_url).git $@
-	cd $@ && git checkout $(blkid_tag)
-
-sub_clone: ${SUBREPO_PATH_LIST}
+ifneq (${SUBREPO_PATH_LIST},)
+${SUBREPO_PATH_LIST}:
+	git clone $($(@F)_url).git $@.tmp
+	cd $@.tmp && git checkout $($(@F)_tag)
+	mv $@.tmp $@
+endif
 
 unload:
 	modprobe -r mpool
