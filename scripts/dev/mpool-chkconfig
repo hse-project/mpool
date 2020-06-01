@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 #
 # SPDX-License-Identifier: MIT
@@ -209,23 +209,6 @@ if ((!ingroup)) ; then
     fi
 elif (($verbose)); then
     echo "Good: user ${user} is a member of the nf group"
-fi
-
-#
-# Check for syslog-ng RPM
-#
-syslog_rpm='sbu-syslog-ng'
-rpm -q ${syslog_rpm} > /dev/null
-if (($? != 0)); then
-    echo "Error: ${syslog_rpm} rpm is not installed"
-    ((errs++))
-    if (($fixup)); then
-        echo "...attempting to fix"
-        ${sudo} yum install -y $syslog_rpm
-        ((fixes_attempted++))
-    fi
-elif (($verbose)); then
-    echo "Good: $syslog_rpm rpm is installed"
 fi
 
 #
