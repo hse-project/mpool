@@ -205,9 +205,9 @@ PERL_CMAKE_NOISE_FILTER := \
 # Build-time, set these using CMAKE_FLAGS="..."
 #
 # Run-time, set these on "make test" commandline
-# Must export BUILD_DIR as MPOOL_BUILD_DIR
+# Must export BUILD_PKG_DIR as MPOOL_BUILD_DIR
 #
-RUN_CTEST = export MPOOL_BUILD_DIR="$(BUILD_DIR)"; set -e -u; cd "$$MPOOL_BUILD_DIR"; ctest --output-on-failure $(CTEST_FLAGS)
+RUN_CTEST = export MPOOL_BUILD_DIR="$(BUILD_PKG_DIR)"; set -e -u; cd "$$MPOOL_BUILD_DIR"; ctest --output-on-failure $(CTEST_FLAGS)
 
 # Run tests with label "smoke"
 RUN_CTEST_SMOKE = ${RUN_CTEST} -L "smoke"
