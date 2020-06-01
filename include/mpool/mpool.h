@@ -933,17 +933,6 @@ mpool_mblock_props_get(
 	uint64_t                mbid,
 	struct mblock_props    *props);
 
-/* deprecated, do not use */
-/* MTF_MOCK */
-uint64_t
-mpool_mblock_write_data(
-	struct mpool           *mp,
-	bool                    sync_writes,
-	uint64_t                mbid,
-	struct iovec           *iov,
-	int                     iov_cnt,
-	struct mp_asyncctx_ioc *pasyncio);
-
 /**
  * mpool_mblock_write() - write data to an mblock synchronously
  * @mp:              mpool
@@ -964,13 +953,6 @@ mpool_mblock_write(
 	uint64_t          mbid,
 	struct iovec     *iov,
 	int               iov_cnt);
-
-/* deprecated, do not use */
-/* MTF_MOCK */
-uint64_t
-mpool_mblock_asyncio_flush(
-	struct mpool           *mp,
-	struct mp_asyncctx_ioc *pasyncctx);
 
 /**
  * mpool_mblock_read() - read data from an mblock

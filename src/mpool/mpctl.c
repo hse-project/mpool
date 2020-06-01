@@ -2913,31 +2913,10 @@ mpool_mblock_props_get(
 	uint64_t                mbid,
 	struct mblock_props    *props)
 {
-	struct mpioc_mblock mb = { .mb_objid = mbid };
-
-	merr_t  err;
-
 	if (!ds || !props)
 		return merr(EINVAL);
 
-	err = mpool_ioctl(ds->ds_fd, MPIOC_MB_PROPS, &mb);
-	if (!err)
-		*props = mb.mb_props.mbx_props;
-
-	return err;
-}
-
-uint64_t
-mpool_mblock_write_data(
-	struct mpool           *ds,
-	bool                    sync_writes,
-	uint64_t                mbid,
-	struct iovec           *iov,
-	int                     iov_cnt,
-	struct mp_asyncctx_ioc *pasyncio)
-{
-	/* Force synchronous writes */
-	return mpool_mblock_write(ds, mbid, iov, iov_cnt);
+	return mpool_mblock_find(ds, mbid, props);
 }
 
 uint64_t
@@ -2957,15 +2936,6 @@ mpool_mblock_write(
 		return merr(EINVAL);
 
 	return mpool_ioctl(ds->ds_fd, MPIOC_MB_WRITE, &mbrw);
-}
-
-uint64_t
-mpool_mblock_asyncio_flush(
-	struct mpool           *ds,
-	struct mp_asyncctx_ioc *pasyncctx)
-{
-	/* Sync I/O is forced; nothing to do here */
-	return 0;
 }
 
 #ifndef NVALGRIND
