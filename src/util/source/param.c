@@ -952,6 +952,8 @@ get_uid(
 			return merr(EINVAL);
 		*(uid_t *)dst = pw->pw_uid;
 	} else {
+		if (num < -1)
+			return merr(EINVAL);
 		*(uid_t *)dst = num;
 	}
 	return 0;
