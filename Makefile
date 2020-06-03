@@ -16,9 +16,10 @@ Primary Targets:
     clean     -- Delete most build outputs (saves external repos).
     config    -- Create build output directory and run cmake config.
     distclean -- Delete all build outputs (i.e., start over).
+    help      -- Print this message.
     install   -- Install build artifacts locally
     package   -- Build "all" and generate deb/rpm packages
-    help      -- Print this message.
+    smoke     -- Run smoke tests
 
 Configuration Variables:
 
@@ -35,16 +36,19 @@ Configuration Variables:
 
   Defaults (not all are customizable):
     BUILD_DIR          $(BUILD_DIR)
+    BUILD_NODE         $(BUILD_NODE)
     BUILD_NUMBER       $(BUILD_NUMBER)
+    BUILD_TYPE         $(BUILD_TYPE)
+    BUILD_STYPE        $(BUILD_STYPE)
     BUILD_PKG_ARCH     ${BUILD_PKG_ARCH}
     BUILD_PKG_DIR      ${BUILD_PKG_DIR}
+    BUILD_PKG_DIST     ${BUILD_PKG_DIST}
     BUILD_PKG_REL      ${BUILD_PKG_REL}
     BUILD_PKG_TAG      ${BUILD_PKG_TAG}
     BUILD_PKG_TYPE     ${BUILD_PKG_TYPE}
     BUILD_PKG_VERSION  ${BUILD_PKG_VERSION}
+    BUILD_PKG_VQUAL    ${BUILD_PKG_VQUAL}
     CFILE              $(CFILE)
-    UBSAN              $(UBSAN)
-    ASAN               $(ASAN)
 
 Customizations:
 
@@ -105,23 +109,31 @@ endef
 .NOTPARALLEL:
 
 
-# Edit when we cut a release branch.
+# Edit the package VERSION and QUALifier when we cut a release branch or tag:
 BUILD_PKG_VERSION := 1.8.0
+BUILD_PKG_VQUAL := '~dev'
 
-BUILD_PKG_TAG := $(shell test -d ".git" && git describe --always --tags --dirty --abbrev=10)
+BUILD_PKG_TAG := $(shell test -d ".git" && \
+	git describe --always --long --tags --dirty --abbrev=10)
+
 ifeq (${BUILD_PKG_TAG},)
 BUILD_PKG_TAG := ${BUILD_PKG_VERSION}
 BUILD_PKG_REL := 0
 else
-BUILD_PKG_REL := $(shell echo ${BUILD_PKG_TAG} | sed -En 's/.*-([0-9]{1,})-[a-z0-9]{6,}(-dirty){0,1}$$/\1/p')
+BUILD_PKG_REL := $(shell echo ${BUILD_PKG_TAG} | \
+	sed -En 's/.*-([0-9]+)-[a-z0-9]{7,}(-dirty){0,1}$$/\1/p')
+BUILD_PKG_VQUAL := $(shell echo ${BUILD_PKG_TAG} | \
+	sed -En 's/.*-([^-]+)-[0-9]+-[a-z0-9]{7,}(-dirty){0,1}$$/~\1/p')
 endif
 
 ifneq ($(shell egrep -i 'id=(ubuntu|debian)' /etc/os-release),)
 BUILD_PKG_TYPE ?= deb
 BUILD_PKG_ARCH ?= $(shell dpkg-architecture -q DEB_HOST_ARCH)
+BUILD_PKG_DIST :=
 else
 BUILD_PKG_TYPE ?= rpm
 BUILD_PKG_ARCH ?= $(shell uname -m)
+BUILD_PKG_DIST := $(shell rpm --eval '%{?dist}')
 endif
 
 ifeq ($(wildcard scripts/${BUILD_PKG_TYPE}/CMakeLists.txt),)
@@ -217,25 +229,25 @@ define config-gen =
 	(echo '# Note: When a variable is set multiple times in this file,' ;\
 	echo '#       it is the *first* setting that sticks!' ;\
 	echo '' ;\
-	echo 'Set( BUILD_NUMBER "$(BUILD_NUMBER)" CACHE STRING "" )' ;\
-	echo 'Set( BUILD_TYPE "$(BUILD_TYPE)" CACHE STRING "" )' ;\
-	echo 'Set( BUILD_STYPE "$(BUILD_STYPE)" CACHE STRING "" )' ;\
-	echo 'Set( BUILD_PKG_TYPE "$(BUILD_PKG_TYPE)" CACHE STRING "" )' ;\
-	echo 'Set( BUILD_PKG_ARCH "$(BUILD_PKG_ARCH)" CACHE STRING "" )' ;\
-	echo 'Set( BUILD_PKG_REL "$(BUILD_PKG_REL)" CACHE STRING "" )' ;\
-	echo 'Set( BUILD_PKG_VERSION "$(BUILD_PKG_VERSION)" CACHE STRING "" )' ;\
-	echo 'Set( BUILD_PKG_TAG "$(BUILD_PKG_TAG)" CACHE STRING "" )' ;\
-	echo 'Set( UBSAN "$(UBSAN)" CACHE BOOL "" )' ;\
-	echo 'Set( ASAN "$(ASAN)" CACHE BOOL "" )' ;\
-	echo 'Set( HAVE_LIBBLKID_2_32 "$(HAVE_LIBBLKID_2_32)" CACHE BOOL "" )' ;\
+	echo 'Set( BUILD_NUMBER        "$(BUILD_NUMBER)" CACHE STRING "" )' ;\
+	echo 'Set( BUILD_TYPE          "$(BUILD_TYPE)" CACHE STRING "" )' ;\
+	echo 'Set( BUILD_STYPE         "$(BUILD_STYPE)" CACHE STRING "" )' ;\
+	echo 'Set( BUILD_PKG_ARCH      "$(BUILD_PKG_ARCH)" CACHE STRING "" )' ;\
+	echo 'Set( BUILD_PKG_DIST      "$(BUILD_PKG_DIST)" CACHE STRING "" )' ;\
+	echo 'Set( BUILD_PKG_REL       "$(BUILD_PKG_REL)" CACHE STRING "" )' ;\
+	echo 'Set( BUILD_PKG_TAG       "$(BUILD_PKG_TAG)" CACHE STRING "" )' ;\
+	echo 'Set( BUILD_PKG_TYPE      "$(BUILD_PKG_TYPE)" CACHE STRING "" )' ;\
+	echo 'Set( BUILD_PKG_VERSION   "$(BUILD_PKG_VERSION)" CACHE STRING "" )' ;\
+	echo 'Set( BUILD_PKG_VQUAL     "$(BUILD_PKG_VQUAL)" CACHE STRING "" )' ;\
+	echo 'Set( UBSAN               "$(UBSAN)" CACHE BOOL "" )' ;\
+	echo 'Set( ASAN                "$(ASAN)" CACHE BOOL "" )' ;\
+	echo 'Set( HAVE_LIBBLKID_2_32  "$(HAVE_LIBBLKID_2_32)" CACHE BOOL "" )' ;\
 	echo '' ;\
-	echo '# BEGIN: $(CFILE)' ;\
+	echo '# $(CFILE)' ;\
 	cat  "$(CFILE)" ;\
-	echo '# END:   $(CFILE)' ;\
 	echo '' ;\
-	echo '# BEGIN: $(S)/cmake/defaults.cmake' ;\
-	cat  "$(S)/cmake/defaults.cmake" ;\
-	echo '# END:   $(S)/cmake/defaults.cmake')
+	echo '# $(S)/cmake/defaults.cmake' ;\
+	cat  "$(S)/cmake/defaults.cmake")
 endef
 
 
@@ -265,7 +277,7 @@ endif
 #
 CONFIG = $(BUILD_PKG_DIR)/config.cmake
 
-ifneq (${MAKECMDGOALS},config-preview)
+ifeq ($(filter config-preview help print-% printq-% smoke load unload,$(MAKECMDGOALS)),)
 $(shell $(config-gen) | cmp -s - ${CONFIG} || rm -f ${CONFIG})
 endif
 
@@ -374,6 +386,7 @@ smokev:
 
 ifneq (${SUBREPO_PATH_LIST},)
 ${SUBREPO_PATH_LIST}:
+	rm -rf $@ $@.tmp
 	git clone $($(@F)_url).git $@.tmp
 	cd $@.tmp && git checkout $($(@F)_tag)
 	mv $@.tmp $@

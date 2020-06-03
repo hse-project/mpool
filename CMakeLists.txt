@@ -216,17 +216,23 @@ add_subdirectory( scripts/modules-load.d )
 
 # Common package options...
 #
-set( CPACK_PACKAGE_NAME           "${PROJECT_NAME}" )
 set( CPACK_PACKAGE_LICENSE        "MIT" )
 set( CPACK_PACKAGE_HOMEPAGE_URL   "https://github.com/hse-project/mpool" )
 
 set( CPACK_PACKAGE_DESCRIPTION_SUMMARY
-    "Object Storage Media Pool (mpool) ${BUILD_TYPE}" )
+    "media pool ${BUILD_PKG_TAG}-${BUILD_STYPE}${BUILD_NUMBER}" )
 
-set( CPACK_PACKAGE_DESCRIPTION
-    "${CPACK_PACKAGE_DESCRIPTION_SUMMARY} ${BUILD_PKG_TAG}" )
+set( CPACK_PACKAGE_DESCRIPTION            "Object Storage Media Pool (mpool)" )
+set( CPACK_COMPONENT_RUNTIME_DESCRIPTION  "${CPACK_PACKAGE_DESCRIPTION} runtime" )
+set( CPACK_COMPONENT_DEVEL_DESCRIPTION    "${CPACK_PACKAGE_DESCRIPTION} SDK" )
+set( CPACK_COMPONENT_TEST_DESCRIPTION     "${CPACK_PACKAGE_DESCRIPTION} test tools" )
+set( CPACK_COMPONENT_TEST_DEPENDS         "runtime" )
 
-set( CPACK_PACKAGE_FILE_NAME  "${BUILD_PKG_TAG}.${BUILD_PKG_ARCH}" )
+if( "${BUILD_NUMBER}" )
+    set( BUILD_RTYPE "${BUILD_STYPE}${BUILD_NUMBER}" )
+else()
+    set( BUILD_RTYPE "" )
+endif()
 
 include( ${MPOOL_SCRIPTS_DIR}/${BUILD_PKG_TYPE}/CMakeLists.txt )
 include( CPack )
