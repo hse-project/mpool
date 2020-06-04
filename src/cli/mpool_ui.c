@@ -1331,7 +1331,7 @@ mpool_usage(void)
 
 static struct verb_s
 mpool_verb[] = {
-	{ "activate",   "hrTv",     mpool_activate_func, mpool_activate_help, },
+	{ "activate",   "fhrTv",    mpool_activate_func, mpool_activate_help, },
 	{ "add",        "DfhTv",    mpool_add_func,      mpool_add_help, },
 	{ "create",     "DfhTv",    mpool_create_func,   mpool_create_help, },
 	{ "deactivate", "hTv",    mpool_deactivate_func, mpool_deactivate_help,},
