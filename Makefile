@@ -12,29 +12,39 @@ define HELP_TEXT
 
 Primary Targets:
 
-    all       -- Build binaries, libraries, tests, etc.
-    clean     -- Delete most build outputs (saves external repos).
-    config    -- Create build output directory and run cmake config.
-    distclean -- Delete all build outputs (i.e., start over).
-    help      -- Print this message.
-    install   -- Install build artifacts locally
-    package   -- Build "all" and generate deb/rpm packages
-    smoke     -- Run smoke tests
+  all       -- Build binaries, libraries, tests, etc.
+  clean     -- Delete most build outputs (saves external repos).
+  config    -- Create build output directory and run cmake config.
+  distclean -- Delete all build outputs (i.e., start over).
+  help      -- Print this message.
+  install   -- Install build artifacts locally
+  package   -- Build "all" and generate deb/rpm packages
+  smoke     -- Run smoke tests
+
+Target Modiiers:
+
+  asan      -- Enable address sanity checking
+  debug     -- Create a debug build
+  optdebug  -- Create a debug build with -Og
+  release   -- Create a release build
+  relassert -- Create a release build with assert enabled
+  ubsan     -- Enable undefined behavior checking
 
 Configuration Variables:
 
-  These configuration variables can be set on the command line
-  or in ~/mpool.mk to customize the build.
+  The following configuration variables can be passed via the command line,
+  environment, or ~/mpool.mk to customize the build.
 
-    ASAN          -- Enable the gcc address/leak sanitizer
-    BUILD_DIR     -- The top-level build output directory
-    BUILD_NUMBER  -- Build job number (as set by Jenkins)
-    CFILE         -- Name of file containing cmake config parameters.
-    DEPGRAPH      -- Set to "--graphviz=<filename_prefix>" to generate
-                     graphviz dependency graph files
-    UBSAN         -- Enable the gcc undefined behavior sanitizer
+    BUILD_DIR         -- The top-level build output directory
+    BUILD_NUMBER      -- Build job number (as set by Jenkins)
+    BUILD_PKG_TYPE    -- Specify package type (rpm or deb)
+    BUILD_PKG_VENDOR  -- Specify the vendor/maintainer tag in the package
+    CFILE             -- Name of file containing custom cmake config parameters
+    DEPGRAPH          -- Set to "--graphviz=<filename_prefix>" to generate
+                         graphviz dependency graph files
 
   Defaults (not all are customizable):
+
     BUILD_DIR          $(BUILD_DIR)
     BUILD_NODE         $(BUILD_NODE)
     BUILD_NUMBER       $(BUILD_NUMBER)
@@ -47,29 +57,15 @@ Configuration Variables:
     BUILD_PKG_TAG      ${BUILD_PKG_TAG}
     BUILD_PKG_TYPE     ${BUILD_PKG_TYPE}
     BUILD_PKG_VERSION  ${BUILD_PKG_VERSION}
+    BUILD_PKG_VENDOR   ${BUILD_PKG_VENDOR}
     BUILD_PKG_VQUAL    ${BUILD_PKG_VQUAL}
     CFILE              $(CFILE)
-
-Customizations:
-
-  The behavior of this makefile can be customized by creating the following files in your home directory:
-
-    ~/mpool.mk  -- included at the top of this makefile, can be
-                  used to change default build directory, default
-                  build targe, etc.
-    ~/mpool1.mk  -- included at the end of this makefile, can be used
-                  to extend existing targets or to create your own
-                  custom targets
 
 Examples:
 
   Create a 'release' package:
 
     make -j package
-
-  Show the current cmake configuration:
-
-    make config-preview
 
   Rebuild the bulk of mpool code, leaving the code in external repos alone:
 
@@ -112,6 +108,8 @@ endef
 # Edit the package VERSION and QUALifier when we cut a release branch or tag:
 BUILD_PKG_VERSION := 1.8.0
 BUILD_PKG_VQUAL := '~dev'
+
+BUILD_PKG_VENDOR ?= "Micron Technology, Inc."
 
 BUILD_PKG_TAG := $(shell test -d ".git" && \
 	git describe --always --long --tags --dirty --abbrev=10)
@@ -238,6 +236,7 @@ define config-gen =
 	echo 'Set( BUILD_PKG_TAG       "$(BUILD_PKG_TAG)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_PKG_TYPE      "$(BUILD_PKG_TYPE)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_PKG_VERSION   "$(BUILD_PKG_VERSION)" CACHE STRING "" )' ;\
+	echo 'Set( BUILD_PKG_VENDOR    "'$(BUILD_PKG_VENDOR)'" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_PKG_VQUAL     "$(BUILD_PKG_VQUAL)" CACHE STRING "" )' ;\
 	echo 'Set( UBSAN               "$(UBSAN)" CACHE BOOL "" )' ;\
 	echo 'Set( ASAN                "$(ASAN)" CACHE BOOL "" )' ;\

@@ -9,7 +9,10 @@ if(${CMAKE_MAJOR_VERSION} GREATER 2)
 cmake_policy(SET CMP0046 OLD)
 endif()
 
-project( mpool VERSION ${BUILD_PKG_VERSION} LANGUAGES C )
+project( mpool
+    VERSION       ${BUILD_PKG_VERSION}
+    HOMEPAGE_URL  "https://github.com/hse-project/mpool"
+    LANGUAGES     C )
 
 message( STATUS "Configuring project ${PROJECT_NAME} ${PROJECT_VERSION} ${BUILD_PKG_TAG} common..." )
 
@@ -217,7 +220,7 @@ add_subdirectory( scripts/modules-load.d )
 # Common package options...
 #
 set( CPACK_PACKAGE_LICENSE        "MIT" )
-set( CPACK_PACKAGE_HOMEPAGE_URL   "https://github.com/hse-project/mpool" )
+set( CPACK_PACKAGE_VENDOR         "${BUILD_PKG_VENDOR}" )
 
 set( CPACK_PACKAGE_DESCRIPTION_SUMMARY
     "media pool ${BUILD_PKG_TAG}-${BUILD_STYPE}${BUILD_NUMBER}" )
