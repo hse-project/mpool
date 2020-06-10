@@ -178,6 +178,22 @@ mpool_params_init2(
 		*dst = *src;
 }
 
+static uint64_t
+mpool_ioctl(
+	int     fd,
+	int     cmd,
+	void   *arg)
+{
+	struct mpioc_cmn   *cmn = arg;
+	int                 rc;
+
+	cmn->mc_merr_base = mpool_merr_base;
+
+	rc = ioctl(fd, cmd, arg);
+
+	return rc ? merr(errno) : cmn->mc_err;
+}
+
 /**
  * mpool_ugm_check() - Check and set device user/group/mode
  * @name:       mpool name (may be null, preferred to %fd)
@@ -1531,22 +1547,6 @@ mpool_close(struct mpool *ds)
 	free(ds);
 
 	return 0;
-}
-
-uint64_t
-mpool_ioctl(
-	int     fd,
-	int     cmd,
-	void   *arg)
-{
-	struct mpioc_cmn   *cmn = arg;
-	int                 rc;
-
-	cmn->mc_merr_base = mpool_merr_base;
-
-	rc = ioctl(fd, cmd, arg);
-
-	return rc ? merr(errno) : cmn->mc_err;
 }
 
 /*

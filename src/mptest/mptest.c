@@ -12,11 +12,14 @@
 
 #include <mpctl/impool.h>
 
+#include <sys/ioctl.h>
 #include <stdarg.h>
 #include <sysexits.h>
 #include <getopt.h>
 #include <pwd.h>
 #include <grp.h>
+
+extern char mpool_merr_base[];
 
 #define min(x, y) ({				\
 	typeof(x) _min1 = (x);			\
@@ -992,8 +995,8 @@ destroy_command(
 	if (1) {
 		struct mpioc_mpool  mp;
 		ulong               cmd;
-		int                 fd;
-		mpool_err_t              err;
+		int                 fd, rc;
+		mpool_err_t         err;
 
 		if (strlen(argv[0]) >= sizeof(mp.mp_params.mp_name)) {
 			syntax("mpool name may not be longer than %zu chars",
@@ -1003,6 +1006,7 @@ destroy_command(
 
 		memset(&mp, 0, sizeof(mp));
 		strcpy(mp.mp_params.mp_name, argv[0]);
+		mp.mp_cmn.mc_merr_base = mpool_merr_base;
 
 		fd = open(MPC_DEV_CTLPATH, O_RDWR);
 		if (-1 == fd) {
@@ -1013,7 +1017,9 @@ destroy_command(
 
 		cmd = destroy ? MPIOC_MP_DESTROY : MPIOC_MP_DEACTIVATE;
 
-		err = mpool_ioctl(fd, cmd, &mp);
+		rc = ioctl(fd, cmd, &mp);
+
+		err = rc ? errno : mp.mp_cmn.mc_err;
 		if (err) {
 			char    errbuf[128];
 
@@ -1058,9 +1064,9 @@ get_command(
 	struct mpioc_prop  *propv_base, *prop;
 	struct mpioc_list   ls;
 	size_t              propmax = 1024;
-	mpool_err_t              err;
-	int                 fd, i;
-	int                 j, jmin;
+	mpool_err_t         err;
+	int                 fd, rc;
+	int                 i, j, jmin;
 	char               *optstring;
 
 	optstring = mkoptstring(longopts);
@@ -1112,6 +1118,7 @@ get_command(
 	ls.ls_listv = propv_base;
 	ls.ls_listc = propmax;
 	ls.ls_cmd = MPIOC_LIST_CMD_PROP_LIST;
+	ls.ls_cmn.mc_merr_base = mpool_merr_base;
 
 	fd = open(MPC_DEV_CTLPATH, O_RDONLY);
 	if (-1 == fd) {
@@ -1120,7 +1127,9 @@ get_command(
 		exit(EX_NOINPUT);
 	}
 
-	err = mpool_ioctl(fd, MPIOC_PROP_GET, &ls);
+	rc = ioctl(fd, MPIOC_PROP_GET, &ls);
+
+	err = rc ? errno : ls.ls_cmn.mc_err;
 	if (err) {
 		char    errbuf[256];
 
@@ -1287,13 +1296,13 @@ list_command(
 	if (1) {
 		struct mpioc_prop  *propv_base, *prop;
 		struct mpioc_list   ls;
+		mpool_err_t         err;
 
 		size_t  propmax = 1024;
 		int     labwidth = 6;
 		int     mpwidth = 5;
 		char   *mpname;
-		mpool_err_t  err;
-		int     fd;
+		int     fd, rc;
 		int     i, j;
 
 		propv_base = calloc(propmax, sizeof(*propv_base));
@@ -1306,6 +1315,7 @@ list_command(
 		ls.ls_listv = propv_base;
 		ls.ls_listc = propmax;
 		ls.ls_cmd = MPIOC_LIST_CMD_PROP_LIST;
+		ls.ls_cmn.mc_merr_base = mpool_merr_base;
 
 		fd = open(MPC_DEV_CTLPATH, O_RDONLY);
 		if (-1 == fd) {
@@ -1314,7 +1324,9 @@ list_command(
 			exit(EX_NOINPUT);
 		}
 
-		err = mpool_ioctl(fd, MPIOC_PROP_GET, &ls);
+		rc = ioctl(fd, MPIOC_PROP_GET, &ls);
+
+		err = rc ? errno : ls.ls_cmn.mc_err;
 		if (err) {
 			char    errbuf[256];
 
@@ -2286,7 +2298,7 @@ test_command(
 
 	char   *mpname, *subcmd, *optstring;
 	char    errbuf[128];
-	int     i;
+	int     rc, i;
 
 	subcmd = argv[0];
 
@@ -2357,8 +2369,11 @@ test_command(
 
 			test.mpt_cmd = 0;
 			test.mpt_sval[0] = atoi(argv[i]);
+			test.mpt_cmn.mc_merr_base = mpool_merr_base;
 
-			err = mpool_ioctl(ds->ds_fd, MPIOC_TEST, &test);
+			rc = ioctl(ds->ds_fd, MPIOC_TEST, &test);
+
+			err = rc ? errno : test.mpt_cmn.mc_err;
 
 			printf("argv[%d] %d: uerr %lx, kerr %lx, mpool_errno %d, mpool_strinfo %s\n",
 			       i, atoi(argv[i]), err,

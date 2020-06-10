@@ -180,14 +180,6 @@ mpool_open(
 uint64_t mpool_close(struct mpool *mp);
 
 /**
- * mpool_ioctl() - wrapper around ioctl
- * @fd:      file descriptor
- * @cmd:     IOCTL command
- * @arg:     IOCTL-specific argument
- */
-uint64_t mpool_ioctl(int fd, int cmd, void *arg);
-
-/**
  * mpool_mclass_add() - Add a media class to an mpool
  * @mpname:  mpool name
  * @devname: device name

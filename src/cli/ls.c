@@ -10,6 +10,7 @@
 
 #include <util/string.h>
 
+#include <sys/ioctl.h>
 #include <stdarg.h>
 #include <pwd.h>
 #include <grp.h>
@@ -18,6 +19,8 @@
 #include "ui_common.h"
 #include "yaml.h"
 #include "ls.h"
+
+extern char mpool_merr_base[];
 
 static
 const match_table_t
@@ -479,7 +482,7 @@ mpool_ls_list(
 	int     entryc;
 	int     labwidth = 6;
 	int     mpwidth = 6;
-	int     fd, i, j;
+	int     fd, rc, i, j;
 	merr_t  err;
 
 	struct yaml_context yc = {
@@ -509,6 +512,7 @@ mpool_ls_list(
 	ls.ls_listc = entryc + 1024;
 	ls.ls_cmd = MPIOC_LIST_CMD_PROP_LIST;
 	ls.ls_cmn.mc_msg = ei ? ei->mdr_msg : NULL;
+	ls.ls_cmn.mc_merr_base = mpool_merr_base;
 
 	fd = open(MPC_DEV_CTLPATH, O_RDONLY);
 	if (-1 == fd) {
@@ -518,7 +522,9 @@ mpool_ls_list(
 		return err;
 	}
 
-	err = mpool_ioctl(fd, MPIOC_PROP_GET, &ls);
+	rc = ioctl(fd, MPIOC_PROP_GET, &ls);
+
+	err = rc ? merr(errno) : ls.ls_cmn.mc_err;
 	if (err) {
 		if (ei)
 			ei->mdr_rcode = ls.ls_cmn.mc_rcode;
