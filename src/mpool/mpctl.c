@@ -3235,33 +3235,6 @@ mpool_mcache_getpages(
 	return 0;
 }
 
-uint64_t
-mpool_mcache_getpagesv(
-	struct mpool_mcache_map    *map,
-	const uint                  pagec,
-	const uint                  mbnumv[],
-	const size_t                pagenumv[],
-	void                       *addrv[])
-{
-	int i;
-
-	if (!map || map->mh_addr == MAP_FAILED)
-		return merr(EINVAL);
-
-	/* The mcache map exists, and we are in user space so it is mmapped...
-	 * Calculate the page addresses within the map.
-	 */
-	for (i = 0; i < pagec; i++) {
-		if (mbnumv[i] >= map->mh_mbidc)
-			return merr(EINVAL);
-
-		addrv[i] = (char *)map->mh_addr + (pagenumv[i] * PAGE_SIZE) +
-			(mbnumv[i] * map->mh_bktsz);
-	}
-
-	return 0;
-}
-
 struct pd_prop *
 mp_get_dev_prop(
 	int dcnt,

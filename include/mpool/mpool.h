@@ -1072,28 +1072,6 @@ mpool_mcache_getpages(
 	void                       *pagev[]);
 
 /**
- * mpool_mcache_getpagesv() - Get a vector of pages from a list of mblocks
- * @map:        mcache map handle
- * @mbidxv:     vector of mcache map mblock indices
- * @pagec:      page count (len of @pagev array)
- * @offsetv:    vector of page offsets into objects/mblocks
- * @pagev:      vector of pointers to pages (output)
- *
- * mbidxv is a vector of indices into the mbidv[] vector
- * that was given to mpool_mcache_create().
- *
- * Return:
- *   %0 on success, uint64_t on failure
- */
-uint64_t
-mpool_mcache_getpagesv(
-	struct mpool_mcache_map    *map,
-	const uint                  pagec,
-	const uint                  mbidxv[],
-	const size_t                offsetv[],
-	void                       *pagev[]);
-
-/**
  * mpool_mcache_mmap() - Create an mcache map
  * @mp:         handle for the mpool
  * @mbidc:      mblock ID count

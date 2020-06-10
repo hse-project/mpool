@@ -395,16 +395,18 @@ verify_with_mcache(
 		}
 	}
 
-	err = mpool_mcache_getpagesv(minfo->map, pagec,
-				     objnumv, offsetv, pagev);
-	if (err) {
-		mpool_strinfo(err, errbuf, sizeof(errbuf));
-		eprint("mpool_mcache_getpagesv: %d "
-		       "objid=0x%lx len=%zu: %s\n",
-		       test->t_idx, objid, wcc + wobble,
-		       errbuf);
-		goto err_out;
+	for (i = 0; i < pagec; ++i) {
+		err = mpool_mcache_getpages(minfo->map, 1, objnumv[i], offsetv + i, pagev + i);
+		if (err) {
+			mpool_strinfo(err, errbuf, sizeof(errbuf));
+			eprint("mpool_mcache_getpages: %d "
+			       "objid=0x%lx len=%zu: %s\n",
+			       test->t_idx, objid, wcc + wobble,
+			       errbuf);
+			goto err_out;
+		}
 	}
+
 	++stats->getpages;
 
 	fail = verify_page_vec(minfo, pagev, objnumv, offsetv,
@@ -921,9 +923,9 @@ usage(void)
 	       " (incompatible with -i and -l)\n");
 	printf("-v           increase verbosity\n");
 	printf("-x           open exclusive\n");
-	printf("props        comma separated list of properties\n");
-	printf("mpool        the mpool name (e.g., mp1)\n");
-	printf("dataset      the dataset specifier (e.g., mympool/mydataset)\n");
+	printf("props  comma separated list of properties\n");
+	printf("mpool  the mpool name (e.g., mp1)\n");
+	printf("\n");
 	printf("DESCRIPTION:\n");
 	printf("    TODO...\n");
 	printf("\n");
