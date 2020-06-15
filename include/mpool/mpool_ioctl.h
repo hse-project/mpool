@@ -719,7 +719,6 @@ union mpioc_union {
 #define MPIOC_DEVPROPS_GET      _IOWR(MPIOC_MAGIC, 22, struct mpioc_devprops)
 
 #define MPIOC_MLOG_ALLOC        _IOWR(MPIOC_MAGIC, 30, struct mpioc_mlog)
-#define MPIOC_MLOG_REALLOC      _IOWR(MPIOC_MAGIC, 31, struct mpioc_mlog)
 #define MPIOC_MLOG_COMMIT       _IOWR(MPIOC_MAGIC, 32, struct mpioc_mlog_id)
 #define MPIOC_MLOG_ABORT        _IOWR(MPIOC_MAGIC, 33, struct mpioc_mlog_id)
 #define MPIOC_MLOG_DELETE       _IOWR(MPIOC_MAGIC, 34, struct mpioc_mlog_id)

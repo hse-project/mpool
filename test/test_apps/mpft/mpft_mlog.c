@@ -940,12 +940,10 @@ u8 oflags = 0; /* flags to be used for mpool_mlog_open() */
  * 3. Allocate and abort an mlog
  * 4. Realloc and commit an mlog
  * 5. Open the mlog
- * 6. Validate that the log is empty
- * 7. Lookup the mlog
- * 8. Open another instance of the same mlog
- * 9. Validate again that the log is empty
- * 10. Try deleting mlog, this must fail due to the outstanding get
- * 11. Cleanup
+ * 6. Lookup the mlog
+ * 7. Open another instance of the same mlog
+ * 8. Try deleting mlog, this must fail due to the outstanding get
+ * 9. Cleanup
  */
 
 char mlog_correctness_simple_mpool[MPOOL_NAME_LEN_MAX];
@@ -980,7 +978,6 @@ mlog_correctness_simple(
 	char   errbuf[ERROR_BUFFER_SIZE];
 	u64    gen;
 	u64    objid;
-	bool   empty;
 
 	struct mpool           *ds;
 	struct mpool_mlog      *mlog1, *mlog2;
@@ -1072,9 +1069,8 @@ mlog_correctness_simple(
 		goto close_ds;
 	}
 
-	/* 4. Realloc and commit an mlog */
-	err = mpool_mlog_realloc(ds, objid, &capreq, mlog_mclassp, &props,
-				 &mlog1);
+	/* 4. Alloc and commit an mlog */
+	err = mpool_mlog_alloc(ds, &capreq, mlog_mclassp, &props, &mlog1);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1082,6 +1078,7 @@ mlog_correctness_simple(
 			__func__, __LINE__, errbuf);
 		goto close_ds;
 	}
+	objid = props.lpr_objid;
 
 	err = mpool_mlog_commit(ds, mlog1);
 	if (err) {
@@ -1103,20 +1100,7 @@ mlog_correctness_simple(
 		goto destroy_mlog;
 	}
 
-	/* 6. Validate that the log is empty */
-	err = mpool_mlog_empty(ds, mlog1, &empty);
-	if (err || !empty) {
-		if (err)
-			original_err = err;
-		else
-			original_err = err = merr(EBUG);
-		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: mlog empty failed: %s\n",
-			__func__, __LINE__, errbuf);
-		goto close_mlog;
-	}
-
-	/* 7. Lookup the mlog */
+	/* 6. Lookup the mlog */
 	err = mpool_mlog_find_get(ds, objid, &props, &mlog2);
 	if (err) {
 		original_err = err;
@@ -1133,7 +1117,7 @@ mlog_correctness_simple(
 		goto put_mlog1;
 	}
 
-	/* 8. Open another instance of the same mlog */
+	/* 7. Open another instance of the same mlog */
 	err = mpool_mlog_open(ds, mlog2, oflags, &gen);
 	if (err) {
 		original_err = err;
@@ -1143,20 +1127,7 @@ mlog_correctness_simple(
 		goto put_mlog1;
 	}
 
-	/* 9. Validate again that the log is empty */
-	err = mpool_mlog_empty(ds, mlog2, &empty);
-	if (err || !empty) {
-		if (err)
-			original_err = err;
-		else
-			original_err = err = merr(EBUG);
-		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: mlog empty failed: %s\n",
-			__func__, __LINE__, errbuf);
-		goto put_mlog1;
-	}
-
-	/* 10. Try deleting mlog, this must fail due to the outstanding get */
+	/* 8. Try deleting mlog, this must fail due to the outstanding get */
 	err = mpool_mlog_delete(ds, mlog1);
 	if (!err) {
 		if (!original_err)
@@ -1166,7 +1137,7 @@ mlog_correctness_simple(
 			__func__, __LINE__, errbuf);
 	}
 
-	/* 11. Cleanup */
+	/* 9. Cleanup */
 put_mlog1:
 	/* Put the reference obtained from mpool_mlog_find_get */
 	err = mpool_mlog_put(ds, mlog2);
@@ -1293,7 +1264,6 @@ mlog_correctness_basicio(
 	size_t read_len, len1, len2;
 	u64    gen1, gen2;
 	u64    objid;
-	bool   empty;
 
 	struct mpool           *ds;
 	struct mpool_mlog      *mlog1;
@@ -1411,18 +1381,6 @@ mlog_correctness_basicio(
 		goto close_mlog;
 	}
 
-	err = mpool_mlog_empty(ds, mlog1, &empty);
-	if (err || empty) {
-		if (err)
-			original_err = err;
-		else
-			original_err = err = merr(EBUG);
-		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: mlog empty failed: %s\n",
-			__func__, __LINE__, errbuf);
-		goto close_mlog;
-	}
-
 	/* 6. Close and reopen the mlog */
 	err = mpool_mlog_close(ds, mlog1);
 	if (err) {
@@ -1526,18 +1484,6 @@ mlog_correctness_basicio(
 		goto close_mlog;
 	}
 
-	err = mpool_mlog_empty(ds, mlog1, &empty);
-	if (err || !empty) {
-		if (err)
-			original_err = err;
-		else
-			original_err = err = merr(EBUG);
-		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: mlog must be empty after erase: %s\n",
-			__func__, __LINE__, errbuf);
-		goto close_mlog;
-	}
-
 	/* 9. Close and reopen the mlog */
 	err = mpool_mlog_close(ds, mlog1);
 	if (err) {
@@ -1555,18 +1501,6 @@ mlog_correctness_basicio(
 		fprintf(stderr, "%s.%d: Unable to open mlog: %s\n",
 			__func__, __LINE__, errbuf);
 		goto destroy_mlog;
-	}
-
-	err = mpool_mlog_empty(ds, mlog1, &empty);
-	if (err || !empty) {
-		if (err)
-			original_err = err;
-		else
-			original_err = err = merr(EBUG);
-		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: mlog must be empty after erase: %s\n",
-			__func__, __LINE__, errbuf);
-		goto close_mlog;
 	}
 
 	if (gen2 <= gen1) {

@@ -293,27 +293,6 @@ mpool_mlog_alloc(
 	struct mpool_mlog      **mlh);
 
 /**
- * mpool_mlog_realloc() - re-allocate an mlog
- * @mp:         mpool handle
- * @objid:      object ID
- * @capreq:     mlog capacity requirements
- * @mclassp:    mlog media class
- * @props:      properties of new mlog (output)
- * @mlh:        mlog handle (output)
- *
- * Return:
- *   %0 on success, <%0 on error
- */
-uint64_t
-mpool_mlog_realloc(
-	struct mpool           *mp,
-	uint64_t                objid,
-	struct mlog_capacity   *capreq,
-	enum mp_media_classp    mclassp,
-	struct mlog_props       *props,
-	struct mpool_mlog      **mlh);
-
-/**
  * mpool_mlog_commit() - commit an mlog
  * @mp:        mpool handle
  * @mlh:       mlog handle
@@ -570,21 +549,6 @@ mpool_mlog_len(
 	struct mpool       *mp,
 	struct mpool_mlog  *mlh,
 	size_t             *len);
-
-/**
- * mpool_mlog_empty() - Returns if an mlog is empty
- * @mp:        mpool handle
- * @mlh:       mlog handle
- * @empty:     is the log empty? (output)
- *
- * Return:
- *   %0 on success, <%0 on error
- */
-uint64_t
-mpool_mlog_empty(
-	struct mpool       *mp,
-	struct mpool_mlog  *mlh,
-	bool               *empty);
 
 /**
  * mpool_mlog_erase() - Erase an mlog

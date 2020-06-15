@@ -1976,48 +1976,6 @@ mpool_mlog_alloc(
 }
 
 uint64_t
-mpool_mlog_realloc(
-	struct mpool           *ds,
-	uint64_t                objid,
-	struct mlog_capacity   *capreq,
-	enum mp_media_classp    mclassp,
-	struct mlog_props       *props,
-	struct mpool_mlog      **mlh)
-{
-	struct mpioc_mlog   ml = {
-		.ml_mclassp = mclassp,
-		.ml_objid = objid,
-	};
-
-	merr_t  err;
-
-	if (!ds || !capreq || !mlh)
-		return merr(EINVAL);
-
-	if (!ds_is_writable(ds))
-		return merr(EPERM);
-
-	ml.ml_cap = *capreq;
-
-	err = mpool_ioctl(ds->ds_fd, MPIOC_MLOG_REALLOC, &ml);
-	if (err)
-		return err;
-
-	objid = ml.ml_props.lpx_props.lpr_objid;
-
-	err = mlog_alloc_handle(ds, &ml.ml_props, ds->ds_mpname, mlh);
-	if (err) {
-		(void)mpool_mlog_cmd_byoid(ds, objid, MPIOC_MLOG_ABORT);
-		return err;
-	}
-
-	if (props)
-		*props = ml.ml_props.lpx_props;
-
-	return 0;
-}
-
-uint64_t
 mpool_mlog_commit(
 	struct mpool       *ds,
 	struct mpool_mlog  *mlh)
@@ -2546,32 +2504,6 @@ exit:
 }
 
 uint64_t
-mpool_mlog_empty(
-	struct mpool       *ds,
-	struct mpool_mlog  *mlh,
-	bool               *empty)
-{
-	merr_t err;
-	bool   rw = false;
-
-	if (!ds || !mlh || !empty)
-		return merr(EINVAL);
-
-	err = mlog_acquire(mlh, rw);
-	if (err)
-		return err;
-
-	err = mlog_empty(mlh->ml_mpdesc, mlh->ml_mldesc, empty);
-	if (err)
-		goto exit;
-
-exit:
-	mlog_release(mlh, rw);
-
-	return err;
-}
-
-uint64_t
 mpool_mlog_props_get(
 	struct mpool           *ds,
 	struct mpool_mlog      *mlh,
@@ -2640,6 +2572,32 @@ exit:
 /*
  * Internal interfaces not exported to apps
  */
+
+merr_t
+mpool_mlog_empty(
+	struct mpool       *ds,
+	struct mpool_mlog  *mlh,
+	bool               *empty)
+{
+	merr_t err;
+	bool   rw = false;
+
+	if (!ds || !mlh || !empty)
+		return merr(EINVAL);
+
+	err = mlog_acquire(mlh, rw);
+	if (err)
+		return err;
+
+	err = mlog_empty(mlh->ml_mpdesc, mlh->ml_mldesc, empty);
+	if (err)
+		goto exit;
+
+exit:
+	mlog_release(mlh, rw);
+
+	return err;
+}
 merr_t
 mpool_mlog_xprops_get(
 	struct mpool               *ds,

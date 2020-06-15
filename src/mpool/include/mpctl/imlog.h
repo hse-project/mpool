@@ -97,4 +97,20 @@ mpool_mlog_rw(
 	size_t              off,
 	u8                  rw);
 
+/**
+ * mpool_mlog_empty() - Returns if an mlog is empty
+ *
+ * @mp:        mpool handle
+ * @mlh:       mlog handle
+ * @empty:     is the log empty? (output)
+ *
+ * Return:
+ * %0 on success, <%0 on error
+ */
+merr_t
+mpool_mlog_empty(
+	struct mpool       *mp,
+	struct mpool_mlog  *mlh,
+	bool               *empty);
+
 #endif /* MPOOL_MPOOL_IMLOG_PRIV_H */
