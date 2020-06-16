@@ -274,11 +274,11 @@ mpool_dev_props_get(
 
 /**
  * mpool_mlog_alloc() - allocate an mlog
- * @mp:         mpool handle
- * @capreq:     mlog capacity requirements
- * @mclassp:    mlog media class
- * @props:      properties of new mlog (output)
- * @mlh:        mlog handle (output)
+ * @mp:      mpool handle
+ * @mclassp: mlog media class
+ * @capreq:  mlog capacity requirements
+ * @mlogid:  mlog id (output)
+ * @props:   properties of new mlog (output)
  *
  * Return:
  *   %0 on success, <%0 on error
@@ -287,58 +287,51 @@ mpool_dev_props_get(
 uint64_t
 mpool_mlog_alloc(
 	struct mpool            *mp,
-	struct mlog_capacity    *capreq,
 	enum mp_media_classp     mclassp,
-	struct mlog_props       *props,
-	struct mpool_mlog      **mlh);
+	struct mlog_capacity    *capreq,
+	uint64_t                *mlogid,
+	struct mlog_props       *props);
 
 /**
  * mpool_mlog_commit() - commit an mlog
- * @mp:        mpool handle
- * @mlh:       mlog handle
+ * @mp:     mpool handle
+ * @mlogid: mlog object id
  *
  * Return:
  *   %0 on success, <%0 on error
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mlog_commit(
-	struct mpool       *mp,
-	struct mpool_mlog  *mlh);
+uint64_t mpool_mlog_commit(struct mpool *mp, uint64_t mlogid);
 
 /**
  * mpool_mlog_abort() - abort an mlog
- * @mp:        mpool handle
- * @mlh:       mlog handle
+ * @mp:     mpool handle
+ * @mlogid: mlog object id
  *
  * Return:
  *   %0 on success, <%0 on error
  */
-uint64_t
-mpool_mlog_abort(
-	struct mpool       *mp,
-	struct mpool_mlog  *mlh);
+uint64_t mpool_mlog_abort(struct mpool *mp, uint64_t mlogid);
 
 /**
  * mpool_mlog_delete() - delete an mlog
- * @mp:        mpool handle
- * @mlh:       mlog handle
+ * @mp:     mpool handle
+ * @mlogid: mlog object id
  *
  * Return:
  *   %0 on success, <%0 on error
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mlog_delete(
-	struct mpool       *mp,
-	struct mpool_mlog  *mlh);
+uint64_t mpool_mlog_delete(struct mpool *mp, uint64_t mlogid);
 
 /**
  * mpool_mlog_open() - open an mlog
- * @mp:        mpool handle
- * @mlh:       mlog handle
- * @flags:     Mlog open flags (enum mlog_open_flags)
- * @gen:       generation number (output)
+ *
+ * @mp:     mpool handle
+ * @mlogid: mlog handle
+ * @flags:  Mlog open flags (enum mlog_open_flags)
+ * @gen:    generation number (output)
+ * @mlogh:  mlog handle (output)
  *
  * Return:
  *   %0 on success, <%0 on error
@@ -346,85 +339,29 @@ mpool_mlog_delete(
 /* MTF_MOCK */
 uint64_t
 mpool_mlog_open(
-	struct mpool       *mp,
-	struct mpool_mlog  *mlh,
-	uint8_t             flags,
-	uint64_t           *gen);
+	struct mpool        *mp,
+	uint64_t             mlogid,
+	uint8_t              flags,
+	uint64_t            *gen,
+	struct mpool_mlog  **mlogh);
 
 /**
  * mpool_mlog_close() - close an mlog
- * @mp:        mpool handle
- * @mlh:       mlog handle
+ * @mlogh: mlog handle
  *
  * Return:
  *   %0 on success, <%0 on error
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mlog_close(
-	struct mpool       *mp,
-	struct mpool_mlog  *mlh);
-
-/**
- * mpool_mlog_find_get() - returns a referenced mlog handle for the specified
- * object ID
- * @mp:        mpool handle
- * @objid:     object ID
- * @props:     mlog properties (output)
- * @mlh_out:   mlog handle (output)
- *
- * Return:
- *   %0 on success, <%0 on error
- */
-/* MTF_MOCK */
-uint64_t
-mpool_mlog_find_get(
-	struct mpool        *mp,
-	uint64_t             objid,
-	struct mlog_props   *props,
-	struct mpool_mlog  **mlh_out);
-
-/**
- * mpool_mlog_resolve() - resolves the specified object ID to a mlog handle
- * without taking reference.
- * @mp:        mpool handle
- * @objid:     object ID
- * @props:     mlog properties (output)
- * @mlh_out:   mlog handle (output)
- *
- * Return:
- *   %0 on success, <%0 on error
- */
-/* MTF_MOCK */
-uint64_t
-mpool_mlog_resolve(
-	struct mpool        *mp,
-	uint64_t             objid,
-	struct mlog_props   *props,
-	struct mpool_mlog  **mlh_out);
-
-/**
- * mpool_mlog_put() - puts the reference back on an mlog
- * mpool_mlog_find_get() and mpool_mlog_put() comes in pairs
- * @mp:        mpool handle
- * @mlh:       mlog handle
- *
- * Return:
- *   %0 on success, <%0 on error
- */
-/* MTF_MOCK */
-uint64_t
-mpool_mlog_put(
-	struct mpool        *mp,
-	struct mpool_mlog   *mlh);
+uint64_t mpool_mlog_close(struct mpool_mlog *mlogh);
 
 /**
  * mpool_mlog_append data() - Appenmp data to an mlog
- * @mp:        mpool handle
- * @mlh:       mlog handle
- * @data:      buffer to append data from
- * @len:       buffer len
- * @sync:      1 = sync; 0 = async append
+ *
+ * @mlogh: mlog handle
+ * @data:  buffer to append data from
+ * @len:   buffer len
+ * @sync:  1 = sync; 0 = async append
  *
  * Return:
  *   %0 on success, <%0 on error
@@ -432,19 +369,18 @@ mpool_mlog_put(
 /* MTF_MOCK */
 uint64_t
 mpool_mlog_append_data(
-	struct mpool       *mp,
-	struct mpool_mlog  *mlh,
+	struct mpool_mlog  *mlogh,
 	void               *data,
 	size_t              len,
 	int                 sync);
 
 /**
  * mpool_mlog_append datav() - Appends data to an mlog
- * @mp:        mpool handle
- * @mlh:       mlog handle
- * @iov        buffer in the form of struct iovec
- * @len:       buffer len
- * @sync:      1 = sync; 0 = async append
+ *
+ * @mlogh: mlog handle
+ * @iov    buffer in the form of struct iovec
+ * @len:   buffer len
+ * @sync:  1 = sync; 0 = async append
  *
  * Return:
  *   %0 on success, <%0 on error
@@ -452,8 +388,7 @@ mpool_mlog_append_data(
 /* MTF_MOCK */
 uint64_t
 mpool_mlog_append_datav(
-	struct mpool       *mp,
-	struct mpool_mlog  *mlh,
+	struct mpool_mlog  *mlogh,
 	struct iovec       *iov,
 	size_t              len,
 	int                 sync);
@@ -461,26 +396,22 @@ mpool_mlog_append_datav(
 /**
  *mpool_mlog_read_data_init() - Initializes the internal read cursor to the
  *                              start of log
- * @mp:        mpool handle
- * @mlh:       mlog handle
+ * @mlogh: mlog handle
  *
  * Return:
  *   %0 on success, <%0 on error
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mlog_read_data_init(
-	struct mpool       *mp,
-	struct mpool_mlog  *mlh);
+uint64_t mpool_mlog_read_data_init(struct mpool_mlog *mlogh);
 
 /**
  * mpool_mlog_read_data_next() - Reads the next record from mlog based on what
- * the internal read cursor points to
- * @mp:        mpool handle
- * @mlh:       mlog handle
- * @data:      buffer to read data into
- * @len:       buffer len
- * @rdlen:     data in bytes of the returned record (output)
+ *                               the internal read cursor points to
+ *
+ * @mlogh: mlog handle
+ * @data:  buffer to read data into
+ * @len:   buffer len
+ * @rdlen: data in bytes of the returned record (output)
  *
  * Return:
  *   %0 on success, <%0 on error
@@ -488,21 +419,20 @@ mpool_mlog_read_data_init(
 /* MTF_MOCK */
 uint64_t
 mpool_mlog_read_data_next(
-	struct mpool       *mp,
-	struct mpool_mlog  *mlh,
+	struct mpool_mlog  *mlogh,
 	void               *data,
 	size_t              len,
 	size_t             *rdlen);
 
 /**
  * mpool_mlog_seek_read_data_next() - Reads the next record from mlog after
- * skipping bytes.
- * @mp:        mpool handle
- * @mlh:       mlog handle
- * skip        number of bytes to be skipped before read
- * @data:      buffer to read data into
- * @len:       buffer len
- * @rdlen:     data in bytes of the returned record (output)
+ *                                    skipping bytes.
+ *
+ * @mlogh: mlog handle
+ * skip    number of bytes to be skipped before read
+ * @data:  buffer to read data into
+ * @len:   buffer len
+ * @rdlen: data in bytes of the returned record (output)
  *
  * Return:
  *   %0 on success, <%0 on error
@@ -513,8 +443,7 @@ mpool_mlog_read_data_next(
 /* MTF_MOCK */
 uint64_t
 mpool_mlog_seek_read_data_next(
-	struct mpool       *mp,
-	struct mpool_mlog  *mlh,
+	struct mpool_mlog  *mlogh,
 	size_t              skip,
 	void               *data,
 	size_t              len,
@@ -522,64 +451,52 @@ mpool_mlog_seek_read_data_next(
 
 /**
  * mpool_mlog_flush() - Flushes/syncs an mlog
- * @mp:        mpool handle
- * @mlh:       mlog handle
+ *
+ * @mlogh: mlog handle
  *
  * Return:
  *   %0 on success, <%0 on error
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mlog_flush(
-	struct mpool       *mp,
-	struct mpool_mlog  *mlh);
+uint64_t mpool_mlog_flush(struct mpool_mlog *mlogh);
 
 /**
  * mpool_mlog_len() - Returns length of an mlog
- * @mp:        mpool handle
- * @mlh:       mlog handle
- * @len:       length of the mlog (output)
+ *
+ * @mlogh: mlog handle
+ * @len:   length of the mlog (output)
  *
  * Return:
  *   %0 on success, <%0 on error
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mlog_len(
-	struct mpool       *mp,
-	struct mpool_mlog  *mlh,
-	size_t             *len);
+uint64_t mpool_mlog_len(struct mpool_mlog *mlogh, size_t *len);
 
 /**
  * mpool_mlog_erase() - Erase an mlog
- * @mp:        mpool handle
- * @mlh:       mlog handle
- * @mingen:    mininum generation number to use (pass 0 if not relevant)
+ *
+ * @mlogh:  mlog handle
+ * @mingen: mininum generation number to use (pass 0 if not relevant)
  *
  * Return:
  *   %0 on success, <%0 on error
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mlog_erase(
-	struct mpool       *mp,
-	struct mpool_mlog  *mlh,
-	uint64_t            mingen);
+uint64_t mpool_mlog_erase(struct mpool_mlog *mlogh, uint64_t mingen);
 
 /**
  * mpool_mlog_props_get() - Get properties of an mlog
- * @mp:        mpool handle
- * @mlh:       mlog handle
- * @props:     mlog properties (output)
+ *
+ * @mlogh: mlog handle
+ * @props: mlog properties (output)
  *
  * Return:
  *   %0 on success, <%0 on error
  */
 uint64_t
 mpool_mlog_props_get(
-	struct mpool           *mp,
-	struct mpool_mlog      *mlh,
-	struct mlog_props      *props);
+	struct mpool_mlog  *mlogh,
+	struct mlog_props  *props);
 
 /*
  * MDC (Metadata Container) APIs
@@ -646,22 +563,34 @@ mpool_mdc_alloc(
 /* MTF_MOCK */
 uint64_t
 mpool_mdc_commit(
-	struct mpool           *mp,
-	uint64_t                logid1,
-	uint64_t                logid2);
+	struct mpool   *mp,
+	uint64_t        logid1,
+	uint64_t        logid2);
 
 /**
- * mpool_mdc_destroy() - Destroy a MDC
+ * mpool_mdc_abort() - Abort an MDC
+ * @mp:       mpool handle
+ * @logid1:   Mlog ID 1
+ * @logid2:   Mlog ID 2
+ */
+uint64_t
+mpool_mdc_abort(
+	struct mpool   *mp,
+	uint64_t        logid1,
+	uint64_t        logid2);
+
+/**
+ * mpool_mdc_delete() - Delete an MDC
  * @mp:       mpool handle
  * @logid1:   Mlog ID 1
  * @logid2:   Mlog ID 2
  */
 /* MTF_MOCK */
 uint64_t
-mpool_mdc_destroy(
-	struct mpool           *mp,
-	uint64_t                logid1,
-	uint64_t                logid2);
+mpool_mdc_delete(
+	struct mpool   *mp,
+	uint64_t        logid1,
+	uint64_t        logid2);
 
 /**
  * mpool_mdc_get_root() - Retrieve mpool root MDC OIDs
@@ -672,9 +601,9 @@ mpool_mdc_destroy(
 /* MTF_MOCK */
 uint64_t
 mpool_mdc_get_root(
-	struct mpool           *mp,
-	uint64_t               *logid1,
-	uint64_t               *logid2);
+	struct mpool   *mp,
+	uint64_t       *logid1,
+	uint64_t       *logid2);
 
 /**
  * mpool_mdc_open() - Open MDC by OIDs
@@ -858,7 +787,7 @@ mpool_mblock_abort(
 	uint64_t        mbid);
 
 /**
- * mpool_mblock_delete() - abort an mblock
+ * mpool_mblock_delete() - delete an mblock
  * @mp:   mpool
  * @mbid: mblock object ID
  *

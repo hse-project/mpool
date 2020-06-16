@@ -19,7 +19,7 @@ struct mpool_mlog;
 /**
  * struct mpool_mdc: MDC handle
  *
- * @mdc_ds:     dataset handle (user client) or mpool desc (kernel client)
+ * @mdc_mp:     mpool handle (user client) or mpool desc (kernel client)
  * @mdc_logh1:  mlog 1 handle
  * @mdc_logh2:  mlog 2 handle
  * @mdc_alogh:  active mlog handle
@@ -36,7 +36,7 @@ struct mpool_mlog;
  *     mpool core locks
  */
 struct mpool_mdc {
-	struct mpool       *mdc_ds;
+	struct mpool       *mdc_mp;
 	struct mpool_mlog  *mdc_logh1;
 	struct mpool_mlog  *mdc_logh2;
 	struct mpool_mlog  *mdc_alogh;

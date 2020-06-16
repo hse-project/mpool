@@ -20,8 +20,7 @@ struct mpool_obj_layout;
 /**
  * mpool_mlog_xprops_get() - Get extended properties of an mlog
  *
- * @ds:    dataset handle
- * @mlh:   mlog handle
+ * @mlogh:    mlog handle
  * @props_ex: extended mlog properties (output)
  *
  * Return:
@@ -29,58 +28,44 @@ struct mpool_obj_layout;
  */
 merr_t
 mpool_mlog_xprops_get(
-	struct mpool               *ds,
-	struct mpool_mlog          *mlh,
-	struct mlog_props_ex       *props_ex);
+	struct mpool_mlog      *mlogh,
+	struct mlog_props_ex   *props_ex);
 
 /**
  * mpool_mlog_append_cstart() - Apppend a CSTART record
  *
- * @ds:    dataset handle
- * @mlh:   mlog handle
+ * @mlogh: mlog handle
  *
  * Return:
  *   %0 on success, <%0 on error
  */
-merr_t
-mpool_mlog_append_cstart(
-	struct mpool       *ds,
-	struct mpool_mlog  *mlh);
+merr_t mpool_mlog_append_cstart(struct mpool_mlog *mlogh);
 
 /**
  * mpool_mlog_append_cend() - Apppend a CEND record
  *
- * @ds:    dataset handle
- * @mlh:   mlog handle
+ * @mlogh: mlog handle
  *
  * Return:
  *   %0 on success, <%0 on error
  */
-merr_t
-mpool_mlog_append_cend(
-	struct mpool       *ds,
-	struct mpool_mlog  *mlh);
+merr_t mpool_mlog_append_cend(struct mpool_mlog *mlogh);
 
 /**
  * mpool_mlog_gen() - Return mlog generation number
  *
- * @ds:    dataset handle
- * @mlh:   mlog handle
+ * @mlogh: mlog handle
  * @gen:   generation no. (output)
  *
  * Return:
  *   %0 on success, <%0 on error
  */
-merr_t
-mpool_mlog_gen(
-	struct mpool      *ds,
-	struct mpool_mlog *mlh,
-	u64               *gen);
+merr_t mpool_mlog_gen(struct mpool_mlog *mlogh, u64 *gen);
 
 /**
  * mpool_mlog_rw() - raw mpctl interface used for mlog IO
  *
- * @mlh:   mlog handle
+ * @mlogh:  mlog handle
  * @iov:   iovec
  * @iovc:  iov count
  * @off:   offset
@@ -91,7 +76,7 @@ mpool_mlog_gen(
  */
 merr_t
 mpool_mlog_rw(
-	struct mpool_mlog  *mlh,
+	struct mpool_mlog  *mlogh,
 	struct iovec       *iov,
 	int                 iovc,
 	size_t              off,
@@ -100,17 +85,12 @@ mpool_mlog_rw(
 /**
  * mpool_mlog_empty() - Returns if an mlog is empty
  *
- * @mp:        mpool handle
- * @mlh:       mlog handle
- * @empty:     is the log empty? (output)
+ * @mlogh: mlog handle
+ * @empty: is the log empty? (output)
  *
  * Return:
  * %0 on success, <%0 on error
  */
-merr_t
-mpool_mlog_empty(
-	struct mpool       *mp,
-	struct mpool_mlog  *mlh,
-	bool               *empty);
+merr_t mpool_mlog_empty(struct mpool_mlog *mlogh, bool *empty);
 
 #endif /* MPOOL_MPOOL_IMLOG_PRIV_H */

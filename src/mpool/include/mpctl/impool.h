@@ -28,17 +28,8 @@
 struct mpool_devrpt;
 enum mp_status;
 
-/**
- *  Dataset throttle queues
- **/
-enum ds_throttle_queue {
-	DS_DEFAULT_THQ = 0,
-	DS_INGEST_THQ,
-	DS_MAX_THQ
-};
-
 /* Magics for API handles */
-#define MPC_DS_MAGIC            0x21122112
+#define MPC_MPOOL_MAGIC         0x21122112
 #define MPC_MLOG_MAGIC          0xBADCAFE
 #define MPC_NO_MAGIC            0xFADEFADE
 
@@ -71,11 +62,12 @@ enum ds_throttle_queue {
  */
 struct mpool_mlog {
 	struct mutex                ml_lock;
+	struct mpool               *ml_mp;
 	struct mpool_descriptor    *ml_mpdesc;
 	struct mlog_descriptor     *ml_mldesc;
 	u64                         ml_objid;
 	int                         ml_magic;
-	int                         ml_dsfd;
+	int                         ml_mpfd;
 	u16                         ml_idx;
 	u8                          ml_flags;
 };
@@ -96,28 +88,24 @@ struct mp_mloghmap {
 
 /**
  * struct mpool:
- * @ds_mlmap:  fixed size map from object ID to mlog handle
- * @ds_magic:
- * @ds_fd:
- * @ds_flags:
- * @ds_mpname: Mpool name
- * @ds_mlnidx: next free index in ds_mlmap
- * @ds_mltot:  total occupied slots in ds_mlmap
- * @ds_maxmem_asyncio: configure max memory async io consume.
- * @ds_maxcsmd_asyncio: current consumption async io.
- * @ds_lock:
+ * @mp_mlmap:  fixed size map from object ID to mlog handle
+ * @mp_magic:
+ * @mp_fd:
+ * @mp_flags:
+ * @mp_name: Mpool name
+ * @mp_mlidx: next free index in ds_mlmap
+ * @mp_mltot:  total occupied slots in ds_mlmap
+ * @mp_lock:
  */
 struct mpool {
-	struct mp_mloghmap   ds_mlmap[MAX_OPEN_MLOGS];
-	int                  ds_magic;
-	int                  ds_fd;
-	int                  ds_flags;
-	char                 ds_mpname[MPOOL_NAME_LEN_MAX]; /* mpool name */
-	u16                  ds_mlnidx;
-	u16                  ds_mltot;
-	u64                  ds_maxmem_asyncio[DS_MAX_THQ];
-	atomic64_t           ds_memcsmd_asyncio[DS_MAX_THQ];
-	struct mutex         ds_lock;
+	struct mp_mloghmap   mp_mlmap[MAX_OPEN_MLOGS];
+	int                  mp_magic;
+	int                  mp_fd;
+	int                  mp_flags;
+	char                 mp_name[MPOOL_NAME_LEN_MAX]; /* mpool name */
+	u16                  mp_mlidx;
+	u16                  mp_mltot;
+	struct mutex         mp_lock;
 };
 
 /**

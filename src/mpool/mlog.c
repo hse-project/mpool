@@ -61,7 +61,7 @@ pmd_obj_wrlock(
 	struct mpool_descriptor        *mp,
 	struct ecio_layout_descriptor  *layout)
 {
-	down_read(&layout->eld_rwlock);
+	down_write(&layout->eld_rwlock);
 }
 
 /**
@@ -88,9 +88,10 @@ pmd_obj_wrunlock(
 static struct ecio_layout_descriptor *
 ecio_user_layout_alloc(
 	struct mpool_descriptor    *mp,
-	struct mpool_uuid            *uuid,
+	struct mpool_uuid          *uuid,
 	u64                         objid,
-	u64                         gen)
+	u64                         gen,
+	u8                          state)
 {
 	struct ecio_layout_descriptor  *layout;
 
@@ -109,7 +110,7 @@ ecio_user_layout_alloc(
 	layout->eld_mlo->mlo_layout = layout;
 	layout->eld_objid = objid;
 	layout->eld_gen   = gen;
-	layout->eld_state = ECIO_LYT_NONE;
+	layout->eld_state = state;
 
 	mpool_uuid_copy(&layout->eld_uuid, uuid);
 
@@ -3238,7 +3239,7 @@ mlog_user_desc_alloc(
 	memcpy(uuid.uuid, mlprop->lpr_uuid, MPOOL_UUID_SIZE);
 
 	layout = ecio_user_layout_alloc(mp, &uuid, mlprop->lpr_objid,
-					mlprop->lpr_gen);
+					mlprop->lpr_gen, props->lpx_state);
 	if (!layout)
 		return NULL;
 

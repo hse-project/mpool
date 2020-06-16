@@ -2371,7 +2371,7 @@ test_command(
 			test.mpt_sval[0] = atoi(argv[i]);
 			test.mpt_cmn.mc_merr_base = mpool_merr_base;
 
-			rc = ioctl(ds->ds_fd, MPIOC_TEST, &test);
+			rc = ioctl(ds->mp_fd, MPIOC_TEST, &test);
 
 			err = rc ? errno : test.mpt_cmn.mc_err;
 
