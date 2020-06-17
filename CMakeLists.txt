@@ -9,10 +9,13 @@ if(${CMAKE_MAJOR_VERSION} GREATER 2)
 cmake_policy(SET CMP0046 OLD)
 endif()
 
-project( mpool
-    VERSION       ${BUILD_PKG_VERSION}
-    HOMEPAGE_URL  "https://github.com/hse-project/mpool"
-    LANGUAGES     C )
+project( mpool C )
+
+set( PROJECT_VERSION            "${BUILD_PKG_VERSION}" )
+set( PROJECT_HOMEPAGE_URL       "https://github.com/hse-project/mpool" )
+
+set( CMAKE_PROJECT_VERSION      "${PROJECT_VERSION}" )
+set( CMAKE_PROJECT_HOMEPAGE_URL "${PROJECT_HOMEPAGE_URL}" )
 
 message( STATUS "Configuring project ${PROJECT_NAME} ${PROJECT_VERSION} ${BUILD_PKG_TAG} common..." )
 
@@ -219,8 +222,9 @@ add_subdirectory( scripts/modules-load.d )
 
 # Common package options...
 #
-set( CPACK_PACKAGE_LICENSE        "MIT" )
-set( CPACK_PACKAGE_VENDOR         "${BUILD_PKG_VENDOR}" )
+set( CPACK_PACKAGE_LICENSE      "MIT" )
+set( CPACK_PACKAGE_VENDOR       "${BUILD_PKG_VENDOR}" )
+set( CPACK_PACKAGE_VERSION      "${PROJECT_VERSION}${BUILD_PKG_VQUAL}" )
 
 set( CPACK_PACKAGE_DESCRIPTION_SUMMARY
     "media pool ${BUILD_PKG_TAG}-${BUILD_STYPE}${BUILD_NUMBER}" )
@@ -235,6 +239,13 @@ if( "${BUILD_NUMBER}" )
     set( BUILD_RTYPE "${BUILD_STYPE}${BUILD_NUMBER}" )
 else()
     set( BUILD_RTYPE "" )
+endif()
+
+set( CPACK_PACKAGE_RELEASE      "${BUILD_PKG_REL}${BUILD_RTYPE}${BUILD_PKG_DIST}" )
+
+if( ${CMAKE_MINIMUM_REQUIRED_VERSION} VERSION_LESS 3.6.2 )
+    set( CPACK_PACKAGE_FILE_NAME
+	"${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CPACK_PACKAGE_RELEASE}" )
 endif()
 
 include( ${MPOOL_SCRIPTS_DIR}/${BUILD_PKG_TYPE}/CMakeLists.txt )

@@ -320,11 +320,11 @@ endif
 
 ${CONFIG}: MAKEFLAGS += --no-print-directory
 ${CONFIG}: Makefile CMakeLists.txt $(wildcard scripts/${BUILD_PKG_TYPE}/*)
-	mkdir -p $(BUILD_PKG_DIR)
-	rm -f ${BUILD_PKG_DIR}/CMakeCache.txt
+	mkdir -p $(@D)
+	rm -f ${@D}/CMakeCache.txt
 	@$(config-gen) > $@.tmp
-	cmake $(DEPGRAPH) $(CMAKE_FLAGS) -B ${BUILD_PKG_DIR} -C $@.tmp -S ${MPOOL_SRC_DIR}
-	$(MAKE) -C $(BUILD_PKG_DIR) clean
+	cd ${@D} && cmake $(DEPGRAPH) $(CMAKE_FLAGS) -C $@.tmp ${MPOOL_SRC_DIR}
+	$(MAKE) -C $(@D) clean
 	mv $@.tmp $@
 
 config: ${SUBREPO_PATH_LIST} ${CONFIG}

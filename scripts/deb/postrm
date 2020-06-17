@@ -9,8 +9,6 @@
 PROG=${0##*/}
 PKG=$(basename ${0%.*})
 
-echo "${PROG} [$*]"
-
 case $1 in
     remove|purge)
         # remove mpool related tmpfiles
