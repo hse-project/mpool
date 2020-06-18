@@ -2461,25 +2461,6 @@ mlog_append_datav(
 }
 
 /**
- * mlog_append_data()
- */
-merr_t
-mlog_append_data(
-	struct mpool_descriptor *mp,
-	struct mlog_descriptor  *mlh,
-	char                    *buf,
-	u64                      buflen,
-	int                      sync)
-{
-	struct iovec iov;
-
-	iov.iov_base = buf;
-	iov.iov_len  = buflen;
-
-	return mlog_append_datav(mp, mlh, &iov, buflen, sync);
-}
-
-/**
  * mlog_read_data_init()
  *
  * Initialize iterator for reading data records from log; log must be open;

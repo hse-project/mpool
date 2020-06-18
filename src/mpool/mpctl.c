@@ -1412,56 +1412,46 @@ errout:
 	return err;
 }
 
-static
-merr_t
-ds_acquire(
-	struct mpool  *ds)
+static merr_t mp_acquire(struct mpool *mp)
 {
 	merr_t err = 0;
 
-	if (!ds)
+	if (!mp)
 		return merr(EINVAL);
 
-	mutex_lock(&ds->mp_lock);
+	mutex_lock(&mp->mp_lock);
 
-	/* ds_close invalidates magic and fd */
-	if (ds->mp_magic != MPC_MPOOL_MAGIC)
+	/* mp_close invalidates magic and fd */
+	if (mp->mp_magic != MPC_MPOOL_MAGIC)
 		err = merr(EINVAL);
-	else if (ds->mp_fd < 0)
+	else if (mp->mp_fd < 0)
 		err = merr(EBADFD);
 
 	if (err)
-		mutex_unlock(&ds->mp_lock);
+		mutex_unlock(&mp->mp_lock);
 
 	return err;
 }
 
-static inline
-void
-ds_release(
-	struct mpool   *ds)
+static inline void mp_release(struct mpool *mp)
 {
-	mutex_unlock(&ds->mp_lock);
+	mutex_unlock(&mp->mp_lock);
 }
 
-merr_t
-mp_mp_name(
-	struct mpool   *ds,
-	char           *mpname,
-	size_t          mplen)
+merr_t mpool_name_get(struct mpool *mp, char *mpname, size_t mplen)
 {
 	merr_t err;
 
-	if (!ds || !mpname)
+	if (!mp || !mpname)
 		return merr(EINVAL);
 
-	err = ds_acquire(ds);
+	err = mp_acquire(mp);
 	if (err)
 		return err;
 
-	strlcpy(mpname, ds->mp_name, mplen);
+	strlcpy(mpname, mp->mp_name, mplen);
 
-	ds_release(ds);
+	mp_release(mp);
 
 	return 0;
 }
@@ -1515,33 +1505,32 @@ mpool_open(
 	return 0;
 }
 
-uint64_t
-mpool_close(struct mpool *ds)
+uint64_t mpool_close(struct mpool *mp)
 {
 	merr_t  err;
 	int     i;
 
-	if (!ds)
+	if (!mp)
 		return 0;
 
-	err = ds_acquire(ds);
+	err = mp_acquire(mp);
 	if (err)
 		return err;
 
 	for (i = 0; i < MAX_OPEN_MLOGS; i++) {
-		if (ds->mp_mlmap[i].mlm_hdl) {
-			ds_release(ds);
+		if (mp->mp_mlmap[i].mlm_hdl) {
+			mp_release(mp);
 			return merr(EBUSY);
 		}
 	}
 
-	ds->mp_magic = MPC_NO_MAGIC;
+	mp->mp_magic = MPC_NO_MAGIC;
 
-	close(ds->mp_fd);
-	ds->mp_fd = -1;
+	close(mp->mp_fd);
+	mp->mp_fd = -1;
 
-	ds_release(ds);
-	free(ds);
+	mp_release(mp);
+	free(mp);
 
 	return 0;
 }
@@ -1553,25 +1542,20 @@ mpool_close(struct mpool *ds)
 /**
  * mlog_hmap_find() - Lookup mlog map for the handle given an object ID
  *
- * @mp:     mpool handle
- * @objid:  object ID
- * @locked: is the mp_lock already acquired?
+ * @mp:      mpool handle
+ * @objid:   object ID
+ * @needref: if true, increment refcount on the mlog handle
+ * @locked:  is the mp_lock already acquired?
  */
-static struct mpool_mlog *
-mlog_hmap_find(
-	struct mpool   *mp,
-	u64             objid,
-	bool            needref,
-	bool            locked)
+static struct mpool_mlog *mlog_hmap_find(struct mpool *mp, u64 objid, bool needref, bool locked)
 {
 	struct mpool_mlog  *mlh;
 	struct mp_mloghmap *mlmap;
-
-	int    i;
+	int                 i;
 
 	mlh = NULL;
 
-	if (!locked && ds_acquire(mp))
+	if (!locked && mp_acquire(mp))
 		return NULL;
 
 	for (i = 0; i < MAX_OPEN_MLOGS; i++) {
@@ -1589,22 +1573,18 @@ mlog_hmap_find(
 	}
 
 	if (!locked)
-		ds_release(mp);
+		mp_release(mp);
 
 	return mlh;
 }
 
 /**
  * mlog_hmap_put_locked() - drop a reference on given mlog handle
- * @mp:      dataset handle
- * @mlogh:     mlog handle
- * @do_free: set to true if the last reference was dropped (output)
+ * @mp:      mpool handle
+ * @mlogh:   mlog handle
+ * @lastref: set to true if the last reference was dropped (output)
  */
-static void
-mlog_hmap_put_locked(
-	struct mpool       *mp,
-	struct mpool_mlog  *mlogh,
-	bool               *lastref)
+static void mlog_hmap_put_locked(struct mpool *mp, struct mpool_mlog *mlogh, bool *lastref)
 {
 	struct mp_mloghmap *mlmap;
 
@@ -1627,35 +1607,23 @@ mlog_hmap_put_locked(
 		*lastref = true;
 }
 
-static void
-mlog_hmap_put(
-	struct mpool       *mp,
-	struct mpool_mlog  *mlogh,
-	bool               *lastref)
+static void mlog_hmap_put(struct mpool *mp, struct mpool_mlog *mlogh, bool *lastref)
 {
-	if (!mp || !mlogh)
-		return;
-
-	if (ds_acquire(mp))
+	if (!mp || !mlogh || mp_acquire(mp))
 		return;
 
 	mlog_hmap_put_locked(mp, mlogh, lastref);
 
-	ds_release(mp);
+	mp_release(mp);
 }
 
 /**
  * mlog_hmap_insert() - Insert <objid, mlogh> pair into mlog map
- *
- * @mp:      dataset handle
- * @objid:   object ID
- * @mlogh:     mlog handle
+ * @mp:    dataset handle
+ * @objid: object ID
+ * @mlogh: mlog handle
  */
-static merr_t
-mlog_hmap_insert(
-	struct mpool       *mp,
-	u64                 objid,
-	struct mpool_mlog  *mlogh)
+static merr_t mlog_hmap_insert(struct mpool *mp, u64 objid, struct mpool_mlog *mlogh)
 {
 	struct mp_mloghmap *mlmap;
 	struct mpool_mlog  *dup;
@@ -1667,7 +1635,7 @@ mlog_hmap_insert(
 	if (!mp || !mlogh)
 		return merr(EINVAL);
 
-	err = ds_acquire(mp);
+	err = mp_acquire(mp);
 	if (err)
 		return err;
 
@@ -1710,16 +1678,15 @@ mlog_hmap_insert(
 		}
 	}
 exit:
-	ds_release(mp);
+	mp_release(mp);
 
 	return err;
 }
 
 /**
  * mlog_acquire() - Validate mlog handle and acquire ml_lock
- *
  * @mlogh: mlog handle
- * @rw:  read/append?
+ * @rw:    read/append?
  */
 static inline merr_t mlog_acquire(struct mpool_mlog *mlogh, bool rw)
 {
@@ -1741,7 +1708,6 @@ static inline merr_t mlog_acquire(struct mpool_mlog *mlogh, bool rw)
 
 /**
  * mlog_release() - Release ml_lock
- *
  * @mlogh: mlog handle
  * @rw: read/append?
  */
@@ -1755,16 +1721,8 @@ static inline void mlog_release(struct mpool_mlog *mlogh, bool rw)
 
 static void mlog_handle_free(struct mpool_mlog *mlogh);
 
-/**
- * mlog_handle_alloc() - Allocate an mlog handle and add it to the mp mlog map
- *
- * @mp:      dataset handle
- * @props:   extended mlog properties
- * @mpname:  mpool name
- * @mlogh: Allocated mlog handle (output)
- */
 static merr_t
-mlog_handle_alloc(
+mlog_handle_alloc_impl(
 	struct mpool            *mp,
 	struct mlog_props_ex    *props,
 	char                    *mpname,
@@ -1826,9 +1784,42 @@ mlog_handle_alloc(
 	return 0;
 }
 
+static merr_t mlog_handle_alloc(struct mpool *mp, u64 objid, struct mpool_mlog **mlogh)
+{
+	struct mpioc_mlog       ml = { .ml_objid = objid };
+	struct mlog_props_ex   *px;
+	struct mpool_mlog      *mlh;
+	merr_t                  err;
+
+	if (!mp || !mlogh)
+		return merr(EINVAL);
+
+	*mlogh = NULL;
+
+	err = mpool_ioctl(mp->mp_fd, MPIOC_MLOG_FIND, &ml);
+	if (err)
+		return err;
+	px = &ml.ml_props;
+
+again:
+	mlh = mlog_hmap_find(mp, objid, true, false);
+	if (!mlh) {
+		err = mlog_handle_alloc_impl(mp, px, mp->mp_name, &mlh);
+		if (err) {
+			if (merr_errno(err) == EEXIST)
+				goto again;
+
+			return err;
+		}
+	}
+
+	*mlogh = mlh;
+
+	return 0;
+}
+
 /**
  * mlog_handle_free() - Free an mlog handle
- *
  * @mlogh: mlog handle
  */
 static void mlog_handle_free(struct mpool_mlog *mlogh)
@@ -1860,44 +1851,6 @@ static merr_t mlog_handle_put(struct mpool_mlog *mlogh)
 	}
 
 	return err;
-}
-
-static merr_t
-mlog_handle_find(
-	struct mpool        *mp,
-	u64                  objid,
-	struct mpool_mlog  **mlogh)
-{
-	struct mpioc_mlog       ml = { .ml_objid = objid };
-	struct mlog_props_ex   *px;
-	struct mpool_mlog      *mlh;
-	merr_t                  err;
-
-	if (!mp || !mlogh)
-		return merr(EINVAL);
-
-	*mlogh = NULL;
-
-	err = mpool_ioctl(mp->mp_fd, MPIOC_MLOG_FIND, &ml);
-	if (err)
-		return err;
-	px = &ml.ml_props;
-
-again:
-	mlh = mlog_hmap_find(mp, objid, true, false);
-	if (!mlh) {
-		err = mlog_handle_alloc(mp, px, mp->mp_name, &mlh);
-		if (err) {
-			if (merr_errno(err) == EEXIST)
-				goto again;
-
-			return err;
-		}
-	}
-
-	*mlogh = mlh;
-
-	return 0;
 }
 
 /**
@@ -1941,10 +1894,7 @@ mpool_mlog_alloc(
 	return 0;
 }
 
-uint64_t
-mpool_mlog_commit(
-	struct mpool   *mp,
-	uint64_t        mlogid)
+uint64_t mpool_mlog_commit(struct mpool *mp, uint64_t mlogid)
 {
 	struct mpioc_mlog_id   mi = { .mi_objid = mlogid };
 
@@ -1957,12 +1907,10 @@ mpool_mlog_commit(
 	return mpool_ioctl(mp->mp_fd, MPIOC_MLOG_COMMIT, &mi);
 }
 
-uint64_t
-mpool_mlog_abort(
-	struct mpool   *mp,
-	uint64_t        mlogid)
+uint64_t mpool_mlog_abort(struct mpool *mp, uint64_t mlogid)
 {
-	struct mpioc_mlog_id   mi = { .mi_objid = mlogid };
+	struct mpioc_mlog_id    mi = { .mi_objid = mlogid };
+	struct mpool_mlog      *mlh;
 
 	if (!mp)
 		return merr(EINVAL);
@@ -1970,13 +1918,14 @@ mpool_mlog_abort(
 	if (!mpool_is_writable(mp))
 		return merr(EPERM);
 
+	mlh = mlog_hmap_find(mp, mlogid, false, false);
+	if (mlh)
+		return merr(EBUSY);
+
 	return mpool_ioctl(mp->mp_fd, MPIOC_MLOG_ABORT, &mi);
 }
 
-uint64_t
-mpool_mlog_delete(
-	struct mpool   *mp,
-	uint64_t        mlogid)
+uint64_t mpool_mlog_delete(struct mpool *mp, uint64_t mlogid)
 {
 	struct mpioc_mlog_id    mi = { .mi_objid = mlogid };
 	struct mpool_mlog      *mlh;
@@ -2008,7 +1957,7 @@ mpool_mlog_open(
 	if (!mp || !mlogh || !gen)
 		return merr(EINVAL);
 
-	err = mlog_handle_find(mp, mlogid, &mlh);
+	err = mlog_handle_alloc(mp, mlogid, &mlh);
 	if (err)
 		return err;
 
@@ -2034,39 +1983,7 @@ uint64_t mpool_mlog_close(struct mpool_mlog *mlogh)
 	return mlog_handle_put(mlogh);
 }
 
-uint64_t
-mpool_mlog_append_data(
-	struct mpool_mlog  *mlogh,
-	void               *data,
-	size_t              len,
-	int                 sync)
-{
-	merr_t err;
-	bool   rw = true;
-
-	if (!mlogh || !data)
-		return merr(EINVAL);
-
-	if (!mpool_is_writable(mlogh->ml_mp))
-		return merr(EPERM);
-
-	err = mlog_acquire(mlogh, rw);
-	if (err)
-		return err;
-
-	err = mlog_append_data(mlogh->ml_mpdesc, mlogh->ml_mldesc, data, len, sync);
-
-	mlog_release(mlogh, rw);
-
-	return err;
-}
-
-uint64_t
-mpool_mlog_append_datav(
-	struct mpool_mlog  *mlogh,
-	struct iovec       *iov,
-	size_t              len,
-	int                 sync)
+uint64_t mpool_mlog_append(struct mpool_mlog *mlogh, struct iovec *iov, size_t len, int sync)
 {
 	merr_t err;
 	bool   rw = true;
@@ -2088,7 +2005,7 @@ mpool_mlog_append_datav(
 	return err;
 }
 
-uint64_t mpool_mlog_read_data_init(struct mpool_mlog *mlogh)
+uint64_t mpool_mlog_rewind(struct mpool_mlog *mlogh)
 {
 	merr_t err;
 	bool   rw = false;
@@ -2108,11 +2025,7 @@ uint64_t mpool_mlog_read_data_init(struct mpool_mlog *mlogh)
 }
 
 uint64_t
-mpool_mlog_read_data_next(
-	struct mpool_mlog  *mlogh,
-	void               *data,
-	size_t              len,
-	size_t             *rdlen)
+mpool_mlog_read(struct mpool_mlog *mlogh, void *data, size_t len, size_t *rdlen)
 {
 	merr_t err;
 	bool   rw = true;
@@ -2124,8 +2037,7 @@ mpool_mlog_read_data_next(
 	if (err)
 		return err;
 
-	err = mlog_read_data_next(mlogh->ml_mpdesc, mlogh->ml_mldesc, data,
-				  len, rdlen);
+	err = mlog_read_data_next(mlogh->ml_mpdesc, mlogh->ml_mldesc, data, len, rdlen);
 
 	mlog_release(mlogh, rw);
 
@@ -2133,12 +2045,7 @@ mpool_mlog_read_data_next(
 }
 
 uint64_t
-mpool_mlog_seek_read_data_next(
-	struct mpool_mlog  *mlogh,
-	size_t              seek,
-	void               *data,
-	size_t              len,
-	size_t             *rdlen)
+mpool_mlog_seek_read(struct mpool_mlog *mlogh, size_t seek, void *data, size_t len, size_t *rdlen)
 {
 	merr_t err;
 	bool   rw = true;
@@ -2150,17 +2057,14 @@ mpool_mlog_seek_read_data_next(
 	if (err)
 		return err;
 
-	err = mlog_seek_read_data_next(mlogh->ml_mpdesc, mlogh->ml_mldesc, seek,
-				       data, len, rdlen);
+	err = mlog_seek_read_data_next(mlogh->ml_mpdesc, mlogh->ml_mldesc, seek, data, len, rdlen);
 
 	mlog_release(mlogh, rw);
 
 	return err;
 }
 
-uint64_t
-mpool_mlog_flush(
-	struct mpool_mlog  *mlogh)
+uint64_t mpool_mlog_sync(struct mpool_mlog *mlogh)
 {
 	merr_t err;
 	bool   rw = false;
@@ -2182,10 +2086,7 @@ mpool_mlog_flush(
 	return err;
 }
 
-uint64_t
-mpool_mlog_len(
-	struct mpool_mlog  *mlogh,
-	size_t             *len)
+uint64_t mpool_mlog_len(struct mpool_mlog *mlogh, size_t *len)
 {
 	merr_t err;
 	bool   rw = false;
@@ -2204,10 +2105,7 @@ mpool_mlog_len(
 	return err;
 }
 
-uint64_t
-mpool_mlog_props_get(
-	struct mpool_mlog      *mlogh,
-	struct mlog_props      *props)
+uint64_t mpool_mlog_props_get(struct mpool_mlog *mlogh, struct mlog_props *props)
 {
 	struct mlog_props_ex   props_ex;
 
@@ -2225,10 +2123,7 @@ mpool_mlog_props_get(
 	return 0;
 }
 
-uint64_t
-mpool_mlog_erase(
-	struct mpool_mlog  *mlogh,
-	uint64_t            mingen)
+uint64_t mpool_mlog_erase(struct mpool_mlog *mlogh, uint64_t mingen)
 {
 	struct mpool           *mp;
 	struct mpioc_mlog_id    mi = { .mi_gen = mingen };
@@ -2258,10 +2153,7 @@ mpool_mlog_erase(
 	if (err)
 		goto exit;
 
-	err = mlog_user_desc_set(mlogh->ml_mpdesc, mlogh->ml_mldesc,
-				 mi.mi_gen, mi.mi_state);
-	if (err)
-		goto exit;
+	err = mlog_user_desc_set(mlogh->ml_mpdesc, mlogh->ml_mldesc, mi.mi_gen, mi.mi_state);
 
 exit:
 	mlog_release(mlogh, rw);
@@ -2273,10 +2165,7 @@ exit:
  * Internal interfaces not exported to apps
  */
 
-merr_t
-mpool_mlog_empty(
-	struct mpool_mlog  *mlogh,
-	bool               *empty)
+merr_t mpool_mlog_empty(struct mpool_mlog *mlogh, bool *empty)
 {
 	merr_t err;
 	bool   rw = false;
@@ -2294,10 +2183,7 @@ mpool_mlog_empty(
 
 	return err;
 }
-merr_t
-mpool_mlog_xprops_get(
-	struct mpool_mlog      *mlogh,
-	struct mlog_props_ex   *props_ex)
+merr_t mpool_mlog_xprops_get(struct mpool_mlog *mlogh, struct mlog_props_ex *props_ex)
 {
 	struct mpool       *mp;
 	struct mpioc_mlog   ml;
@@ -2392,8 +2278,7 @@ I_WRAP_SONAME_FNNAME_ZU(NONE, mpool_mlog_rw)(
 	VALGRIND_GET_ORIG_FN(fn);
 
 	if (atomic_cmpxchg(&once, 0, 1) == 0)
-		mse_log(MPOOL_NOTICE
-			"valgrind wrapper enabled: mpool_mlog_rw()");
+		mse_log(MPOOL_NOTICE "valgrind wrapper enabled: mpool_mlog_rw()");
 
 	if (iov && rw == MPOOL_OP_READ) {
 		for (i = 0; i < iovc; i++)
@@ -2433,10 +2318,7 @@ mpool_mlog_rw(
 	return merr(EINVAL);
 }
 
-merr_t
-mpool_mlog_gen(
-	struct mpool_mlog  *mlogh,
-	u64                *gen)
+merr_t mpool_mlog_gen(struct mpool_mlog *mlogh, u64 *gen)
 {
 	merr_t err;
 	bool   rw = false;
@@ -2453,6 +2335,21 @@ mpool_mlog_gen(
 	mlog_release(mlogh, rw);
 
 	return err;
+}
+
+merr_t mpool_mlog_erase_byoid(struct mpool *mp, u64 mlogid, uint64_t mingen)
+{
+	struct mpioc_mlog_id   mi = { .mi_gen = mingen };
+
+	if (!mp)
+		return merr(EINVAL);
+
+	if (!mpool_is_writable(mp))
+		return merr(EPERM);
+
+	mi.mi_objid = mlogid;
+
+	return mpool_ioctl(mp->mp_fd, MPIOC_MLOG_ERASE, &mi);
 }
 
 /* Mpctl Mblock Interfaces */

@@ -29,17 +29,13 @@
 		  (_mlh), (ulong)(_objid), (ulong)(_gen1),		\
 		  (ulong)(_gen2))					\
 
-#define OP_COMMIT      0
-#define OP_DELETE      1
-
 /**
  * mdc_acquire() - Validate mdc handle and acquire mdc_lock
  *
  * @mlh: MDC handle
  * @rw:  read/append?
  */
-static inline merr_t
-mdc_acquire(struct mpool_mdc *mdc, bool rw)
+static inline merr_t mdc_acquire(struct mpool_mdc *mdc, bool rw)
 {
 	if (!mdc || mdc->mdc_magic != MPC_MDC_MAGIC || !mdc->mdc_valid)
 		return merr(EINVAL);
@@ -63,8 +59,7 @@ mdc_acquire(struct mpool_mdc *mdc, bool rw)
  * @mlh: MDC handle
  * @rw:  read/append?
  */
-static inline void
-mdc_release(struct mpool_mdc *mdc, bool rw)
+static inline void mdc_release(struct mpool_mdc *mdc, bool rw)
 {
 	if (rw && (mdc->mdc_flags & MDC_OF_SKIP_SER))
 		return;
@@ -77,29 +72,24 @@ mdc_release(struct mpool_mdc *mdc, bool rw)
  *
  * @mdc: MDC handle
  */
-static inline void
-mdc_invalidate(struct mpool_mdc *mdc)
+static inline void mdc_invalidate(struct mpool_mdc *mdc)
 {
 	mdc->mdc_magic = MPC_NO_MAGIC;
 }
 
 /**
- * mdc_get_mpname() - Get mpool name from MDC context or dataset handle
+ * mdc_mpname_get() - Get mpool name from MDC context or dataset handle
  *
  * @mp:     mpool handle
  * @mpname: buffer to store the mpool name (output)
  * @mplen:  buffer len
  */
-static merr_t
-mdc_get_mpname(
-	struct mpool           *mp,
-	char                   *mpname,
-	size_t                  mplen)
+static merr_t mdc_mpname_get(struct mpool *mp, char *mpname, size_t mplen)
 {
 	if (!mp || !mpname)
 		return merr(EINVAL);
 
-	mp_ds_mpname(mp, mpname, mplen);
+	mpool_name_get(mp, mpname, mplen);
 
 	return 0;
 }
@@ -148,11 +138,7 @@ mpool_mdc_alloc(
 	return 0;
 }
 
-uint64_t
-mpool_mdc_commit(
-	struct mpool   *mp,
-	u64             logid1,
-	u64             logid2)
+uint64_t mpool_mdc_commit(struct mpool *mp, u64 logid1, u64 logid2)
 {
 	merr_t err;
 
@@ -178,11 +164,7 @@ mpool_mdc_commit(
 	return 0;
 }
 
-uint64_t
-mpool_mdc_delete(
-	struct mpool    *mp,
-	u64              logid1,
-	u64              logid2)
+uint64_t mpool_mdc_delete(struct mpool *mp, u64 logid1, u64 logid2)
 {
 	merr_t rval = 0, err;
 
@@ -204,11 +186,7 @@ mpool_mdc_delete(
 	return rval;
 }
 
-uint64_t
-mpool_mdc_abort(
-	struct mpool    *mp,
-	u64              logid1,
-	u64              logid2)
+uint64_t mpool_mdc_abort(struct mpool *mp, u64 logid1, u64 logid2)
 {
 	merr_t rval = 0, err;
 
@@ -235,7 +213,7 @@ mpool_mdc_open(
 	u8                   flags,
 	struct mpool_mdc   **mdc_out)
 {
-	struct mpool_mlog  *mlh[2];
+	struct mpool_mlog  *mlh[2] = {};
 	struct mpool_mdc   *mdc;
 
 	merr_t  err = 0, err1 = 0, err2 = 0;
@@ -253,7 +231,7 @@ mpool_mdc_open(
 
 	mdc->mdc_valid = 0;
 	mdc->mdc_mp = mp;
-	mdc_get_mpname(mp, mdc->mdc_mpname, sizeof(mdc->mdc_mpname));
+	mdc_mpname_get(mp, mdc->mdc_mpname, sizeof(mdc->mdc_mpname));
 
 	mpname = mdc->mdc_mpname;
 
@@ -270,15 +248,11 @@ mpool_mdc_open(
 	err1 = mpool_mlog_open(mp, logid1, mlflags, &gen1, &mlh[0]);
 	err2 = mpool_mlog_open(mp, logid2, mlflags, &gen2, &mlh[1]);
 
-	if (err1 && merr_errno(err1) != EMSGSIZE &&
-	    merr_errno(err1) != EBUSY) {
+	if (err1 && merr_errno(err1) != EMSGSIZE && merr_errno(err1) != EBUSY) {
 		err = err1;
-	} else if (err2 && merr_errno(err2) != EMSGSIZE &&
-		   merr_errno(err2) != EBUSY) {
+	} else if (err2 && merr_errno(err2) != EMSGSIZE && merr_errno(err2) != EBUSY) {
 		err = err2;
-	} else if ((err1 && err2) ||
-			(!err1 && !err2 && gen1 && gen1 == gen2)) {
-
+	} else if ((err1 && err2) || (!err1 && !err2 && gen1 && gen1 == gen2)) {
 		err = merr(EINVAL);
 
 		/*
@@ -287,8 +261,7 @@ mpool_mdc_open(
 		 */
 		mp_pr_err(
 			"mpool %s, mdc open, bad mlog handle, mlog1 %p logid1 0x%lx errno %d gen1 %lu, mlog2 %p logid2 0x%lx errno %d gen2 %lu",
-			err, mpname, mlh[0], (ulong)logid1,
-			merr_errno(err1), (ulong)gen1, mlh[1],
+			err, mpname, mlh[0], (ulong)logid1, merr_errno(err1), (ulong)gen1, mlh[1],
 			(ulong)logid2, merr_errno(err2), (ulong)gen2);
 	} else {
 		/* active log is valid log with smallest gen */
@@ -297,26 +270,26 @@ mpool_mdc_open(
 			if (!err1) {
 				err = mpool_mlog_empty(mlh[0], &empty);
 				if (err)
-					mdc_logerr(mpname,
-						   "mlog1 empty check failed",
-						   mlh[0], logid1,
-						   gen1, gen2, err);
+					mdc_logerr(mpname, "mlog1 empty check failed",
+						   mlh[0], logid1, gen1, gen2, err);
 			}
 			if (!err && (err1 || !empty)) {
-				err = mpool_mlog_erase(mlh[0], gen2 + 1);
-				if (!err) {
-					mpool_mlog_close(mlh[0]);
-					err = mpool_mlog_open(mp, logid1,
-							      mlflags, &gen1,
-							      &mlh[0]);
-					if (err)
-						mdc_logerr(mpname,
-						"mlog1 open failed", mlh[0],
-						logid1, gen1, gen2, err);
+				if (err1) {
+					err = mpool_mlog_erase_byoid(mp, logid1, gen2 + 1);
 				} else {
-					mdc_logerr(mpname,
-						"mlog1 erase failed", mlh[0],
-						logid1, gen1, gen2, err);
+					err = mpool_mlog_erase(mlh[0], gen2 + 1);
+					if (!err)
+						mpool_mlog_close(mlh[0]);
+				}
+
+				if (!err) {
+					err = mpool_mlog_open(mp, logid1, mlflags, &gen1, &mlh[0]);
+					if (err)
+						mdc_logerr(mpname, "mlog1 open failed",
+							   mlh[0], logid1, gen1, gen2, err);
+				} else {
+					mdc_logerr(mpname, "mlog1 erase failed",
+						   mlh[0], logid1, gen1, gen2, err);
 				}
 			}
 		} else {
@@ -324,26 +297,26 @@ mpool_mdc_open(
 			if (!err2) {
 				err = mpool_mlog_empty(mlh[1], &empty);
 				if (err)
-					mdc_logerr(mpname,
-						   "mlog2 empty check failed",
-						   mlh[1], logid2,
-						   gen1, gen2, err);
+					mdc_logerr(mpname, "mlog2 empty check failed",
+						   mlh[1], logid2, gen1, gen2, err);
 			}
 			if (!err && (err2 || gen2 == gen1 || !empty)) {
-				err = mpool_mlog_erase(mlh[1], gen1 + 1);
-				if (!err) {
-					mpool_mlog_close(mlh[1]);
-					err = mpool_mlog_open(mp, logid2,
-							      mlflags, &gen2,
-							      &mlh[1]);
-					if (err)
-						mdc_logerr(mpname,
-						"mlog2 open failed", mlh[1],
-						logid2, gen1, gen2, err);
+				if (err2) {
+					err = mpool_mlog_erase_byoid(mp, logid2, gen1 + 1);
 				} else {
-					mdc_logerr(mpname,
-						   "mlog2 erase failed", mlh[1],
-						   logid2, gen1, gen2, err);
+					err = mpool_mlog_erase(mlh[1], gen1 + 1);
+					if (!err)
+						mpool_mlog_close(mlh[1]);
+				}
+
+				if (!err) {
+					err = mpool_mlog_open(mp, logid2, mlflags, &gen2, &mlh[1]);
+					if (err)
+						mdc_logerr(mpname, "mlog2 open failed",
+							   mlh[1], logid2, gen1, gen2, err);
+				} else {
+					mdc_logerr(mpname, "mlog2 erase failed",
+						   mlh[1], logid2, gen1, gen2, err);
 				}
 			}
 		}
@@ -363,24 +336,18 @@ mpool_mdc_open(
 						mdc_logerr(mpname,
 							   "adding cend to active mlog failed",
 							   mdc->mdc_alogh,
-							   mdc->mdc_alogh ==
-							   mlh[0] ?
-							   logid1 : logid2,
-							   gen1, gen2, err);
+							   mdc->mdc_alogh == mlh[0] ?
+							   logid1 : logid2, gen1, gen2, err);
 				} else {
 					mdc_logerr(mpname,
 						   "adding cstart to active mlog failed",
-						   mdc->mdc_alogh,
-						   mdc->mdc_alogh == mlh[0] ?
-						   logid1 : logid2, gen1,
-						   gen2, err);
+						   mdc->mdc_alogh, mdc->mdc_alogh == mlh[0] ?
+						   logid1 : logid2, gen1, gen2, err);
 				}
 
 			} else if (err) {
-				mdc_logerr(mpname,
-					   "active mlog empty check failed",
-					   mdc->mdc_alogh,
-					   mdc->mdc_alogh == mlh[0] ?
+				mdc_logerr(mpname, "active mlog empty check failed",
+					   mdc->mdc_alogh, mdc->mdc_alogh == mlh[0] ?
 					   logid1 : logid2, gen1, gen2, err);
 			}
 		}
@@ -396,8 +363,10 @@ mpool_mdc_open(
 
 		*mdc_out = mdc;
 	} else {
-		err1 = mpool_mlog_close(mlh[0]);
-		err2 = mpool_mlog_close(mlh[1]);
+		if (mlh[0])
+			err1 = mpool_mlog_close(mlh[0]);
+		if (mlh[1])
+			err2 = mpool_mlog_close(mlh[1]);
 	}
 
 exit:
@@ -407,8 +376,7 @@ exit:
 	return err;
 }
 
-uint64_t
-mpool_mdc_cstart(struct mpool_mdc *mdc)
+uint64_t mpool_mdc_cstart(struct mpool_mdc *mdc)
 {
 	struct mpool_mlog  *tgth = NULL;
 
@@ -446,8 +414,7 @@ mpool_mdc_cstart(struct mpool_mdc *mdc)
 	return err;
 }
 
-uint64_t
-mpool_mdc_cend(struct mpool_mdc *mdc)
+uint64_t mpool_mdc_cend(struct mpool_mdc *mdc)
 {
 	struct mpool_mlog  *srch = NULL;
 	struct mpool_mlog  *tgth = NULL;
@@ -494,8 +461,7 @@ mpool_mdc_cend(struct mpool_mdc *mdc)
 	return err;
 }
 
-uint64_t
-mpool_mdc_close(struct mpool_mdc *mdc)
+uint64_t mpool_mdc_close(struct mpool_mdc *mdc)
 {
 	merr_t err = 0;
 	merr_t rval = 0;
@@ -532,8 +498,7 @@ mpool_mdc_close(struct mpool_mdc *mdc)
 	return rval;
 }
 
-uint64_t
-mpool_mdc_sync(struct mpool_mdc *mdc)
+uint64_t mpool_mdc_sync(struct mpool_mdc *mdc)
 {
 	merr_t err;
 	bool   rw = false;
@@ -545,7 +510,7 @@ mpool_mdc_sync(struct mpool_mdc *mdc)
 	if (err)
 		return err;
 
-	err = mpool_mlog_flush(mdc->mdc_alogh);
+	err = mpool_mlog_sync(mdc->mdc_alogh);
 	if (err)
 		mp_pr_err("mpool %s, mdc %p sync failed, mlog %p",
 			  err, mdc->mdc_mpname, mdc, mdc->mdc_alogh);
@@ -555,8 +520,7 @@ mpool_mdc_sync(struct mpool_mdc *mdc)
 	return err;
 }
 
-uint64_t
-mpool_mdc_rewind(struct mpool_mdc *mdc)
+uint64_t mpool_mdc_rewind(struct mpool_mdc *mdc)
 {
 	merr_t err;
 	bool   rw = false;
@@ -568,7 +532,7 @@ mpool_mdc_rewind(struct mpool_mdc *mdc)
 	if (err)
 		return err;
 
-	err = mpool_mlog_read_data_init(mdc->mdc_alogh);
+	err = mpool_mlog_rewind(mdc->mdc_alogh);
 	if (err)
 		mp_pr_err("mpool %s, mdc %p rewind failed, mlog %p",
 			  err, mdc->mdc_mpname, mdc, mdc->mdc_alogh);
@@ -580,7 +544,7 @@ mpool_mdc_rewind(struct mpool_mdc *mdc)
 
 uint64_t
 mpool_mdc_read(
-	struct mpool_mdc      *mdc,
+	struct mpool_mdc   *mdc,
 	void               *data,
 	size_t              len,
 	size_t             *rdlen)
@@ -595,7 +559,7 @@ mpool_mdc_read(
 	if (err)
 		return err;
 
-	err = mpool_mlog_read_data_next(mdc->mdc_alogh, data, len, rdlen);
+	err = mpool_mlog_read(mdc->mdc_alogh, data, len, rdlen);
 	if (err && (merr_errno(err) != EOVERFLOW))
 		mp_pr_err("mpool %s, mdc %p read failed, mlog %p len %lu",
 			  err, mdc->mdc_mpname, mdc, mdc->mdc_alogh, len);
@@ -607,13 +571,14 @@ mpool_mdc_read(
 
 uint64_t
 mpool_mdc_append(
-	struct mpool_mdc      *mdc,
+	struct mpool_mdc   *mdc,
 	void               *data,
 	ssize_t             len,
 	bool                sync)
 {
-	merr_t err;
-	bool   rw = true;
+	struct iovec iov;
+	merr_t       err;
+	bool         rw = true;
 
 	if (!mdc || !data)
 		return merr(EINVAL);
@@ -622,7 +587,10 @@ mpool_mdc_append(
 	if (err)
 		return err;
 
-	err = mpool_mlog_append_data(mdc->mdc_alogh, data, len, sync);
+	iov.iov_base = data;
+	iov.iov_len = len;
+
+	err = mpool_mlog_append(mdc->mdc_alogh, &iov, len, sync);
 	if (err)
 		mp_pr_err("mpool %s, mdc %p append failed, mlog %p, len %lu sync %d",
 			  err, mdc->mdc_mpname, mdc, mdc->mdc_alogh, len, sync);
@@ -632,8 +600,7 @@ mpool_mdc_append(
 	return err;
 }
 
-uint64_t
-mpool_mdc_usage(struct mpool_mdc *mdc, size_t *usage)
+uint64_t mpool_mdc_usage(struct mpool_mdc *mdc, size_t *usage)
 {
 	merr_t err;
 	bool   rw = false;
@@ -655,8 +622,7 @@ mpool_mdc_usage(struct mpool_mdc *mdc, size_t *usage)
 	return err;
 }
 
-uint64_t
-mpool_mdc_get_root(struct mpool *mp, u64 *oid1, u64 *oid2)
+uint64_t mpool_mdc_get_root(struct mpool *mp, u64 *oid1, u64 *oid2)
 {
 	struct mpool_params    params;
 	merr_t                 err;

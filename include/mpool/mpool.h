@@ -29,19 +29,6 @@ struct iovec;
 
 /* MTF_MOCK_DECL(mpool) */
 
-/**
- * mpool_strerror() - Format errno description from merr_t
- */
-char *mpool_strerror(mpool_err_t err, char *buf, size_t bufsz);
-
-/**
- * mpool_strinfo() - Format file, line, and errno from merr_t
- */
-char *mpool_strinfo(mpool_err_t err, char *buf, size_t bufsz);
-
-int mpool_errno(mpool_err_t err);
-
-
 /*
  * Mpool Administrative APIs...
  */
@@ -69,44 +56,7 @@ mpool_create(
  * @ei:     error detail
  */
 /* MTF_MOCK */
-uint64_t
-mpool_destroy(
-	const char             *mpname,
-	uint32_t                flags,
-	struct mpool_devrpt    *ei);
-
-/**
- * mpool_scan() - Scan disks for mpools
- * @propcp:   (output) count of mpools found
- * @propvp:   (output) vector of mpool properties
- * @ei:       error detail
- *
- * %mpool_scan scans all drives on the system and builds
- * a list of tuples (mpool name and uuid) for each mpool found.
- *
- * Note that only valid fields in each struct mpool_params record
- * are %mp_poolid and %mp_name.
- */
-uint64_t
-mpool_scan(
-	int                    *propcp,
-	struct mpool_params   **propvp,
-	struct mpool_devrpt    *ei);
-
-/**
- * mpool_list() - Get list of active mpools
- * @propcp:   (output) count of mpools found
- * @propvp:   (output) vector of mpool properties
- * @ei:       error detail
- *
- * %mpool_list retrieves the list of active mpools from the mpool
- * kernel module.
- */
-uint64_t
-mpool_list(
-	int                    *propcp,
-	struct mpool_params   **propvp,
-	struct mpool_devrpt    *ei);
+uint64_t mpool_destroy(const char *mpname, uint32_t flags, struct mpool_devrpt *ei);
 
 /**
  * mpool_activate() - Activate an mpool
@@ -130,54 +80,7 @@ mpool_activate(
  * @flags:  mpool management flags
  * @ei:     error detail
  */
-uint64_t
-mpool_deactivate(
-	const char             *mpname,
-	uint32_t                flags,
-	struct mpool_devrpt    *ei);
-
-/**
- * mpool_rename() - Rename an mpool by name
- * @oldmp: old mpool name
- * @newmp: new mpool name
- * @flags:  mpool management flags
- * @ei:     error detail
- */
-uint64_t
-mpool_rename(
-	const char             *oldmp,
-	const char             *newmp,
-	uint32_t                flags,
-	struct mpool_devrpt    *ei);
-
-/**
- * mpool_open() - Open an mpool
- * @mp_name:  mpool name
- * @flags:    open flags
- * @ds:       mpool handle (output)
- * @ei:       error detail
- *
- * Flags are limited to a subset of flags allowed by open(2):
- * O_RDONLY, O_WRONLY, O_RDWR, and O_EXCL.
- *
- * If the O_EXCL flag is given on first open then all subsequent calls to
- * @mpool_open() will fail with -EBUSY.  Similarly, if the mpool is open in
- * shared mode then specifying the O_EXCL flag will fail with -EBUSY.
- */
-/* MTF_MOCK */
-uint64_t
-mpool_open(
-	const char             *mpname,
-	uint32_t                flags,
-	struct mpool          **mp,
-	struct mpool_devrpt    *ei);
-
-/**
- * mpool_close() - Close an mpool
- * @mp:       mpool handle
- */
-/* MTF_MOCK */
-uint64_t mpool_close(struct mpool *mp);
+uint64_t mpool_deactivate(const char *mpname, uint32_t flags, struct mpool_devrpt *ei);
 
 /**
  * mpool_mclass_add() - Add a media class to an mpool
@@ -197,6 +100,64 @@ mpool_mclass_add(
 	struct mpool_devrpt    *ei);
 
 /**
+ * mpool_rename() - Rename an mpool by name
+ * @oldmp: old mpool name
+ * @newmp: new mpool name
+ * @flags: mpool management flags
+ * @ei:    error detail
+ */
+uint64_t
+mpool_rename(const char *oldmp, const char *newmp, uint32_t flags, struct mpool_devrpt *ei);
+
+/**
+ * mpool_scan() - Scan disks for mpools
+ * @propcp: (output) count of mpools found
+ * @propvp: (output) vector of mpool properties
+ * @ei:     error detail
+ *
+ * %mpool_scan scans all drives on the system and builds
+ * a list of tuples (mpool name and uuid) for each mpool found.
+ *
+ * Note that only valid fields in each struct mpool_params record
+ * are %mp_poolid and %mp_name.
+ */
+uint64_t mpool_scan(int *propcp, struct mpool_params **propvp, struct mpool_devrpt *ei);
+
+/**
+ * mpool_list() - Get list of active mpools
+ * @propcp: (output) count of mpools found
+ * @propvp: (output) vector of mpool properties
+ * @ei:     error detail
+ *
+ * %mpool_list retrieves the list of active mpools from the mpool kernel module.
+ */
+uint64_t mpool_list(int *propcp, struct mpool_params **propvp, struct mpool_devrpt *ei);
+
+/**
+ * mpool_open() - Open an mpool
+ * @mp_name: mpool name
+ * @flags:   open flags
+ * @mp:      mpool handle (output)
+ * @ei:      error detail
+ *
+ * Flags are limited to a subset of flags allowed by open(2):
+ * O_RDONLY, O_WRONLY, O_RDWR, and O_EXCL.
+ *
+ * If the O_EXCL flag is given on first open then all subsequent calls to
+ * @mpool_open() will fail with -EBUSY.  Similarly, if the mpool is open in
+ * shared mode then specifying the O_EXCL flag will fail with -EBUSY.
+ */
+/* MTF_MOCK */
+uint64_t mpool_open(const char *mpname, uint32_t flags, struct mpool **mp, struct mpool_devrpt *ei);
+
+/**
+ * mpool_close() - Close an mpool
+ * @mp: mpool handle
+ */
+/* MTF_MOCK */
+uint64_t mpool_close(struct mpool *mp);
+
+/**
  * mpool_mclass_get() - get properties of the specified media class
  * @mp:      mpool descriptor
  * @mclass:  input media mclass
@@ -206,10 +167,22 @@ mpool_mclass_add(
  */
 /* MTF_MOCK */
 uint64_t
-mpool_mclass_get(
-	struct mpool               *mp,
-	enum mp_media_classp        mclass,
-	struct mpool_mclass_props  *props);
+mpool_mclass_get(struct mpool *mp, enum mp_media_classp mclass, struct mpool_mclass_props *props);
+
+/**
+ * mpool_usage_get() - Get mpool usage
+ * @mp:    mpool handle
+ * @usage: mpool usage (output)
+ */
+uint64_t mpool_usage_get(struct mpool *mp, struct mp_usage *usage);
+
+/**
+ * mpool_dev_props_get() - Get properties of a device within an mpool
+ * @mp:      mpool handle
+ * @devname: device name
+ * @dprops:  device props (output)
+ */
+uint64_t mpool_dev_props_get(struct mpool *mp, const char *devname, struct mp_devprops *dprops);
 
 /**
  * mpool_params_init() - initialize mpool params
@@ -224,11 +197,7 @@ void mpool_params_init(struct mpool_params *params);
  * @ei:     error detail
  */
 /* MTF_MOCK */
-uint64_t
-mpool_params_get(
-	struct mpool           *mp,
-	struct mpool_params    *params,
-	struct mpool_devrpt    *ei);
+uint64_t mpool_params_get(struct mpool *mp, struct mpool_params *params, struct mpool_devrpt *ei);
 
 /**
  * mpool_params_set() - set parameters of an activated mpool
@@ -236,41 +205,14 @@ mpool_params_get(
  * @params: mpool parameters
  * @ei:     error detail
  */
-uint64_t
-mpool_params_set(
-	struct mpool           *mp,
-	struct mpool_params    *params,
-	struct mpool_devrpt    *ei);
+uint64_t mpool_params_set(struct mpool *mp, struct mpool_params *params, struct mpool_devrpt *ei);
 
-/**
- * mpool_usage_get() - Get mpool usage
- * @mp:    mpool handle
- * @usage: mpool usage (output)
- */
-uint64_t
-mpool_usage_get(
-	struct mpool       *mp,
-	struct mp_usage    *usage);
-
-/**
- * mpool_dev_props_get() - Get properties of a device within an mpool
- * @mp:      mpool handle
- * @devname: device name
- * @dprops:  device props (output)
- */
-uint64_t
-mpool_dev_props_get(
-	struct mpool       *mp,
-	const char         *devname,
-	struct mp_devprops *dprops);
 
 /*
  * Mpool Data Manager APIs
  */
 
-/*
- * MLOG APIs
- */
+/******************************** MLOG APIs ************************************/
 
 /**
  * mpool_mlog_alloc() - allocate an mlog
@@ -280,8 +222,7 @@ mpool_dev_props_get(
  * @mlogid:  mlog id (output)
  * @props:   properties of new mlog (output)
  *
- * Return:
- *   %0 on success, <%0 on error
+ * Return: %0 on success, <%0 on error
  */
 /* MTF_MOCK */
 uint64_t
@@ -295,10 +236,9 @@ mpool_mlog_alloc(
 /**
  * mpool_mlog_commit() - commit an mlog
  * @mp:     mpool handle
- * @mlogid: mlog object id
+ * @mlogid: mlog object ID
  *
- * Return:
- *   %0 on success, <%0 on error
+ * Return: %0 on success, <%0 on error
  */
 /* MTF_MOCK */
 uint64_t mpool_mlog_commit(struct mpool *mp, uint64_t mlogid);
@@ -306,35 +246,31 @@ uint64_t mpool_mlog_commit(struct mpool *mp, uint64_t mlogid);
 /**
  * mpool_mlog_abort() - abort an mlog
  * @mp:     mpool handle
- * @mlogid: mlog object id
+ * @mlogid: mlog object ID
  *
- * Return:
- *   %0 on success, <%0 on error
+ * Return: %0 on success, <%0 on error
  */
 uint64_t mpool_mlog_abort(struct mpool *mp, uint64_t mlogid);
 
 /**
  * mpool_mlog_delete() - delete an mlog
  * @mp:     mpool handle
- * @mlogid: mlog object id
+ * @mlogid: mlog object ID
  *
- * Return:
- *   %0 on success, <%0 on error
+ * Return: %0 on success, <%0 on error
  */
 /* MTF_MOCK */
 uint64_t mpool_mlog_delete(struct mpool *mp, uint64_t mlogid);
 
 /**
  * mpool_mlog_open() - open an mlog
- *
  * @mp:     mpool handle
- * @mlogid: mlog handle
- * @flags:  Mlog open flags (enum mlog_open_flags)
+ * @mlogid: mlog object ID
+ * @flags:  mlog open flags (enum mlog_open_flags)
  * @gen:    generation number (output)
  * @mlogh:  mlog handle (output)
  *
- * Return:
- *   %0 on success, <%0 on error
+ * Return: %0 on success, <%0 on error
  */
 /* MTF_MOCK */
 uint64_t
@@ -349,161 +285,104 @@ mpool_mlog_open(
  * mpool_mlog_close() - close an mlog
  * @mlogh: mlog handle
  *
- * Return:
- *   %0 on success, <%0 on error
+ * Return: %0 on success, <%0 on error
  */
 /* MTF_MOCK */
 uint64_t mpool_mlog_close(struct mpool_mlog *mlogh);
 
 /**
- * mpool_mlog_append data() - Appenmp data to an mlog
- *
+ * mpool_mlog_append() - Appends data to an mlog
  * @mlogh: mlog handle
- * @data:  buffer to append data from
+ * @iov:   buffer in the form of struct iovec
  * @len:   buffer len
  * @sync:  1 = sync; 0 = async append
  *
- * Return:
- *   %0 on success, <%0 on error
+ * Return: %0 on success, <%0 on error
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mlog_append_data(
-	struct mpool_mlog  *mlogh,
-	void               *data,
-	size_t              len,
-	int                 sync);
+uint64_t mpool_mlog_append(struct mpool_mlog *mlogh, struct iovec *iov, size_t len, int sync);
 
 /**
- * mpool_mlog_append datav() - Appends data to an mlog
- *
- * @mlogh: mlog handle
- * @iov    buffer in the form of struct iovec
- * @len:   buffer len
- * @sync:  1 = sync; 0 = async append
- *
- * Return:
- *   %0 on success, <%0 on error
- */
-/* MTF_MOCK */
-uint64_t
-mpool_mlog_append_datav(
-	struct mpool_mlog  *mlogh,
-	struct iovec       *iov,
-	size_t              len,
-	int                 sync);
-
-/**
- *mpool_mlog_read_data_init() - Initializes the internal read cursor to the
- *                              start of log
+ * mpool_mlog_rewind() - Rewinds the internal read cursor to the start of log
  * @mlogh: mlog handle
  *
- * Return:
- *   %0 on success, <%0 on error
+ * Return: %0 on success, <%0 on error
  */
 /* MTF_MOCK */
-uint64_t mpool_mlog_read_data_init(struct mpool_mlog *mlogh);
+uint64_t mpool_mlog_rewind(struct mpool_mlog *mlogh);
 
 /**
- * mpool_mlog_read_data_next() - Reads the next record from mlog based on what
- *                               the internal read cursor points to
- *
+ * mpool_mlog_read() - Reads the next record from mlog based on where
+ *                     the internal read cursor points to
  * @mlogh: mlog handle
  * @data:  buffer to read data into
  * @len:   buffer len
  * @rdlen: data in bytes of the returned record (output)
  *
- * Return:
- *   %0 on success, <%0 on error
+ * Return: %0 on success, <%0 on error
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mlog_read_data_next(
-	struct mpool_mlog  *mlogh,
-	void               *data,
-	size_t              len,
-	size_t             *rdlen);
+uint64_t mpool_mlog_read(struct mpool_mlog *mlogh, void *data, size_t len, size_t *rdlen);
 
 /**
- * mpool_mlog_seek_read_data_next() - Reads the next record from mlog after
- *                                    skipping bytes.
- *
+ * mpool_mlog_seek_read() - Reads the next record from mlog after skipping bytes.
  * @mlogh: mlog handle
  * skip    number of bytes to be skipped before read
  * @data:  buffer to read data into
  * @len:   buffer len
  * @rdlen: data in bytes of the returned record (output)
  *
- * Return:
- *   %0 on success, <%0 on error
- *   If merr_errno() of the return value is EOVERFLOW, then the receive buffer
- *   "data" is too small and must be resized according to the value returned
- *   in "rdlen".
+ * Return: %0 on success, <%0 on error
+ *         If merr_errno() of the return value is EOVERFLOW, then the receive buffer
+ *         "data" is too small and must be resized according to the value returned in "rdlen".
  */
 /* MTF_MOCK */
 uint64_t
-mpool_mlog_seek_read_data_next(
-	struct mpool_mlog  *mlogh,
-	size_t              skip,
-	void               *data,
-	size_t              len,
-	size_t             *rdlen);
+mpool_mlog_seek_read(struct mpool_mlog *mlogh, size_t skip, void *data, size_t len, size_t *rdlen);
 
 /**
- * mpool_mlog_flush() - Flushes/syncs an mlog
- *
+ * mpool_mlog_sync() - Sync an mlog to stable media
  * @mlogh: mlog handle
  *
- * Return:
- *   %0 on success, <%0 on error
+ * Return: %0 on success, <%0 on error
  */
 /* MTF_MOCK */
-uint64_t mpool_mlog_flush(struct mpool_mlog *mlogh);
+uint64_t mpool_mlog_sync(struct mpool_mlog *mlogh);
 
 /**
  * mpool_mlog_len() - Returns length of an mlog
- *
  * @mlogh: mlog handle
  * @len:   length of the mlog (output)
  *
- * Return:
- *   %0 on success, <%0 on error
+ * Return: %0 on success, <%0 on error
  */
 /* MTF_MOCK */
 uint64_t mpool_mlog_len(struct mpool_mlog *mlogh, size_t *len);
 
 /**
  * mpool_mlog_erase() - Erase an mlog
- *
  * @mlogh:  mlog handle
  * @mingen: mininum generation number to use (pass 0 if not relevant)
  *
- * Return:
- *   %0 on success, <%0 on error
+ * Return: %0 on success, <%0 on error
  */
 /* MTF_MOCK */
 uint64_t mpool_mlog_erase(struct mpool_mlog *mlogh, uint64_t mingen);
 
 /**
  * mpool_mlog_props_get() - Get properties of an mlog
- *
  * @mlogh: mlog handle
  * @props: mlog properties (output)
  *
- * Return:
- *   %0 on success, <%0 on error
+ * Return: %0 on success, <%0 on error
  */
-uint64_t
-mpool_mlog_props_get(
-	struct mpool_mlog  *mlogh,
-	struct mlog_props  *props);
+uint64_t mpool_mlog_props_get(struct mpool_mlog *mlogh, struct mlog_props *props);
 
-/*
- * MDC (Metadata Container) APIs
- */
+
+/******************************** MDC APIs ************************************/
 
 /**
- * mdc_open_flags -
+ * enum mdc_open_flags -
  * @MDC_OF_SKIP_SER: appends and reads are guaranteed to be serialized
  *                   outside of the MDC API
  */
@@ -512,7 +391,7 @@ enum mdc_open_flags {
 };
 
 /**
- * mdc_capacity -
+ * struct mdc_capacity -
  * @mdt_captgt: capacity target for mlog in bytes
  * @mpt_spare:  true if alloc MDC from spare space
  */
@@ -522,7 +401,7 @@ struct mdc_capacity {
 };
 
 /**
- * mdc_props -
+ * struct mdc_props -
  * @mdc_objid1:
  * @mdc_objid2:
  * @mdc_alloc_cap:
@@ -537,12 +416,12 @@ struct mdc_props {
 
 /**
  * mpool_mdc_alloc() - Alloc an MDC
- * @mp:         mpool handle
- * @logid1:     Mlog ID 1
- * @logid2:     Mlog ID 2
- * @mclassp:    media class
- * @ecparm:     erase coding parameters
- * @capreq:     capacity requirements
+ * @mp:      mpool handle
+ * @logid1:  Mlog ID 1
+ * @logid2:  Mlog ID 2
+ * @mclassp: media class
+ * @capreq:  capacity requirements
+ * @props:   MDC properties
  */
 /* MTF_MOCK */
 uint64_t
@@ -556,219 +435,167 @@ mpool_mdc_alloc(
 
 /**
  * mpool_mdc_commit() - Commit an MDC
- * @mp:       mpool handle
- * @logid1:   Mlog ID 1
- * @logid2:   Mlog ID 2
+ * @mp:     mpool handle
+ * @logid1: Mlog ID 1
+ * @logid2: Mlog ID 2
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mdc_commit(
-	struct mpool   *mp,
-	uint64_t        logid1,
-	uint64_t        logid2);
+uint64_t mpool_mdc_commit(struct mpool *mp, uint64_t logid1, uint64_t logid2);
 
 /**
  * mpool_mdc_abort() - Abort an MDC
- * @mp:       mpool handle
- * @logid1:   Mlog ID 1
- * @logid2:   Mlog ID 2
+ * @mp:     mpool handle
+ * @logid1: Mlog ID 1
+ * @logid2: Mlog ID 2
  */
-uint64_t
-mpool_mdc_abort(
-	struct mpool   *mp,
-	uint64_t        logid1,
-	uint64_t        logid2);
+uint64_t mpool_mdc_abort(struct mpool *mp, uint64_t logid1, uint64_t logid2);
 
 /**
  * mpool_mdc_delete() - Delete an MDC
- * @mp:       mpool handle
- * @logid1:   Mlog ID 1
- * @logid2:   Mlog ID 2
+ * @mp:     mpool handle
+ * @logid1: Mlog ID 1
+ * @logid2: Mlog ID 2
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mdc_delete(
-	struct mpool   *mp,
-	uint64_t        logid1,
-	uint64_t        logid2);
+uint64_t mpool_mdc_delete(struct mpool *mp, uint64_t logid1, uint64_t logid2);
 
 /**
  * mpool_mdc_get_root() - Retrieve mpool root MDC OIDs
- * @mp:       mpool handle
- * @logid1:   Mlog ID 1
- * @logid2:   Mlog ID 2
+ * @mp:     mpool handle
+ * @logid1: Mlog ID 1
+ * @logid2: Mlog ID 2
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mdc_get_root(
-	struct mpool   *mp,
-	uint64_t       *logid1,
-	uint64_t       *logid2);
+uint64_t mpool_mdc_get_root(struct mpool *mp, uint64_t *logid1, uint64_t *logid2);
 
 /**
  * mpool_mdc_open() - Open MDC by OIDs
- * @mp:       mpool handle
- * @logid1:   Mlog ID 1
- * @logid2:   Mlog ID 2
- * @flags:    MDC Open flags (enum mdc_open_flags)
- * @mdc_out:  MDC handle
+ * @mp:      mpool handle
+ * @logid1:  Mlog ID 1
+ * @logid2:  Mlog ID 2
+ * @flags:   MDC Open flags (enum mdc_open_flags)
+ * @mdc_out: MDC handle
  */
 /* MTF_MOCK */
 uint64_t
 mpool_mdc_open(
-	struct mpool            *mp,
-	uint64_t                 logid1,
-	uint64_t                 logid2,
-	uint8_t                  flags,
-	struct mpool_mdc       **mdc_out);
+	struct mpool        *mp,
+	uint64_t             logid1,
+	uint64_t             logid2,
+	uint8_t              flags,
+	struct mpool_mdc   **mdc_out);
 
 /**
  * mpool_mdc_close() - Close MDC
- * @mdc:      MDC handle
+ * @mdc: MDC handle
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mdc_close(
-	struct mpool_mdc   *mdc);
+uint64_t mpool_mdc_close(struct mpool_mdc *mdc);
 
 /**
  * mpool_mdc_sync() - Flush MDC content to media
- * @mdc:      MDC handle
+ * @mdc: MDC handle
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mdc_sync(
-	struct mpool_mdc   *mdc);
+uint64_t mpool_mdc_sync(struct mpool_mdc *mdc);
 
 /**
  * mpool_mdc_rewind() - Rewind MDC to first record
- * @mdc:      MDC handle
+ * @mdc: MDC handle
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mdc_rewind(
-	struct mpool_mdc   *mdc);
+uint64_t mpool_mdc_rewind(struct mpool_mdc *mdc);
 
 /**
  * mpool_mdc_read() - Read next record from MDC
- * @mdc:      MDC handle
- * @data:     buffer to receive data
- * @len:      length of supplied buffer
- * @rdlen:    number of bytes read
+ * @mdc:   MDC handle
+ * @data:  buffer to receive data
+ * @len:   length of supplied buffer
+ * @rdlen: number of bytes read
  *
- * Return:
- *   If merr_errno() of the return value is EOVERFLOW, then the receive buffer
- *   "data" is too small and must be resized according to the value returned
- *   in "rdlen".
+ * Return: If merr_errno() of the return value is EOVERFLOW, then the receive buffer
+ *         "data" is too small and must be resized according to the value returned in "rdlen".
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mdc_read(
-	struct mpool_mdc   *mdc,
-	void               *data,
-	size_t              len,
-	size_t             *rdlen);
+uint64_t mpool_mdc_read(struct mpool_mdc *mdc, void *data, size_t len, size_t *rdlen);
 
 /**
  * mpool_mdc_append() - append record to MDC
- * @mdc:      MDC handle
- * @data:     data to write
- * @len:      length of data
- * @sync:     flag to defer return until IO is complete
+ * @mdc:  MDC handle
+ * @data: data to write
+ * @len:  length of data
+ * @sync: flag to defer return until IO is complete
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mdc_append(
-	struct mpool_mdc   *mdc,
-	void               *data,
-	ssize_t             len,
-	bool                sync);
-
+uint64_t mpool_mdc_append(struct mpool_mdc *mdc, void *data, ssize_t len, bool sync);
 /**
  * mpool_mdc_cstart() - Initiate MDC compaction
- * @mdc:      MDC handle
+ * @mdc: MDC handle
  *
  * Swap active (ostensibly full) and inactive (empty) mlogs
  * Append a compaction start marker to newly active mlog
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mdc_cstart(
-	struct mpool_mdc   *mdc);
+uint64_t mpool_mdc_cstart(struct mpool_mdc *mdc);
 
 /**
  * mpool_mdc_cend() - End MDC compactions
- * @mdc:      MDC handle
+ * @mdc: MDC handle
  *
  * Append a compaction end marker to the active mlog
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mdc_cend(
-	struct mpool_mdc   *mdc);
+uint64_t mpool_mdc_cend(struct mpool_mdc *mdc);
 
 /**
  * mpool_mdc_usage() - Return estimate of active mlog usage
- * @mdc:      MDC handle
- * @usage:    Number of bytes used (includes overhead)
+ * @mdc:   MDC handle
+ * @usage: Number of bytes used (includes overhead)
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mdc_usage(
-	struct mpool_mdc   *mdc,
-	size_t             *usage);
+uint64_t mpool_mdc_usage(struct mpool_mdc *mdc, size_t *usage);
 
-/* Mblock APIs
- */
+
+/******************************** MBLOCK APIs ************************************/
 
 /**
  * mpool_mblock_alloc() - allocate an mblock
- * @mp:		mpool
- * @mclassp:	media class
- * @spare:      allocate from spare zones
- * @mbid:	mblock object ID (output)
- * @props:	properties of new mblock (output) - will be returned if the
- *		ptr is non-NULL
+ * @mp:      mpool
+ * @mclassp: media class
+ * @spare:   allocate from spare zones
+ * @mbid:    mblock object ID (output)
+ * @props:   properties of new mblock (output) - will be returned if the ptr is non-NULL
  *
- * Return:
- *   %0 on success, <%0 on error
+ * Return: %0 on success, <%0 on error
  */
 /* MTF_MOCK */
 uint64_t
 mpool_mblock_alloc(
-	struct mpool                   *mp,
-	enum mp_media_classp		mclassp,
-	bool                            spare,
-	uint64_t                       *mbid,
-	struct mblock_props            *props);
+	struct mpool           *mp,
+	enum mp_media_classp	mclassp,
+	bool                    spare,
+	uint64_t               *mbid,
+	struct mblock_props    *props);
 
 /**
  * mpool_mblock_find() - look up an mblock by object ID
- * @mp:     mpool
- * @objid:  object ID for the mblock
- * @props:  mblock properties (returned if the ptr is non-NULL)
+ * @mp:    mpool
+ * @objid: mblock object ID
+ * @props: mblock properties (returned if the ptr is non-NULL)
  *
- *   %0 on success, <%0 on error
+ * Return: %0 on success, <%0 on error
  */
-uint64_t
-mpool_mblock_find(
-	struct mpool           *mp,
-	uint64_t                objid,
-	struct mblock_props    *props);
+uint64_t mpool_mblock_find(struct mpool *mp, uint64_t objid, struct mblock_props *props);
 
 /**
  * mpool_mblock_commit() - commit an mblock
  * @mp:   mpool
  * @mbid: mblock object ID
  *
- * Return:
- *   %0 on success, <%0 on error
+ * Return: %0 on success, <%0 on error
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mblock_commit(
-	struct mpool   *mp,
-	uint64_t        mbid);
+uint64_t mpool_mblock_commit(struct mpool *mp, uint64_t mbid);
 
 /**
  * mpool_mblock_abort() - abort an mblock
@@ -777,14 +604,10 @@ mpool_mblock_commit(
  *
  * mblock must have been allocated but not yet committed.
  *
- * Return:
- *   %0 on success, <%0 on error
+ * Return: %0 on success, <%0 on error
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mblock_abort(
-	struct mpool   *mp,
-	uint64_t        mbid);
+uint64_t mpool_mblock_abort(struct mpool *mp, uint64_t mbid);
 
 /**
  * mpool_mblock_delete() - delete an mblock
@@ -793,82 +616,65 @@ mpool_mblock_abort(
  *
  * mblock must have been allocated but not yet committed.
  *
- * Return:
- *   %0 on success, <%0 on error
+ * Return: %0 on success, <%0 on error
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mblock_delete(
-	struct mpool   *mp,
-	uint64_t        mbid);
+uint64_t mpool_mblock_delete(struct mpool *mp, uint64_t mbid);
 
 /**
  * mpool_mblock_props_get() - get properties of an mblock
- * @mp:     mpool
- * @mbid:   mblock ojbect ID
- * @props:  properties (output)
+ * @mp:    mpool
+ * @mbid:  mblock ojbect ID
+ * @props: properties (output)
  *
- * Return:
- *   %0 on success, <%0 on error
+ * Return: %0 on success, <%0 on error
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mblock_props_get(
-	struct mpool           *mp,
-	uint64_t                mbid,
-	struct mblock_props    *props);
+uint64_t mpool_mblock_props_get(struct mpool *mp, uint64_t mbid, struct mblock_props *props);
 
 /**
  * mpool_mblock_write() - write data to an mblock synchronously
- * @mp:              mpool
- * @mbid:            mblock object ID
- * @iov, @iov_cnt:   iovec containing data to be written
+ * @mp:      mpool
+ * @mbid:    mblock object ID
+ * @iov:     iovec containing data to be written
+ * @iov_cnt: iovec count
  *
  * Mblock writes are all or nothing.  Either all data is written to media, or
  * no data is written to media.  Hence, return code is success/fail instead of
  * the usual number of bytes written.
  *
- * Return:
- *   %0 on success, <%0 on error
+ * Return: %0 on success, <%0 on error
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mblock_write(
-	struct mpool     *mp,
-	uint64_t          mbid,
-	struct iovec     *iov,
-	int               iov_cnt);
+uint64_t mpool_mblock_write(struct mpool *mp, uint64_t mbid, struct iovec *iov, int iov_cnt);
 
 /**
  * mpool_mblock_read() - read data from an mblock
- * @mp:             mpool
- * @mbid:           mblock object ID
- * @iov:            iovec for output data
- * @iov_cnt:        length of iov[]
- * @offset:         PAGE aligned offset into the mblock
+ * @mp:      mpool
+ * @mbid:    mblock object ID
+ * @iov:     iovec for output data
+ * @iov_cnt: length of iov[]
+ * @offset:  PAGE aligned offset into the mblock
  *
  * Return:
- *   On failure: <%0  : -ERRNO
- *   On success: >=%0 : number of bytes read
+ * * On failure: <%0  - -ERRNO
+ * * On success: >=%0 - number of bytes read
  */
 /* MTF_MOCK */
 uint64_t
-mpool_mblock_read(
-	struct mpool     *mp,
-	uint64_t          mbid,
-	struct iovec     *iov,
-	int               iov_cnt,
-	size_t            offset);
+mpool_mblock_read(struct mpool *mp, uint64_t mbid, struct iovec *iov, int iov_cnt, size_t offset);
 
-/************* mcache stuff **********************************************/
+
+/******************************** MCACHE APIs ************************************/
+
 
 /**
  * mpool_mcache_madvise() - Give advice about use of memory
- * @map:        mcache map handle
- * @mbidx:      logical mblock number in mcache map
- * @offset:     offset into the mblock specified by mbidx
- * @length:     see madvise(2)
- * @advice:     see madvise(2)
+ * @map:    mcache map handle
+ * @mbidx:  logical mblock number in mcache map
+ * @offset: offset into the mblock specified by mbidx
+ * @length: see madvise(2)
+ * @advice: see madvise(2)
  *
  * Like madvise(2), but for mcache maps.
  *
@@ -889,21 +695,18 @@ mpool_mcache_madvise(
 
 /**
  * mpool_mcache_purge() - Purge map
- *
  * @map: mcache map handle
  * @mp:  mp mpool
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mcache_purge(
-	struct mpool_mcache_map    *map,
-	const struct mpool         *mp);
+uint64_t mpool_mcache_purge(struct mpool_mcache_map *map, const struct mpool *mp);
+
 /**
  * mpool_mcache_mincore() - Get VSS and RSS for the mcache map
- *
- * @map:        mcache map handle
- * @rssp:       ptr to count of resident pages in the map
- * @vssp:       ptr to count of virtual pages in the map
+ * @map:  mcache map handle
+ * @mp:   mpool handle
+ * @rssp: ptr to count of resident pages in the map
+ * @vssp: ptr to count of virtual pages in the map
  *
  * Get the virtual and resident set sizes (in pages count)
  * for the given mcache map.
@@ -917,20 +720,16 @@ mpool_mcache_mincore(
 	size_t                     *vssp);
 
 /**
- * mpool_mcache_getbase() - Get the base address of a memory-mapped
- *                       mblock in an mcache map
- * @map:        mcache map handle
- * @mbidx:      mcache map mblock index
+ * mpool_mcache_getbase() - Get the base address of a memory-mapped mblock in an mcache map
+ * @map:   mcache map handle
+ * @mbidx: mcache map mblock index
  *
  * If the pages of an mcache map are contiguous in memory (as is the case in
  * user-space), return the the base address of the mapped mblock.  If the
  * pages are not contiguous, return NULL.
  */
 /* MTF_MOCK */
-void *
-mpool_mcache_getbase(
-	struct mpool_mcache_map    *map,
-	const uint                  mbidx);
+void *mpool_mcache_getbase(struct mpool_mcache_map *map, const uint mbidx);
 
 
 /**
@@ -944,8 +743,7 @@ mpool_mcache_getbase(
  * mbidx is an index into the mbidv[] vector that was given
  * to mpool_mcache_create().
  *
- * Return:
- *   %0 on success, uint64_t on failure
+ * Return: %0 on success, uint64_t on failure
  */
 /* MTF_MOCK */
 uint64_t
@@ -958,11 +756,11 @@ mpool_mcache_getpages(
 
 /**
  * mpool_mcache_mmap() - Create an mcache map
- * @mp:         handle for the mpool
- * @mbidc:      mblock ID count
- * @mbidv:      vector of mblock IDs
+ * @mp:     handle for the mpool
+ * @mbidc:  mblock ID count
+ * @mbidv:  vector of mblock IDs
  * @advice:
- * @mapp:       pointer to (opaque) mpool_mcache_map ptr
+ * @mapp:   pointer to (opaque) mpool_mcache_map ptr
  *
  * Create an mcache map for the list of given mblock IDs
  * and returns a handle to it via *mapp.
@@ -978,11 +776,36 @@ mpool_mcache_mmap(
 
 /**
  * mpool_mcache_munmap() - munmap an mcache mmap
+ * @map:
  */
 /* MTF_MOCK */
-uint64_t
-mpool_mcache_munmap(
-	struct mpool_mcache_map   *map);
+uint64_t mpool_mcache_munmap(struct mpool_mcache_map *map);
+
+
+/******************************** ERROR MGMT APIs ************************************/
+
+
+/**
+ * mpool_strerror() - Format errno description from merr_t
+ * @err:
+ * @buf:
+ * @bufsz:
+ */
+char *mpool_strerror(mpool_err_t err, char *buf, size_t bufsz);
+
+/**
+ * mpool_strinfo() - Format file, line, and errno from merr_t
+ * @err:
+ * @buf:
+ * @bufsz:
+ */
+char *mpool_strinfo(mpool_err_t err, char *buf, size_t bufsz);
+
+/**
+ * mpool_strinfo() - Format file, line, and errno from merr_t
+ * @err:
+ */
+int mpool_errno(mpool_err_t err);
 
 #if defined(HSE_UNIT_TEST_MODE) && HSE_UNIT_TEST_MODE == 1
 #include "mpool_ut.h"

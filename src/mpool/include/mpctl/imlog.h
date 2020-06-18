@@ -93,4 +93,16 @@ mpool_mlog_rw(
  */
 merr_t mpool_mlog_empty(struct mpool_mlog *mlogh, bool *empty);
 
+/**
+ * mpool_mlog_erase_byoid() - Erase an mlog by object ID
+ *
+ * @mp:     mpool handle
+ * @mlogid: mlog oid
+ * @mingen: mininum generation number to use (pass 0 if not relevant)
+ *
+ * Return:
+ *   %0 on success, <%0 on error
+ */
+merr_t mpool_mlog_erase_byoid(struct mpool *mp, u64 mlogid, uint64_t mingen);
+
 #endif /* MPOOL_MPOOL_IMLOG_PRIV_H */

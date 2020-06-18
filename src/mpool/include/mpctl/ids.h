@@ -7,14 +7,14 @@
 #define MPOOL_MPOOL_IDS_PRIV_H
 
 /**
- * mp_ds_mpname() - Get mpool name from the specified dataset handle
+ * mpool_name_get() - Get mpool name from the specified dataset handle
  *
  * @ds:       dataset handle
  * @mpname:   output buffer to store the mpool name
  * @mplen:    buffer len
  */
 merr_t
-mp_ds_mpname(
+mpool_name_get(
 	struct mpool   *ds,
 	char           *mpname,
 	size_t          mplen);
