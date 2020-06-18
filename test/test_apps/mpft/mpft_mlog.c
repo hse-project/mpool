@@ -850,8 +850,8 @@ perf_seq_writes(
 free_oid:
 	for (i = 0; i < tc; i++) {
 		if (oid[i].oid[0] || oid[i].oid[1]) {
-			err = mpool_mdc_destroy(mp_ds, oid[i].oid[0],
-						oid[i].oid[1]);
+			err = mpool_mdc_delete(mp_ds, oid[i].oid[0],
+					       oid[i].oid[1]);
 			if (err) {
 				mpool_strinfo(err, err_str, sizeof(err_str));
 				fprintf(stderr,
@@ -977,7 +977,7 @@ mlog_correctness_simple(
 	int    next_arg = 0;
 	char   errbuf[ERROR_BUFFER_SIZE];
 	u64    gen;
-	u64    objid;
+	u64    mlogid;
 
 	struct mpool           *ds;
 	struct mpool_mlog      *mlog1, *mlog2;
@@ -1019,7 +1019,7 @@ mlog_correctness_simple(
 	capreq.lcp_spare  = false;
 
 	/* 3. Allocate and abort an mlog */
-	err = mpool_mlog_alloc(ds, &capreq, mlog_mclassp, &props, &mlog1);
+	err = mpool_mlog_alloc(ds, mlog_mclassp, &capreq, &mlogid, &props);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1027,40 +1027,8 @@ mlog_correctness_simple(
 			__func__, __LINE__, errbuf);
 		goto close_ds;
 	}
-	objid = props.lpr_objid;
 
-	err = mpool_mlog_find_get(ds, objid, &props, &mlog2);
-	if (err) {
-		original_err = err;
-		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to get mlog: %s\n",
-			__func__, __LINE__, errbuf);
-		(void)mpool_mlog_abort(ds, mlog1);
-		goto close_ds;
-	}
-
-	/* This abort must fail due to the outstanding get */
-	err = mpool_mlog_abort(ds, mlog1);
-	if (!err) {
-		original_err = err = merr(EBUG);
-		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Abort must have failed: %s\n",
-			__func__, __LINE__, errbuf);
-		goto close_ds;
-	}
-
-	/* Put the get reference taken above */
-	err = mpool_mlog_put(ds, mlog2);
-	if (err) {
-		original_err = err;
-		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to put mlog: %s\n",
-			__func__, __LINE__, errbuf);
-		goto close_ds;
-	}
-
-	/* This abort must succeed */
-	err = mpool_mlog_abort(ds, mlog1);
+	err = mpool_mlog_abort(ds, mlogid);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1070,7 +1038,7 @@ mlog_correctness_simple(
 	}
 
 	/* 4. Alloc and commit an mlog */
-	err = mpool_mlog_alloc(ds, &capreq, mlog_mclassp, &props, &mlog1);
+	err = mpool_mlog_alloc(ds, mlog_mclassp, &capreq, &mlogid, &props);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1078,20 +1046,19 @@ mlog_correctness_simple(
 			__func__, __LINE__, errbuf);
 		goto close_ds;
 	}
-	objid = props.lpr_objid;
 
-	err = mpool_mlog_commit(ds, mlog1);
+	err = mpool_mlog_commit(ds, mlogid);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to commit mlog: %s\n",
 			__func__, __LINE__, errbuf);
-		(void) mpool_mlog_abort(ds, mlog1);
+		(void) mpool_mlog_abort(ds, mlogid);
 		goto close_ds;
 	}
 
 	/* 5. Open the mlog */
-	err = mpool_mlog_open(ds, mlog1, oflags, &gen);
+	err = mpool_mlog_open(ds, mlogid, oflags, &gen, &mlog1);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1100,35 +1067,18 @@ mlog_correctness_simple(
 		goto destroy_mlog;
 	}
 
-	/* 6. Lookup the mlog */
-	err = mpool_mlog_find_get(ds, objid, &props, &mlog2);
-	if (err) {
-		original_err = err;
-		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to get mlog: %s\n",
-			__func__, __LINE__, errbuf);
-		goto close_mlog;
-	}
-
-	if (mlog1 != mlog2) {
-		original_err = merr(EBUG);
-		fprintf(stderr, "%s.%d: mlog lookup handle is different from "
-				"alloc handle", __func__, __LINE__);
-		goto put_mlog1;
-	}
-
 	/* 7. Open another instance of the same mlog */
-	err = mpool_mlog_open(ds, mlog2, oflags, &gen);
+	err = mpool_mlog_open(ds, mlogid, oflags, &gen, &mlog2);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to open mlog2: %s\n",
 			__func__, __LINE__, errbuf);
-		goto put_mlog1;
+		goto close_mlog;
 	}
 
-	/* 8. Try deleting mlog, this must fail due to the outstanding get */
-	err = mpool_mlog_delete(ds, mlog1);
+	/* 8. Try deleting mlog, this must fail due to the outstanding open */
+	err = mpool_mlog_delete(ds, mlogid);
 	if (!err) {
 		if (!original_err)
 			original_err = err = merr(EBUG);
@@ -1138,9 +1088,8 @@ mlog_correctness_simple(
 	}
 
 	/* 9. Cleanup */
-put_mlog1:
-	/* Put the reference obtained from mpool_mlog_find_get */
-	err = mpool_mlog_put(ds, mlog2);
+close_mlog:
+	err = mpool_mlog_close(mlog2);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1148,8 +1097,7 @@ put_mlog1:
 			__func__, __LINE__, errbuf);
 	}
 
-close_mlog:
-	err = mpool_mlog_close(ds, mlog1);
+	err = mpool_mlog_close(mlog1);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1158,8 +1106,7 @@ close_mlog:
 	}
 
 destroy_mlog:
-	/* This automatically gets rid of the alloc reference */
-	err = mpool_mlog_delete(ds, mlog1);
+	err = mpool_mlog_delete(ds, mlogid);
 	if (err) {
 		if (!original_err)
 			original_err = err;
@@ -1263,7 +1210,7 @@ mlog_correctness_basicio(
 	char   buf[BUF_SIZE], buf_in[BUF_SIZE];
 	size_t read_len, len1, len2;
 	u64    gen1, gen2;
-	u64    objid;
+	u64    mlogid;
 
 	struct mpool           *ds;
 	struct mpool_mlog      *mlog1;
@@ -1305,7 +1252,7 @@ mlog_correctness_basicio(
 	capreq.lcp_spare  = false;
 
 	/* 3. Allocate and commit an mlog */
-	err = mpool_mlog_alloc(ds, &capreq, mlog_mclassp, &props, &mlog1);
+	err = mpool_mlog_alloc(ds, mlog_mclassp, &capreq, &mlogid, &props);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1314,20 +1261,18 @@ mlog_correctness_basicio(
 		goto close_ds;
 	}
 
-	err = mpool_mlog_commit(ds, mlog1);
+	err = mpool_mlog_commit(ds, mlogid);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to commit mlog: %s\n",
 			__func__, __LINE__, errbuf);
-		(void) mpool_mlog_abort(ds, mlog1);
+		(void) mpool_mlog_abort(ds, mlogid);
 		goto close_ds;
 	}
 
-	objid = props.lpr_objid;
-
 	/* 4. Open the mlog */
-	err = mpool_mlog_open(ds, mlog1, oflags, &gen1);
+	err = mpool_mlog_open(ds, mlogid, oflags, &gen1, &mlog1);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1338,9 +1283,14 @@ mlog_correctness_basicio(
 
 	/* 5. Write pattern to mlog in sync mode */
 	for (i = 0; i < BUF_CNT; i++) {
+		struct iovec iov;
+
 		memset(buf, i, BUF_SIZE);
 
-		err = mpool_mlog_append_data(ds, mlog1, buf,  BUF_SIZE, true);
+		iov.iov_base = buf;
+		iov.iov_len = BUF_SIZE;
+
+		err = mpool_mlog_append(mlog1, &iov, iov.iov_len, true);
 		if (err) {
 			mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 			fprintf(stderr, "%s.%d: Unable to append to mlog: %s\n",
@@ -1351,9 +1301,14 @@ mlog_correctness_basicio(
 
 	/* Write pattern to mlog in async mode */
 	for (i = BUF_CNT; i < 2 * BUF_CNT; i++) {
+		struct iovec iov;
+
 		memset(buf, i, BUF_SIZE);
 
-		err = mpool_mlog_append_data(ds, mlog1, buf,  BUF_SIZE, false);
+		iov.iov_base = buf;
+		iov.iov_len = BUF_SIZE;
+
+		err = mpool_mlog_append(mlog1, &iov, iov.iov_len, false);
 		if (err) {
 			mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 			fprintf(stderr, "%s.%d: Unable to append to mlog: %s\n",
@@ -1362,7 +1317,7 @@ mlog_correctness_basicio(
 		}
 	}
 
-	err = mpool_mlog_len(ds, mlog1, &len1);
+	err = mpool_mlog_len(mlog1, &len1);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1372,7 +1327,7 @@ mlog_correctness_basicio(
 	}
 
 	/* 7. Flush the mlog */
-	err = mpool_mlog_flush(ds, mlog1);
+	err = mpool_mlog_sync(mlog1);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1382,7 +1337,7 @@ mlog_correctness_basicio(
 	}
 
 	/* 6. Close and reopen the mlog */
-	err = mpool_mlog_close(ds, mlog1);
+	err = mpool_mlog_close(mlog1);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1391,26 +1346,7 @@ mlog_correctness_basicio(
 		goto destroy_mlog;
 	}
 
-	/* Put alloc reference */
-	err = mpool_mlog_put(ds, mlog1);
-	if (err) {
-		original_err = err;
-		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to put mlog: %s\n",
-			__func__, __LINE__, errbuf);
-		goto destroy_mlog;
-	}
-
-	err = mpool_mlog_find_get(ds, objid, &props, &mlog1);
-	if (err) {
-		original_err = err;
-		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to get mlog: %s\n",
-			__func__, __LINE__, errbuf);
-		goto destroy_mlog;
-	}
-
-	err = mpool_mlog_open(ds, mlog1, oflags, &gen1);
+	err = mpool_mlog_open(ds, mlogid, oflags, &gen1, &mlog1);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1419,7 +1355,7 @@ mlog_correctness_basicio(
 		goto destroy_mlog;
 	}
 
-	err = mpool_mlog_len(ds, mlog1, &len2);
+	err = mpool_mlog_len(mlog1, &len2);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1436,7 +1372,7 @@ mlog_correctness_basicio(
 	}
 
 	/* 7. Init for Read */
-	err = mpool_mlog_read_data_init(ds, mlog1);
+	err = mpool_mlog_rewind(mlog1);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1449,8 +1385,7 @@ mlog_correctness_basicio(
 	for (i = 0; i < BUF_CNT * 2; i++) {
 		memset(buf_in, ~i, BUF_SIZE);
 
-		err = mpool_mlog_read_data_next(ds, mlog1, buf_in, BUF_SIZE,
-				&read_len);
+		err = mpool_mlog_read(mlog1, buf_in, BUF_SIZE, &read_len);
 		if (err) {
 			mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 			fprintf(stderr, "%s.%d: Unable to read from mlog: %s\n",
@@ -1475,7 +1410,7 @@ mlog_correctness_basicio(
 		}
 	}
 
-	err = mpool_mlog_erase(ds, mlog1, 0);
+	err = mpool_mlog_erase(mlog1, 0);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1485,7 +1420,7 @@ mlog_correctness_basicio(
 	}
 
 	/* 9. Close and reopen the mlog */
-	err = mpool_mlog_close(ds, mlog1);
+	err = mpool_mlog_close(mlog1);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1494,7 +1429,7 @@ mlog_correctness_basicio(
 		goto destroy_mlog;
 	}
 
-	err = mpool_mlog_open(ds, mlog1, oflags, &gen2);
+	err = mpool_mlog_open(ds, mlogid, oflags, &gen2, &mlog1);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1510,7 +1445,7 @@ mlog_correctness_basicio(
 		goto close_mlog;
 	}
 
-	err = mpool_mlog_props_get(ds, mlog1, &props);
+	err = mpool_mlog_props_get(mlog1, &props);
 	if (err || props.lpr_gen != gen2) {
 		if (err)
 			original_err = err;
@@ -1524,7 +1459,7 @@ mlog_correctness_basicio(
 
 	/* 10. Cleanup */
 close_mlog:
-	err = mpool_mlog_close(ds, mlog1);
+	err = mpool_mlog_close(mlog1);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1533,7 +1468,7 @@ close_mlog:
 	}
 
 destroy_mlog:
-	err = mpool_mlog_delete(ds, mlog1);
+	err = mpool_mlog_delete(ds, mlogid);
 	if (err) {
 		if (!original_err)
 			original_err = err;
@@ -1611,7 +1546,7 @@ mlog_correctness_recovery(
 	int    next_arg = 0;
 	char   errbuf[ERROR_BUFFER_SIZE];
 	char   buf[BUF_SIZE], buf_in[BUF_SIZE];
-	u64    gen;
+	u64    gen, mlogid;
 	int    i, rc;
 	size_t read_len;
 
@@ -1656,7 +1591,7 @@ mlog_correctness_recovery(
 	capreq.lcp_spare  = false;
 
 	/* 3. Allocate and commit an mlog */
-	err = mpool_mlog_alloc(ds, &capreq, mlog_mclassp, &props, &mlog1);
+	err = mpool_mlog_alloc(ds, mlog_mclassp, &capreq, &mlogid, &props);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1665,18 +1600,18 @@ mlog_correctness_recovery(
 		goto close_ds;
 	}
 
-	err = mpool_mlog_commit(ds, mlog1);
+	err = mpool_mlog_commit(ds, mlogid);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to commit mlog: %s\n",
 			__func__, __LINE__, errbuf);
-		(void) mpool_mlog_abort(ds, mlog1);
+		(void) mpool_mlog_abort(ds, mlogid);
 		goto close_ds;
 	}
 
 	/* 4. Open the mlog with client serialization */
-	err = mpool_mlog_open(ds, mlog1, MLOG_OF_SKIP_SER, &gen);
+	err = mpool_mlog_open(ds, mlogid, MLOG_OF_SKIP_SER, &gen, &mlog1);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1687,9 +1622,14 @@ mlog_correctness_recovery(
 
 	/* 5. Write pattern to mlog in sync mode */
 	for (i = 0; i < BUF_CNT; i++) {
+		struct iovec iov;
+
 		memset(buf, i, BUF_SIZE);
 
-		err = mpool_mlog_append_data(ds, mlog1, buf,  BUF_SIZE, true);
+		iov.iov_base = buf;
+		iov.iov_len = BUF_SIZE;
+
+		err = mpool_mlog_append(mlog1, &iov, iov.iov_len, true);
 		if (err) {
 			mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 			fprintf(stderr, "%s.%d: Unable to append to mlog: %s\n",
@@ -1713,8 +1653,7 @@ mlog_correctness_recovery(
 	for (i = 0; i < BUF_CNT; i++) {
 		memset(buf_in, ~i, BUF_SIZE);
 
-		err = mpool_mlog_read_data_next(ds, mlog1, buf_in, BUF_SIZE,
-				&read_len);
+		err = mpool_mlog_read(mlog1, buf_in, BUF_SIZE, &read_len);
 		if (err) {
 			mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 			fprintf(stderr, "%s.%d: Unable to read from mlog: %s\n",
@@ -1741,7 +1680,7 @@ mlog_correctness_recovery(
 
 	/* 8. Cleanup */
 close_mlog:
-	err = mpool_mlog_close(ds, mlog1);
+	err = mpool_mlog_close(mlog1);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1750,8 +1689,7 @@ close_mlog:
 	}
 
 destroy_mlog:
-	/* This automatically drops the alloc reference */
-	err = mpool_mlog_delete(ds, mlog1);
+	err = mpool_mlog_delete(ds, mlogid);
 	if (err) {
 		if (!original_err)
 			original_err = err;

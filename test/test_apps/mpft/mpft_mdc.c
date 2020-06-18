@@ -41,52 +41,6 @@ show_args(
 		fprintf(stdout, "\t[%d] %s\n", i, argv[i]);
 }
 
-/**
- * mdc_resolve() - Wrapper around resolve for mlog pair.
- */
-static
-void
-mdc_resolve(
-	struct mpool            *ds,
-	u64                     *logid,
-	struct mlog_props       *props,
-	struct mpool_mlog      **mlh,
-	mpool_err_t                  *ferr)
-{
-	mpool_err_t err;
-	int    i;
-
-	for (i = 0; i < 2; i++) {
-		ferr[i] = 0;
-		err = mpool_mlog_resolve(ds, logid[i], &props[i], &mlh[i]);
-		if (err)
-			ferr[i] = err;
-	}
-}
-
-/**
- * mdc_put() - Wrapper around put for mlog pair.
- */
-static
-mpool_err_t
-mdc_put(
-	struct mpool       *ds,
-	struct mpool_mlog  *mlh1,
-	struct mpool_mlog  *mlh2)
-{
-	mpool_err_t rval = 0;
-	mpool_err_t err;
-
-	err = mpool_mlog_put(ds, mlh1);
-	if (err)
-		rval = err;
-
-	err = mpool_mlog_put(ds, mlh2);
-	if (err)
-		rval = err;
-
-	return rval;
-}
 
 #define ERROR_BUFFER_SIZE 256
 #define BUFFER_SIZE 64
@@ -141,13 +95,10 @@ mdc_correctness_simple(
 	u64    oid[2];
 
 	struct mpool       *ds;
-	struct mpool_mdc      *mdc;
+	struct mpool_mdc   *mdc;
 
 	struct mdc_capacity  capreq;
 	enum mp_media_classp mclassp;
-	struct mlog_props    props[2];
-	struct mpool_mlog   *mlh[2];
-	mpool_err_t               ferr[2] = {0};
 
 	show_args(argc, argv);
 	err = process_params(argc, argv,
@@ -193,30 +144,11 @@ mdc_correctness_simple(
 		goto close_ds;
 	}
 
-	mdc_resolve(ds, oid, props, mlh, ferr);
-	if (ferr[0] || ferr[1]) {
-		original_err = (ferr[0] ? : ferr[1]);
-		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: mdc_resolve failed : %s\n",
-			__func__, __LINE__, errbuf);
-		goto close_ds;
-	}
-
-	err = mdc_put(ds, mlh[0], mlh[1]);
+	err = mpool_mdc_abort(ds, oid[0], oid[1]);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: mdc_put failed : %s\n",
-			__func__, __LINE__, errbuf);
-		goto close_ds;
-	}
-
-	/* Test MDC destroy with two un-committed mlogs */
-	err = mpool_mdc_destroy(ds, oid[0], oid[1]);
-	if (err) {
-		original_err = err;
-		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: mpool_mdc_destroy failed : %s\n",
+		fprintf(stderr, "%s.%d: Unable to abort MDC : %s\n",
 			__func__, __LINE__, errbuf);
 		goto close_ds;
 	}
@@ -260,7 +192,7 @@ mdc_correctness_simple(
 	}
 
 	/* Test MDC destroy with two committed mlogs */
-	err = mpool_mdc_destroy(ds, oid[0], oid[1]);
+	err = mpool_mdc_delete(ds, oid[0], oid[1]);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -270,7 +202,7 @@ mdc_correctness_simple(
 	}
 
 	/* Test MDC destroy with two non-existent mlogs */
-	err = mpool_mdc_destroy(ds, oid[0], oid[1]);
+	err = mpool_mdc_delete(ds, oid[0], oid[1]);
 	if (!err && mpool_errno(err) != ENOENT) {
 		original_err = (err ? : merr(EBUG));
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -289,28 +221,18 @@ mdc_correctness_simple(
 		goto close_ds;
 	}
 
-	mdc_resolve(ds, oid, props, mlh, ferr);
-	if (ferr[0] || ferr[1]) {
-		original_err = (ferr[0] ? : ferr[1]);
-		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: mdc_resolve failed : %s\n",
-			__func__, __LINE__, errbuf);
-		goto close_ds;
-	}
-
-	(void)mpool_mlog_put(ds, mlh[0]);
-	err = mpool_mlog_abort(ds, mlh[1]);
+	err = mpool_mlog_abort(ds, oid[0]);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to abort mlog : %s\n",
 			__func__, __LINE__, errbuf);
-		mpool_mlog_put(ds, mlh[1]);
+		mpool_mlog_abort(ds, oid[1]);
 		goto destroy_mdc;
 	}
 
 	/* Test MDC destroy with one non-existent and one un-committed mlog */
-	err = mpool_mdc_destroy(ds, oid[0], oid[1]);
+	err = mpool_mdc_delete(ds, oid[0], oid[1]);
 	if (!err || mpool_errno(err) != ENOENT) {
 		original_err = (err ? : merr(EBUG));
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -338,8 +260,7 @@ mdc_correctness_simple(
 		goto close_ds;
 	}
 
-	mpool_mlog_find_get(ds, oid[0], &props[0], &mlh[0]);
-	err = mpool_mlog_delete(ds, mlh[0]);
+	err = mpool_mlog_delete(ds, oid[0]);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -349,7 +270,7 @@ mdc_correctness_simple(
 	}
 
 	/* Test MDC destroy with one non-existent and one committed mlog */
-	err = mpool_mdc_destroy(ds, oid[0], oid[1]);
+	err = mpool_mdc_delete(ds, oid[0], oid[1]);
 	if (!err || mpool_errno(err) != ENOENT) {
 		original_err = (err ? : merr(EBUG));
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -363,7 +284,7 @@ mdc_correctness_simple(
 
 	/* 6. Cleanup */
 destroy_mdc:
-	err = mpool_mdc_destroy(ds, oid[0], oid[1]);
+	err = mpool_mdc_delete(ds, oid[0], oid[1]);
 	if (err) {
 		if (!original_err)
 			original_err = err;
@@ -558,7 +479,7 @@ mdc_correctness_ds_release(
 	/* 10. Cleanup */
 	/* Destroy the MDC */
 destroy_mdc:
-	err = mpool_mdc_destroy(ds, oid[0], oid[1]);
+	err = mpool_mdc_delete(ds, oid[0], oid[1]);
 	if (err) {
 		if (!original_err)
 			original_err = err;
@@ -873,7 +794,7 @@ close_mdc0:
 
 	/* Destroy the MDC */
 destroy_mdc:
-	err = mpool_mdc_destroy(ds, oid[0], oid[1]);
+	err = mpool_mdc_delete(ds, oid[0], oid[1]);
 	if (err) {
 		if (!original_err)
 			original_err = err;
@@ -1105,7 +1026,7 @@ close_mdc:
 
 	/* Destroy the MDC */
 destroy_mdc:
-	err = mpool_mdc_destroy(ds, oid[0], oid[1]);
+	err = mpool_mdc_delete(ds, oid[0], oid[1]);
 	if (err) {
 		if (!original_err)
 			original_err = err;
@@ -1328,7 +1249,7 @@ close_mdc1:
 
 	/* Destroy the MDC */
 destroy_mdc:
-	err = mpool_mdc_destroy(ds, oid[0], oid[1]);
+	err = mpool_mdc_delete(ds, oid[0], oid[1]);
 	if (err) {
 		if (!original_err)
 			original_err = err;
@@ -1605,7 +1526,7 @@ close_mdcs:
 	/* Destroy the MDCs */
 destroy_mdcs:
 	for (i = 0; i < mdc_cnt; i++) {
-		err = mpool_mdc_destroy(ds, oid[i].oid[0], oid[i].oid[1]);
+		err = mpool_mdc_delete(ds, oid[i].oid[0], oid[i].oid[1]);
 		if (err) {
 			if (!original_err)
 				original_err = err;
