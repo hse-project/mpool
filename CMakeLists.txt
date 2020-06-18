@@ -162,25 +162,6 @@ else()
 endif()
 
 
-find_package(Git)
-
-# Create the version header file.
-#
-file( WRITE ${CMAKE_BINARY_DIR}/mpool_version.h
-    "static const char mpool_version[] = \"${PROJECT_VERSION}${BUILD_PKG_VQUAL}\";\n"
-    "static const char mpool_tag[] = \"${BUILD_PKG_TAG}\";\n"
-    "static const char mpool_sha[] = \"${BUILD_PKG_SHA}\";\n"
-)
-
-# Set up custom target
-#
-add_custom_target(
-    mpool_version
-    COMMAND mkdir -p ${MPOOL_STAGE_INSTALL_PREFIX}/include
-    COMMAND cp -fuv ${CMAKE_BINARY_DIR}/mpool_version.h ${MPOOL_STAGE_INSTALL_PREFIX}/include/mpool_version.h
-)
-
-
 ################################################################
 #
 # Establish prerequisites for all compiled targets
@@ -250,6 +231,23 @@ endif()
 
 include( ${MPOOL_SCRIPTS_DIR}/${BUILD_PKG_TYPE}/CMakeLists.txt )
 include( CPack )
+
+
+# Create the version header file.
+#
+file( WRITE ${CMAKE_BINARY_DIR}/mpool_version.h
+    "static const char mpool_version[] = \"${CPACK_PACKAGE_VERSION}-${CPACK_PACKAGE_RELEASE}\";\n"
+    "static const char mpool_tag[] = \"${BUILD_PKG_TAG}\";\n"
+    "static const char mpool_sha[] = \"${BUILD_PKG_SHA}\";\n"
+)
+
+# Set up custom target
+#
+add_custom_target(
+    mpool_version
+    COMMAND mkdir -p ${MPOOL_STAGE_INSTALL_PREFIX}/include
+    COMMAND cp -fuv ${CMAKE_BINARY_DIR}/mpool_version.h ${MPOOL_STAGE_INSTALL_PREFIX}/include/mpool_version.h
+)
 
 
 # CTest pretest script
