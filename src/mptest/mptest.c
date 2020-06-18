@@ -202,7 +202,7 @@ comopts_handler(
 		break;
 
 	case 'V':
-		printf("%s\n", mpool_version);
+		printf("%s  %s  %s\n", mpool_version, mpool_tag, mpool_sha);
 		exit(0);
 
 	case 'v':

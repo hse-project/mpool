@@ -4,10 +4,8 @@
 # Copyright (C) 2015-2020 Micron Technology, Inc.  All rights reserved.
 #
 
-cmake_minimum_required(VERSION 3.6)
-if(${CMAKE_MAJOR_VERSION} GREATER 2)
-cmake_policy(SET CMP0046 OLD)
-endif()
+cmake_minimum_required( VERSION 2.8 )
+cmake_policy( SET CMP0046 OLD )
 
 project( mpool C )
 
@@ -169,7 +167,9 @@ find_package(Git)
 # Create the version header file.
 #
 file( WRITE ${CMAKE_BINARY_DIR}/mpool_version.h
-    "static const char mpool_version[] = \"${BUILD_PKG_TAG}\";\n"
+    "static const char mpool_version[] = \"${PROJECT_VERSION}${BUILD_PKG_VQUAL}\";\n"
+    "static const char mpool_tag[] = \"${BUILD_PKG_TAG}\";\n"
+    "static const char mpool_sha[] = \"${BUILD_PKG_SHA}\";\n"
 )
 
 # Set up custom target

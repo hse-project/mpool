@@ -54,6 +54,7 @@ Configuration Variables:
     BUILD_PKG_DIR      ${BUILD_PKG_DIR}
     BUILD_PKG_DIST     ${BUILD_PKG_DIST}
     BUILD_PKG_REL      ${BUILD_PKG_REL}
+    BUILD_PKG_SHA      ${BUILD_PKG_SHA}
     BUILD_PKG_TAG      ${BUILD_PKG_TAG}
     BUILD_PKG_TYPE     ${BUILD_PKG_TYPE}
     BUILD_PKG_VERSION  ${BUILD_PKG_VERSION}
@@ -111,12 +112,15 @@ BUILD_PKG_VQUAL := '~dev'
 
 BUILD_PKG_VENDOR ?= "Micron Technology, Inc."
 
+BUILD_PKG_SHA := $(shell test -d ".git" && git rev-parse HEAD 2>/dev/null)
+
 BUILD_PKG_TAG := $(shell test -d ".git" && \
-	git describe --always --long --tags --dirty --abbrev=10)
+	git describe --always --long --tags --dirty --abbrev=10 2>/dev/null)
 
 ifeq (${BUILD_PKG_TAG},)
 BUILD_PKG_TAG := ${BUILD_PKG_VERSION}
 BUILD_PKG_REL := 0
+BUILD_PKG_SHA := 0
 else
 BUILD_PKG_REL := $(shell echo ${BUILD_PKG_TAG} | \
 	sed -En 's/.*-([0-9]+)-[a-z0-9]{7,}(-dirty){0,1}$$/\1/p')
@@ -233,6 +237,7 @@ define config-gen =
 	echo 'Set( BUILD_PKG_ARCH      "$(BUILD_PKG_ARCH)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_PKG_DIST      "$(BUILD_PKG_DIST)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_PKG_REL       "$(BUILD_PKG_REL)" CACHE STRING "" )' ;\
+	echo 'Set( BUILD_PKG_SHA       "$(BUILD_PKG_SHA)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_PKG_TAG       "$(BUILD_PKG_TAG)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_PKG_TYPE      "$(BUILD_PKG_TYPE)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_PKG_VERSION   "$(BUILD_PKG_VERSION)" CACHE STRING "" )' ;\

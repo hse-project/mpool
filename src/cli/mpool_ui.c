@@ -1245,7 +1245,8 @@ mpool_version_func(
 		return merr(EINVAL);
 	}
 
-	fprintf(co.co_fp, "version: %s\n", mpool_version);
+	fprintf(co.co_fp, "version: %s  %s  %s\n",
+		mpool_version, mpool_tag, mpool_sha);
 
 	return 0;
 }
