@@ -1245,8 +1245,13 @@ mpool_version_func(
 		return merr(EINVAL);
 	}
 
-	fprintf(co.co_fp, "version: %s  %s  %s\n",
-		mpool_version, mpool_tag, mpool_sha);
+	if (co.co_verbose) {
+		fprintf(co.co_fp, "version: %s\n", mpool_version);
+		fprintf(co.co_fp, "tag:     %s\n", mpool_tag);
+		fprintf(co.co_fp, "sha:     %s\n", mpool_sha);
+	} else {
+		fprintf(co.co_fp, "%s\n", mpool_version);
+	}
 
 	return 0;
 }

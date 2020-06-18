@@ -182,25 +182,6 @@ macro(add_executable _target)
 endmacro()
 
 
-################################################################
-#
-# Subdirectories
-#
-################################################################
-
-enable_testing()
-
-add_subdirectory( sub )
-add_subdirectory( src )
-add_subdirectory( test )
-add_subdirectory( include )
-add_subdirectory( scripts/tmpfiles.d )
-add_subdirectory( scripts/systemd )
-add_subdirectory( scripts/udev/rules.d )
-add_subdirectory( scripts/sysctl.d )
-add_subdirectory( scripts/modules-load.d )
-
-
 # Common package options...
 #
 set( CPACK_PACKAGE_LICENSE      "MIT" )
@@ -229,25 +210,45 @@ if( ${CMAKE_MINIMUM_REQUIRED_VERSION} VERSION_LESS 3.6.2 )
 	"${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CPACK_PACKAGE_RELEASE}" )
 endif()
 
+
+# Create the version header file template:
+#
+file( WRITE ${CMAKE_BINARY_DIR}/mpool_version.h.in
+    "static const char mpool_version[] = \"@CPACK_PACKAGE_VERSION@-@CPACK_PACKAGE_RELEASE@\";\n"
+    "static const char mpool_tag[] = \"@BUILD_PKG_TAG@\";\n"
+    "static const char mpool_sha[] = \"@BUILD_PKG_SHA@\";\n"
+)
+
+configure_file(
+    ${CMAKE_BINARY_DIR}/mpool_version.h.in
+    ${MPOOL_STAGE_INSTALL_PREFIX}/include/mpool_version.h
+    @ONLY
+    )
+
+
+################################################################
+#
+# Subdirectories
+#
+################################################################
+
+enable_testing()
+
+add_subdirectory( sub )
+add_subdirectory( src )
+add_subdirectory( test )
+add_subdirectory( include )
+add_subdirectory( scripts/tmpfiles.d )
+add_subdirectory( scripts/systemd )
+add_subdirectory( scripts/udev/rules.d )
+add_subdirectory( scripts/sysctl.d )
+add_subdirectory( scripts/modules-load.d )
+
+
+# Configure cpack now that we've seen all components...
+#
 include( ${MPOOL_SCRIPTS_DIR}/${BUILD_PKG_TYPE}/CMakeLists.txt )
 include( CPack )
-
-
-# Create the version header file.
-#
-file( WRITE ${CMAKE_BINARY_DIR}/mpool_version.h
-    "static const char mpool_version[] = \"${CPACK_PACKAGE_VERSION}-${CPACK_PACKAGE_RELEASE}\";\n"
-    "static const char mpool_tag[] = \"${BUILD_PKG_TAG}\";\n"
-    "static const char mpool_sha[] = \"${BUILD_PKG_SHA}\";\n"
-)
-
-# Set up custom target
-#
-add_custom_target(
-    mpool_version
-    COMMAND mkdir -p ${MPOOL_STAGE_INSTALL_PREFIX}/include
-    COMMAND cp -fuv ${CMAKE_BINARY_DIR}/mpool_version.h ${MPOOL_STAGE_INSTALL_PREFIX}/include/mpool_version.h
-)
 
 
 # CTest pretest script
