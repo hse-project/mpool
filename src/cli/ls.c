@@ -477,7 +477,7 @@ mpool_ls_list(
 	struct imp_entry   *entryv;
 
 	int     noffline, nappended, nmatched;
-	bool    argmatchv[argc];
+	bool    argmatchv[argc + 1];
 	size_t  obufoff = 0;
 	int     entryc;
 	int     labwidth = 6;

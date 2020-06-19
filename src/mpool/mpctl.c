@@ -1292,7 +1292,7 @@ mpool_deactivate(
 	if (-1 == fd) {
 		err = merr(errno);
 		mpool_devrpt(ei, MPOOL_RC_OPEN, -1, MPC_DEV_CTLPATH);
-		return err;
+		goto errout;
 	}
 
 	memset(&mp, 0, sizeof(mp));
@@ -1312,6 +1312,9 @@ mpool_deactivate(
 	}
 
 	close(fd);
+errout:
+	free(entry);
+	free(dpaths);
 
 	return err;
 }
