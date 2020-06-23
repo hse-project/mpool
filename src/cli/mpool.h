@@ -26,6 +26,6 @@ enum verbosity {
 	MPOOL_TERSE = true,
 };
 
-#define NFUI_ERRBUFSZ 128
+#define MPUI_ERRBUFSZ 128
 
 #endif /* MPOOL_CLI_H */

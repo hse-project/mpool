@@ -33,13 +33,11 @@
 static const char *fmt_insufficient =
 	"%s: insufficient arguments for mandatory parameters, use -h for help\n";
 
-static const char *fmt_extraneous =
-	"%s: extraneous argument `%s' detected, use -h for help\n";
+static const char *fmt_extraneous = "%s: extraneous argument `%s' detected, use -h for help\n";
 
 static char stgdev[128];
 
-static void
-mpool_params_defaults(struct mpool_params *params)
+static void mpool_params_defaults(struct mpool_params *params)
 {
 	const char *path = "/sys/module/mpool/parameters/mpc_default_";
 	mpool_err_t err;
@@ -74,14 +72,11 @@ mpool_params_defaults(struct mpool_params *params)
 	strcpy(params->mp_label, MPOOL_LABEL_DEFAULT);
 }
 
-static merr_t
-mpool_prepare(
-	char   **devices,
-	int      dcnt)
+static merr_t mpool_prepare(char **devices, int dcnt)
 {
 	struct mpool_devrpt devrpt;
 
-	char    errbuf[NFUI_ERRBUFSZ];
+	char    errbuf[MPUI_ERRBUFSZ];
 	int     i, j;
 	merr_t  err = 0;
 
@@ -93,15 +88,13 @@ mpool_prepare(
 	for (i = 0; i < dcnt ; i++) {
 		err = device_is_full_device(devices[i]);
 		if (err && !co.co_dry_run) {
-			fprintf(co.co_fp, "%s is not a full device name\n",
-				devices[i]);
+			fprintf(co.co_fp, "%s is not a full device name\n", devices[i]);
 			return err;
 		}
 		for (j = i + 1; j < dcnt; j++) {
 			if (!strcmp(devices[j], devices[i])) {
-				fprintf(co.co_fp,
-				"Device %s is repeated in argument list.\n",
-				devices[i]);
+				fprintf(co.co_fp, "Device %s is repeated in argument list.\n",
+					devices[i]);
 				return merr(EINVAL);
 			}
 		}
@@ -117,20 +110,17 @@ mpool_prepare(
 				 * Check if that mpool is activated.
 				 */
 				err = mp_dev_activated(devices[i], &activated,
-					mp_name, sizeof(mp_name));
+						       mp_name, sizeof(mp_name));
 				if (err)
 					goto exit;
 
 				if (activated) {
-					mpool_devrpt(
-						&devrpt, MPCTL_RC_DEVACTIVATED,
-						i, NULL);
+					mpool_devrpt(&devrpt, MPCTL_RC_DEVACTIVATED, i, NULL);
 					err = merr(EBUSY);
 					goto exit;
 				}
 
-				fprintf(co.co_fp,
-					"WARNING: mpool %s might now be unusable\n",
+				fprintf(co.co_fp, "WARNING: mpool %s might now be unusable\n",
 					mp_name);
 
 			} else if (err) {
@@ -169,8 +159,7 @@ mpool_prepare(
 
 			/* Erase the superblocks.
 			 */
-			err = mp_sb_erase(dcnt, devices, &devrpt, pool_lst,
-					  pool_lst_len);
+			err = mp_sb_erase(dcnt, devices, &devrpt, pool_lst, pool_lst_len);
 			if (err) {
 				free(pool_lst);
 				goto exit;
@@ -200,16 +189,15 @@ exit:
 			strlcpy(ei.mdr_msg, device, sizeof(ei.mdr_msg));
 		}
 
-		emit_err(co.co_fp, err, errbuf, sizeof(errbuf),
-			 "prepare device", device, &ei);
+		emit_err(co.co_fp, err, errbuf, sizeof(errbuf), "prepare device", device, &ei);
 	}
 
 	return err;
 }
 
-#define PARAM_INST_MBSZ(_val, _name, _msg)			\
-	{ { _name"=%s", sizeof(u32), 1, 64 + 1,	\
-	   get_u32, show_u32, check_u32 },			\
+#define PARAM_INST_MBSZ(_val, _name, _msg)                \
+	{ { _name"=%s", sizeof(u32), 1, 64 + 1,	          \
+	   get_u32, show_u32, check_u32 },                \
 	   (void *)&(_val), (_msg), PARAM_FLAG_TUNABLE }
 
 /**
@@ -218,32 +206,22 @@ exit:
 
 static struct mpool_params params;
 
-static struct param_inst
-create_paramsv[] = {
+static struct param_inst create_paramsv[] = {
 	PARAM_INST_UID(params.mp_uid, "uid", "spec file user ID"),
 	PARAM_INST_GID(params.mp_gid, "gid", "spec file group ID"),
 	PARAM_INST_MODE(params.mp_mode, "mode", "spec file mode bits"),
-	PARAM_INST_STRING(params.mp_label, sizeof(params.mp_label),
-			  "label", "limited ascii text"),
-	PARAM_INST_MBSZ(params.mp_mblocksz[MP_MED_CAPACITY],
-			"capsz", "capacity device mblock size"),
-	PARAM_INST_MBSZ(params.mp_mblocksz[MP_MED_STAGING],
-			"stgsz", "staging device mblock size"),
-	PARAM_INST_U16_ADV(params.mp_mdc0cap, "mdc0cap",
-			   "MDC0 capacity in MiB"),
-	PARAM_INST_U16_ADV(params.mp_mdcncap, "mdcncap",
-			   "MDCN capacity in MiB"),
-	PARAM_INST_U16_ADV(params.mp_mdcnum, "mdcnum",
-			   "Number of mpool internal MDCs"),
-	PARAM_INST_STRING(stgdev, sizeof(stgdev),
-			  "stgdev", "staging device"),
+	PARAM_INST_STRING(params.mp_label, sizeof(params.mp_label), "label", "limited ascii text"),
+	PARAM_INST_MBSZ(params.mp_mblocksz[MP_MED_CAPACITY], "capsz",
+			"capacity device mblock size"),
+	PARAM_INST_MBSZ(params.mp_mblocksz[MP_MED_STAGING], "stgsz", "staging device mblock size"),
+	PARAM_INST_U16_ADV(params.mp_mdc0cap, "mdc0cap", "MDC0 capacity in MiB"),
+	PARAM_INST_U16_ADV(params.mp_mdcncap, "mdcncap", "MDCN capacity in MiB"),
+	PARAM_INST_U16_ADV(params.mp_mdcnum, "mdcnum", "Number of mpool internal MDCs"),
+	PARAM_INST_STRING(stgdev, sizeof(stgdev), "stgdev", "staging device"),
 	PARAM_INST_END
 };
 
-void
-mpool_create_help(
-	struct verb_s  *v,
-	bool            terse)
+void mpool_create_help(struct verb_s *v, bool terse)
 {
 	struct help_s  h = {
 		.token = "create",
@@ -260,17 +238,13 @@ mpool_create_help(
 	mpool_generic_verb_help(v, &h, terse, create_paramsv, 0);
 }
 
-merr_t
-mpool_create_func(
-	struct verb_s   *v,
-	int              argc,
-	char           **argv)
+merr_t mpool_create_func(struct verb_s *v, int argc, char **argv)
 {
 	struct mpool_devrpt     ei = { };
 	struct pd_prop          props;
 	const char             *mpname;
 
-	char    errbuf[NFUI_ERRBUFSZ];
+	char    errbuf[MPUI_ERRBUFSZ];
 	int     argind = 0;
 	u32     flags = 0;
 	merr_t  err;
@@ -315,26 +289,19 @@ mpool_create_func(
 			rcode = MPOOL_RC_OPEN;
 
 		mpool_devrpt(&ei, rcode, -1, argv[1]);
-		emit_err(co.co_fp, err, errbuf, sizeof(errbuf),
-			 "create mpool", mpname, &ei);
+		emit_err(co.co_fp, err, errbuf, sizeof(errbuf), "create mpool", mpname, &ei);
 		return err;
 	}
 
 	sz = params.mp_mblocksz[MP_MED_CAPACITY];
-	if (sz > 0 && (!powerof2(sz) ||
-		       sz < MPOOL_MBSIZE_MB_MIN ||
-		       sz > MPOOL_MBSIZE_MB_MAX)) {
-		fprintf(co.co_fp, "%s: capsz must be power-of-2 in [1..64]\n",
-			progname);
+	if (sz > 0 && (!powerof2(sz) || sz < MPOOL_MBSIZE_MB_MIN || sz > MPOOL_MBSIZE_MB_MAX)) {
+		fprintf(co.co_fp, "%s: capsz must be power-of-2 in [1..64]\n", progname);
 		return merr(EINVAL);
 	}
 
 	sz = params.mp_mblocksz[MP_MED_STAGING];
-	if (sz > 0 && (!powerof2(sz) ||
-		       sz < MPOOL_MBSIZE_MB_MIN ||
-		       sz > MPOOL_MBSIZE_MB_MAX)) {
-		fprintf(co.co_fp, "%s: stgsz must be power-of-2 in [1..64]\n",
-			progname);
+	if (sz > 0 && (!powerof2(sz) || sz < MPOOL_MBSIZE_MB_MIN || sz > MPOOL_MBSIZE_MB_MAX)) {
+		fprintf(co.co_fp, "%s: stgsz must be power-of-2 in [1..64]\n", progname);
 		return merr(EINVAL);
 	}
 
@@ -349,8 +316,7 @@ mpool_create_func(
 
 		mdc0cap = params.mp_mdc0cap;
 		mdcncap = params.mp_mdcncap;
-		if ((mdc0cap != 0 && !powerof2(mdc0cap)) ||
-		    (mdcncap != 0 && !powerof2(mdcncap))) {
+		if ((mdc0cap != 0 && !powerof2(mdc0cap)) || (mdcncap != 0 && !powerof2(mdcncap))) {
 			err = merr(EINVAL);
 			mpool_devrpt(&ei, MPOOL_RC_ERRMSG, -1,
 				     "mdc0cap/mdcncap must be power-of-2");
@@ -377,8 +343,7 @@ mpool_create_func(
 		if (mdcnum > MPOOL_MDCNUM_MAX) {
 			params.mp_mdcnum = MPOOL_MDCNUM_MAX;
 			if (co.co_verbose)
-				fprintf(co.co_fp, "mdcnum capped to max %u\n",
-					MPOOL_MDCNUM_MAX);
+				fprintf(co.co_fp, "mdcnum capped to max %u\n", MPOOL_MDCNUM_MAX);
 		}
 
 		err = mpool_create(mpname, argv[1], &params, flags, &ei);
@@ -389,9 +354,7 @@ mpool_create_func(
 		}
 
 		if (stgdev[0]) {
-			err = mpool_mclass_add(mpname, stgdev,
-					       MP_MED_STAGING,
-					       &params, flags, &ei);
+			err = mpool_mclass_add(mpname, stgdev, MP_MED_STAGING, &params, flags, &ei);
 			if (err) {
 				emit_err(co.co_fp, err, errbuf, sizeof(errbuf),
 					 "create mpool", mpname, &ei);
@@ -416,19 +379,13 @@ errout:
 
 static struct mpool_params aparams;
 
-static struct param_inst
-add_paramsv[] = {
-	PARAM_INST_STRING(stgdev, sizeof(stgdev),
-			  "stgdev", "staging device"),
-	PARAM_INST_MBSZ(aparams.mp_mblocksz[MP_MED_STAGING],
-			"stgsz", "staging device mblock size"),
+static struct param_inst add_paramsv[] = {
+	PARAM_INST_STRING(stgdev, sizeof(stgdev), "stgdev", "staging device"),
+	PARAM_INST_MBSZ(aparams.mp_mblocksz[MP_MED_STAGING], "stgsz", "staging device mblock size"),
 	PARAM_INST_END
 };
 
-void
-mpool_add_help(
-	struct verb_s  *v,
-	bool            terse)
+void mpool_add_help(struct verb_s *v, bool terse)
 {
 	struct help_s  h = {
 		.token = "add",
@@ -446,17 +403,13 @@ mpool_add_help(
 	mpool_generic_verb_help(v, &h, terse, add_paramsv, 0);
 }
 
-merr_t
-mpool_add_func(
-	struct verb_s   *v,
-	int              argc,
-	char           **argv)
+merr_t mpool_add_func(struct verb_s *v, int argc, char **argv)
 {
 	struct mpool_devrpt     ei = { };
 	struct pd_prop          props;
 	const char             *mpname;
 
-	char    errbuf[NFUI_ERRBUFSZ];
+	char    errbuf[MPUI_ERRBUFSZ];
 	int     argind = 0;
 	u32     flags = 0;
 	merr_t  err;
@@ -486,11 +439,8 @@ mpool_add_func(
 	}
 
 	sz = aparams.mp_mblocksz[MP_MED_STAGING];
-	if (sz > 0 && (!powerof2(sz) ||
-		       sz < MPOOL_MBSIZE_MB_MIN ||
-		       sz > MPOOL_MBSIZE_MB_MAX)) {
-		fprintf(co.co_fp, "%s: stgsz must be power-of-2 in [1..64]\n",
-			progname);
+	if (sz > 0 && (!powerof2(sz) || sz < MPOOL_MBSIZE_MB_MIN || sz > MPOOL_MBSIZE_MB_MAX)) {
+		fprintf(co.co_fp, "%s: stgsz must be power-of-2 in [1..64]\n", progname);
 		return merr(EINVAL);
 	}
 
@@ -504,8 +454,7 @@ mpool_add_func(
 			rcode = MPOOL_RC_OPEN;
 
 		mpool_devrpt(&ei, rcode, -1, stgdev);
-		emit_err(co.co_fp, err, errbuf, sizeof(errbuf),
-			 "add device to mpool", mpname, &ei);
+		emit_err(co.co_fp, err, errbuf, sizeof(errbuf), "add device to mpool", mpname, &ei);
 		return err;
 	}
 
@@ -516,16 +465,13 @@ mpool_add_func(
 		if (err)
 			return err;
 
-		err = mpool_mclass_add(mpname, stgdev,
-				       MP_MED_STAGING,
-				       &aparams, flags, &ei);
+		err = mpool_mclass_add(mpname, stgdev, MP_MED_STAGING, &aparams, flags, &ei);
 		if (err)
 			emit_err(co.co_fp, err, errbuf, sizeof(errbuf),
 				 "add device to mpool", mpname, &ei);
 
 		if (!err && co.co_verbose)
-			fprintf(co.co_fp, "added %s to mpool %s\n",
-				stgdev, mpname);
+			fprintf(co.co_fp, "added %s to mpool %s\n", stgdev, mpname);
 	}
 
 	return err;
@@ -535,10 +481,7 @@ mpool_add_func(
  * mpool destroy <mpool>
  */
 
-void
-mpool_destroy_help(
-	struct verb_s  *v,
-	bool            terse)
+void mpool_destroy_help(struct verb_s *v, bool terse)
 {
 	struct help_s  h = {
 		.token = "destroy",
@@ -555,16 +498,12 @@ mpool_destroy_help(
 	mpool_generic_verb_help(v, &h, terse, NULL, 0);
 }
 
-merr_t
-mpool_destroy_func(
-	struct verb_s   *v,
-	int              argc,
-	char           **argv)
+merr_t mpool_destroy_func(struct verb_s *v, int argc, char **argv)
 {
 	struct mpool_devrpt ei = { };
 	const char         *mpname;
 
-	char    errbuf[NFUI_ERRBUFSZ];
+	char    errbuf[MPUI_ERRBUFSZ];
 	merr_t  err = 0;
 	u32     flags = 0;
 
@@ -584,8 +523,7 @@ mpool_destroy_func(
 		return 0;
 
 	err = mpool_destroy(mpname, flags, &ei);
-	emit_err(co.co_fp, err, errbuf, sizeof(errbuf),
-		 "destroy mpool", mpname, &ei);
+	emit_err(co.co_fp, err, errbuf, sizeof(errbuf), "destroy mpool", mpname, &ei);
 
 	if (!err && co.co_verbose)
 		fprintf(co.co_fp, "mpool %s destroyed\n", mpname);
@@ -593,10 +531,7 @@ mpool_destroy_func(
 	return err;
 }
 
-void
-mpool_scan_help(
-	struct verb_s  *v,
-	bool            terse)
+void mpool_scan_help(struct verb_s *v, bool terse)
 {
 	struct help_s  h = {
 		.token = "scan",
@@ -613,11 +548,7 @@ mpool_scan_help(
 	mpool_generic_verb_help(v, &h, terse, NULL, 0);
 }
 
-merr_t
-mpool_scan_func(
-	struct verb_s   *v,
-	int             argc,
-	char           **argv)
+merr_t mpool_scan_func(struct verb_s *v, int argc, char **argv)
 {
 	struct mpool_devrpt     ei = { };
 	struct mpool_params    *allv, *actv;
@@ -645,14 +576,11 @@ mpool_scan_func(
 		if (!buf)
 			return merr(ENOMEM);
 
-		err = mpool_ls_list(argc, argv, flags,
-				    co.co_verbose, !co.co_noheadings,
-				    co.co_nosuffix, co.co_yaml,
-				    buf, MPOOL_LIST_BUFSZ, &ei);
+		err = mpool_ls_list(argc, argv, flags, co.co_verbose, !co.co_noheadings,
+				    co.co_nosuffix, co.co_yaml, buf, MPOOL_LIST_BUFSZ, &ei);
 
 		if (err)
-			emit_err(co.co_fp, err, errbuf, sizeof(errbuf),
-				 "scan mpools", "", &ei);
+			emit_err(co.co_fp, err, errbuf, sizeof(errbuf), "scan mpools", "", &ei);
 		else
 			printf("%s", buf);
 
@@ -664,22 +592,20 @@ mpool_scan_func(
 	err = mpool_scan(&allc, &allv, &ei);
 	if (err) {
 		emit_err(co.co_fp, err, errbuf, sizeof(errbuf),
-			 co.co_activate ? "activate mpools" : "deactivate mpools",
-			 "", &ei);
+			 co.co_activate ? "activate mpools" : "deactivate mpools", "", &ei);
 		return err;
 	}
 
 	if (allc == 0 && geteuid() != 0) {
 		printf("Run as root to scan and %sctivate all mpools\n",
-			co.co_activate ? "a" : "dea");
+		       co.co_activate ? "a" : "dea");
 		return merr(EPERM);
 	}
 
 	err = mpool_list(&actc, &actv, &ei);
 	if (err) {
 		emit_err(co.co_fp, err, errbuf, sizeof(errbuf),
-			 co.co_activate ? "activate mpools" : "deactivate mpools",
-			 "", &ei);
+			 co.co_activate ? "activate mpools" : "deactivate mpools", "", &ei);
 		free(allv);
 		return err;
 	}
@@ -704,8 +630,7 @@ mpool_scan_func(
 		if (co.co_verbose > 0) {
 			uuid_unparse(*(uuid_t *)&allv[i].mp_poolid, uuidstr);
 
-			printf("%sctivating mpool %s  %s\n",
-				co.co_activate ? "A" : "Dea",
+			printf("%sctivating mpool %s  %s\n", co.co_activate ? "A" : "Dea",
 				allv[i].mp_name, uuidstr);
 		}
 
@@ -719,8 +644,7 @@ mpool_scan_func(
 
 		if (err) {
 			printf("Unable to %sactivate mpool %s: %s\n",
-			       co.co_activate ? "" : "de",
-			       allv[i].mp_name,
+			       co.co_activate ? "" : "de", allv[i].mp_name,
 			       mpool_strinfo(err, errbuf, sizeof(errbuf)));
 			continue;
 		}
@@ -742,22 +666,17 @@ mpool_scan_func(
 
 static struct mpool_params act_params;
 
-static struct param_inst
-activate_paramsv[] = {
+static struct param_inst activate_paramsv[] = {
 	PARAM_INST_UID(act_params.mp_uid, "uid", "spec file user ID"),
 	PARAM_INST_GID(act_params.mp_gid, "gid", "spec file group ID"),
 	PARAM_INST_MODE(act_params.mp_mode, "mode", "spec file mode bits"),
-	PARAM_INST_U16_ADV(act_params.mp_mdcnum, "mdcnum",
-			   "Number of mpool internal MDCs"),
+	PARAM_INST_U16_ADV(act_params.mp_mdcnum, "mdcnum", "Number of mpool internal MDCs"),
 	PARAM_INST_STRING(act_params.mp_label, sizeof(act_params.mp_label),
 			  "label", "limited ascii text"),
 	PARAM_INST_END
 };
 
-void
-mpool_activate_help(
-	struct verb_s  *v,
-	bool            terse)
+void mpool_activate_help(struct verb_s *v, bool terse)
 {
 	struct help_s  h = {
 		.token = "activate",
@@ -774,16 +693,12 @@ mpool_activate_help(
 	mpool_generic_verb_help(v, &h, terse, activate_paramsv, 0);
 }
 
-merr_t
-mpool_activate_func(
-	struct verb_s   *v,
-	int              argc,
-	char           **argv)
+merr_t mpool_activate_func(struct verb_s *v, int argc, char **argv)
 {
 	struct mpool_devrpt ei = { };
 	const char         *mpname;
 
-	char    errbuf[NFUI_ERRBUFSZ];
+	char    errbuf[MPUI_ERRBUFSZ];
 	merr_t  err = 0;
 	u32     flags = 0;
 	int     argind = 0;
@@ -820,14 +735,12 @@ mpool_activate_func(
 	if (mdcnum > MPOOL_MDCNUM_MAX) {
 		act_params.mp_mdcnum = MPOOL_MDCNUM_MAX;
 		if (co.co_verbose)
-			fprintf(co.co_fp, "mdcnum capped to max %u\n",
-				MPOOL_MDCNUM_MAX);
+			fprintf(co.co_fp, "mdcnum capped to max %u\n", MPOOL_MDCNUM_MAX);
 	}
 
 	err = mpool_activate(mpname, &act_params, flags, &ei);
 	if (err) {
-		emit_err(co.co_fp, err, errbuf, sizeof(errbuf),
-			 "activate mpool", mpname, &ei);
+		emit_err(co.co_fp, err, errbuf, sizeof(errbuf), "activate mpool", mpname, &ei);
 		return err;
 	}
 
@@ -854,8 +767,7 @@ struct param_inst set_paramsv[] = {
 	PARAM_INST_MODE(sparams.mp_mode, "mode", "spec file mode bits"),
 	PARAM_INST_STRING(sparams.mp_label, sizeof(sparams.mp_label),
 			  "label", "limited ascii text"),
-	PARAM_INST_RA(sparams.mp_ra_pages_max,
-		      "ra", "Max readahead pages"),
+	PARAM_INST_RA(sparams.mp_ra_pages_max, "ra", "Max readahead pages"),
 	PARAM_INST_PCT(sparams.mp_spare_cap, "spare_pct_capacity",
 		       "Spare percent for CAPACITY media class"),
 	PARAM_INST_PCT(sparams.mp_spare_stg, "spare_pct_staging",
@@ -863,10 +775,7 @@ struct param_inst set_paramsv[] = {
 	PARAM_INST_END
 };
 
-void
-mpool_set_help(
-	struct verb_s  *v,
-	bool            terse)
+void mpool_set_help(struct verb_s *v, bool terse)
 {
 	struct help_s  h = {
 		.token   = "set",
@@ -883,17 +792,13 @@ mpool_set_help(
 	mpool_generic_verb_help(v, &h, terse, set_paramsv, 0);
 }
 
-merr_t
-mpool_set_func(
-	struct verb_s   *v,
-	int              argc,
-	char           **argv)
+merr_t mpool_set_func(struct verb_s *v, int argc, char **argv)
 {
-	struct mpool_devrpt   ei = { };
-	struct mpool       *ds;
-	const char         *mpname;
+	struct mpool_devrpt     ei = { };
+	struct mpool           *ds;
+	const char             *mpname;
 
-	char    errbuf[NFUI_ERRBUFSZ];
+	char    errbuf[MPUI_ERRBUFSZ];
 	int     argind = 0;
 	merr_t  err;
 
@@ -942,10 +847,7 @@ mpool_set_func(
 	return err;
 }
 
-void
-mpool_get_help(
-	struct verb_s  *v,
-	bool            terse)
+void mpool_get_help(struct verb_s *v, bool terse)
 {
 	struct help_s  h = {
 		.token = "get",
@@ -959,11 +861,7 @@ mpool_get_help(
 	mpool_generic_verb_help(v, &h, terse, NULL, 0);
 }
 
-merr_t
-mpool_get_func(
-	struct verb_s   *v,
-	int              argc,
-	char           **argv)
+merr_t mpool_get_func(struct verb_s *v, int argc, char **argv)
 {
 	struct mpool_params    *paramsv, *params;
 	struct mpool_devrpt       ei;
@@ -984,8 +882,7 @@ mpool_get_func(
 
 	err = mpool_list(&paramsc, &paramsv, &ei);
 	if (err) {
-		emit_err(co.co_fp, err, errbuf, sizeof(errbuf),
-			 "get mpool config params", "", &ei);
+		emit_err(co.co_fp, err, errbuf, sizeof(errbuf), "get mpool config params", "", &ei);
 		return merr(EINVAL);
 	}
 
@@ -1038,13 +935,8 @@ mpool_get_func(
 
 		if (headers) {
 			printf("%-*s %*s %*s %*s  %4s %4s %6s %5s %5s %5s",
-			       mpwidth, "MPOOL",
-			       labwidth, "LABEL",
-			       uidwidth, "UID",
-			       gidwidth, "GID",
-			       "MODE", "RA",
-			       "STGSZ", "CAPSZ",
-			       "STGSP", "CAPSP");
+			       mpwidth, "MPOOL", labwidth, "LABEL", uidwidth, "UID",
+			       gidwidth, "GID", "MODE", "RA", "STGSZ", "CAPSZ", "STGSP", "CAPSP");
 
 
 			if (co.co_mutest > 0)
@@ -1066,14 +958,9 @@ mpool_get_func(
 			snprintf(gidstr, sizeof(gidstr), "%u", params->mp_gid);
 
 		printf("%-*s %*s %*s %*s  %04o %4u %6u %5u %5u %5u",
-		       mpwidth, params->mp_name,
-		       labwidth, params->mp_label,
-		       uidwidth, uidstr,
-		       gidwidth, gidstr,
-		       params->mp_mode,
-		       params->mp_ra_pages_max,
-		       params->mp_mblocksz[MP_MED_STAGING],
-		       params->mp_mblocksz[MP_MED_CAPACITY],
+		       mpwidth, params->mp_name, labwidth, params->mp_label, uidwidth, uidstr,
+		       gidwidth, gidstr, params->mp_mode, params->mp_ra_pages_max,
+		       params->mp_mblocksz[MP_MED_STAGING], params->mp_mblocksz[MP_MED_CAPACITY],
 		       params->mp_spare_stg, params->mp_spare_cap);
 
 		if (co.co_mutest > 0)
@@ -1097,10 +984,7 @@ mpool_get_func(
 /**
  * mpool deactivate <mpool>
  */
-void
-mpool_deactivate_help(
-	struct verb_s   *v,
-	bool             terse)
+void mpool_deactivate_help(struct verb_s *v, bool terse)
 {
 	struct help_s  h = {
 		.token = "deactivate",
@@ -1116,16 +1000,12 @@ mpool_deactivate_help(
 	mpool_generic_verb_help(v, &h, terse, NULL, 0);
 }
 
-merr_t
-mpool_deactivate_func(
-	struct verb_s   *v,
-	int              argc,
-	char           **argv)
+merr_t mpool_deactivate_func(struct verb_s *v, int argc, char **argv)
 {
 	struct mpool_devrpt ei = { };
 	const char         *mpname;
 
-	char    errbuf[NFUI_ERRBUFSZ];
+	char    errbuf[MPUI_ERRBUFSZ];
 	merr_t  err = 0;
 	u32     flags = 0;
 
@@ -1145,8 +1025,7 @@ mpool_deactivate_func(
 		return err;
 
 	err = mpool_deactivate(mpname, flags, &ei);
-	emit_err(co.co_fp, err, errbuf, sizeof(errbuf),
-		 "deactivate mpool", mpname, &ei);
+	emit_err(co.co_fp, err, errbuf, sizeof(errbuf), "deactivate mpool", mpname, &ei);
 
 	if (!err && co.co_verbose)
 		fprintf(co.co_fp, "mpool %s now inactive\n", mpname);
@@ -1158,10 +1037,7 @@ mpool_deactivate_func(
 /**
  * mpool rename
  */
-void
-mpool_rename_help(
-	struct verb_s   *v,
-	bool             terse)
+void mpool_rename_help(struct verb_s *v, bool terse)
 {
 	struct help_s  h = {
 		.token = "rename",
@@ -1176,16 +1052,12 @@ mpool_rename_help(
 	mpool_generic_verb_help(v, &h, terse, NULL, 0);
 }
 
-merr_t
-mpool_rename_func(
-	struct verb_s   *v,
-	int              argc,
-	char           **argv)
+merr_t mpool_rename_func(struct verb_s *v, int argc, char **argv)
 {
 	struct mpool_devrpt ei = { };
 	const char         *oldmp, *newmp;
 
-	char        errbuf[NFUI_ERRBUFSZ];
+	char        errbuf[MPUI_ERRBUFSZ];
 	merr_t      err = 0;
 	uint32_t    flags = 0;
 
@@ -1206,12 +1078,10 @@ mpool_rename_func(
 		return err;
 
 	err = mpool_rename(oldmp, newmp, flags, &ei);
-	emit_err(co.co_fp, err, errbuf, sizeof(errbuf),
-		 "rename mpool", oldmp, &ei);
+	emit_err(co.co_fp, err, errbuf, sizeof(errbuf), "rename mpool", oldmp, &ei);
 
 	if (!err && co.co_verbose)
-		fprintf(co.co_fp, "Renamed mpool name from \"%s\" to \"%s\"\n",
-			oldmp, newmp);
+		fprintf(co.co_fp, "Renamed mpool name from \"%s\" to \"%s\"\n", oldmp, newmp);
 
 	return err;
 }
@@ -1219,10 +1089,7 @@ mpool_rename_func(
 /**
  * mpool version
  */
-void
-mpool_version_help(
-	struct verb_s   *v,
-	bool             terse)
+void mpool_version_help(struct verb_s *v, bool terse)
 {
 	struct help_s  h = {
 		.token   = "version",
@@ -1234,11 +1101,7 @@ mpool_version_help(
 	mpool_generic_verb_help(v, &h, terse, NULL, 0);
 }
 
-merr_t
-mpool_version_func(
-	struct verb_s   *v,
-	int              argc,
-	char           **argv)
+merr_t mpool_version_func(struct verb_s *v, int argc, char **argv)
 {
 	if (argc > 1) {
 		fprintf(co.co_fp, fmt_extraneous, progname, argv[1]);
@@ -1270,27 +1133,20 @@ struct test {
 
 static struct test test;
 
-const struct xoption
-mpool_test_xoptionv[] = {
-	{ 'h', "help",       NULL, "Show help",
-	  &co.co_help, },
+const struct xoption mpool_test_xoptionv[] = {
+	{ 'h', "help",       NULL, "Show help", &co.co_help, },
 	{ 'i', "int64",       "u", "Specify an int64_t",
 	  &test.val64flg, false, &test.val64, sizeof(test.val64), get_s64 },
 	{ 'u', "uid",         "i", "Specify a uid",
 	  &test.uidflg, false, &test.uid, sizeof(test.uid), get_uid },
 	{ 's', NULL,         NULL, "Specify a string",
 	  &test.strflg, false, &test.str, sizeof(test.str), get_string },
-	{ 'T', "mutest",     NULL, "Enable mutest mode",
-	  &co.co_mutest, },
-	{ 'v', "verbose",    NULL, "Increase verbosity",
-	  &co.co_verbose, },
+	{ 'T', "mutest",     NULL, "Enable mutest mode", &co.co_mutest, },
+	{ 'v', "verbose",    NULL, "Increase verbosity", &co.co_verbose, },
 	{ -1 }
 };
 
-void
-mpool_test_help(
-	struct verb_s   *v,
-	bool             terse)
+void mpool_test_help(struct verb_s *v, bool terse)
 {
 	struct help_s  h = {
 		.token   = "test",
@@ -1302,24 +1158,15 @@ mpool_test_help(
 	mpool_generic_verb_help(v, &h, terse, NULL, 0);
 }
 
-merr_t
-mpool_test_func(
-	struct verb_s   *v,
-	int              argc,
-	char           **argv)
+merr_t mpool_test_func(struct verb_s *v, int argc, char **argv)
 {
-	printf("%d %d %d %ld %d %u %d %s\n",
-	       argc, co.co_verbose,
-	       test.val64flg, test.val64,
-	       test.uidflg, test.uid,
-	       test.strflg, test.str ?: "");
+	printf("%d %d %d %ld %d %u %d %s\n", argc, co.co_verbose, test.val64flg, test.val64,
+	       test.uidflg, test.uid, test.strflg, test.str ?: "");
 
 	return 0;
 }
 
-void
-mpool_help(
-	bool terse)
+void mpool_help(bool terse)
 {
 	struct help_s  h = {
 		.token = "mpool",
@@ -1329,14 +1176,12 @@ mpool_help(
 	mpool_generic_sub_help(&h, terse);
 }
 
-void
-mpool_usage(void)
+void mpool_usage(void)
 {
 	fprintf(co.co_fp, "usage: %s <command> [options] [args]\n", progname);
 }
 
-static struct verb_s
-mpool_verb[] = {
+static struct verb_s mpool_verb[] = {
 	{ "activate",   "fhrTv",    mpool_activate_func, mpool_activate_help, },
 	{ "add",        "DfhTv",    mpool_add_func,      mpool_add_help, },
 	{ "create",     "DfhTv",    mpool_create_func,   mpool_create_help, },

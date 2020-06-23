@@ -13,39 +13,7 @@
 #include "common.h"
 #include "mpool.h"
 
-merr_t
-split_mp_ds(
-	char     *path,
-	char    **mpool,
-	char    **dataset,
-	char    **rest)
-{
-	char *mp = 0;
-	char *ds = 0;
-
-	if (!path || !mpool || !dataset || !rest)
-		return merr(EINVAL);
-
-	*mpool = *dataset = *rest = 0;
-	if (path[0])
-		mp = strsep(&path, "/");
-
-	if (mp[0] && path && path[0])
-		ds = strsep(&path, "/");
-
-	if (path)
-		*rest = path;
-
-	*mpool   = mp;
-	*dataset = ds;
-
-	return 0;
-}
-
-void
-mpool_generic_sub_help(
-	struct help_s  *h,
-	bool           terse)
+void mpool_generic_sub_help(struct help_s *h, bool terse)
 {
 	if (terse)
 		fprintf(co.co_fp, "  %-16s  %s\n", h->token, h->shelp);
@@ -66,11 +34,8 @@ mpool_generic_verb_help(
 		return;
 	}
 
-	fprintf(co.co_fp, "usage: %s %s%s %s%s\n",
-		progname, h->token,
-		v ? " [options]" : "",
-		h->usage,
-		pi ? " [param=value ...]" : "");
+	fprintf(co.co_fp, "usage: %s %s%s %s%s\n", progname, h->token,
+		v ? " [options]" : "", h->usage, pi ? " [param=value ...]" : "");
 
 	if (h->lhelp)
 		fprintf(co.co_fp, "\n  %s\n", h->lhelp);
@@ -86,10 +51,8 @@ mpool_generic_verb_help(
 			int width = strlen(progname) + 2;
 
 			fprintf(co.co_fp, "\nExamples:\n");
-			fprintf(co.co_fp, h->example,
-				width, progname, h->token,
-				width, progname, h->token,
-				width, progname, h->token);
+			fprintf(co.co_fp, h->example, width, progname, h->token,
+				width, progname, h->token, width, progname, h->token);
 		} else {
 			fprintf(co.co_fp, "\nUse -hv for more detail\n");
 		}
@@ -98,9 +61,7 @@ mpool_generic_verb_help(
 	fprintf(co.co_fp, "\n");
 }
 
-void
-flags_set_common(
-	u32 *flags)
+void flags_set_common(u32 *flags)
 {
 	if (co.co_force)
 		*flags |= (1u << MP_FLAGS_FORCE);
@@ -112,19 +73,14 @@ flags_set_common(
 }
 
 /* MEDIA CLASS */
-static
-const match_table_t
+static const match_table_t
 media_classp_table = {
 	{ MP_MED_STAGING,  "STAGING" },
 	{ MP_MED_CAPACITY, "CAPACITY" },
 	{ -1, NULL }
 };
 
-merr_t
-get_media_classp(
-	const char *str,
-	void       *dst,
-	size_t      dstsz)
+merr_t get_media_classp(const char *str, void *dst, size_t dstsz)
 {
 	int ret;
 	substring_t s;
@@ -141,12 +97,7 @@ get_media_classp(
 	return 0;
 }
 
-merr_t
-show_media_classp(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused)
+merr_t show_media_classp(char *str, size_t strsz, const void *val, size_t unused)
 {
 	size_t n;
 
@@ -158,12 +109,7 @@ show_media_classp(
 	return (n < strsz) ? 0 : merr(EINVAL);
 }
 
-size_t
-show_lookup(
-	const struct match_token *mt,
-	char       *str,
-	size_t      strsz,
-	s32         token)
+size_t show_lookup(const struct match_token *mt, char *str, size_t strsz, s32 token)
 {
 	for (; mt->pattern; ++mt) {
 		if (mt->token == token)
@@ -174,8 +120,7 @@ show_lookup(
 	return -1;
 }
 
-static
-const match_table_t
+static const match_table_t
 status_table = {
 	{ MP_OPTIMAL, "optimal" },
 	{ MP_FAULTED, "faulted" },
@@ -183,11 +128,7 @@ status_table = {
 	{ -1, NULL }
 };
 
-merr_t
-get_status(
-	const char *str,
-	void       *dst,
-	size_t      dstsz)
+merr_t get_status(const char *str, void *dst, size_t dstsz)
 {
 	int ret;
 	substring_t s;
@@ -204,12 +145,7 @@ get_status(
 	return 0;
 }
 
-merr_t
-show_status(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused)
+merr_t show_status(char *str, size_t strsz, const void *val, size_t unused)
 {
 	size_t n;
 

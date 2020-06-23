@@ -10,9 +10,7 @@
 
 #include <stdarg.h>
 
-void
-yaml_print_and_rewind(
-	struct yaml_context *yc)
+void yaml_print_and_rewind(struct yaml_context *yc)
 {
 	printf("%s", yc->yaml_buf);
 	yc->yaml_offset = 0;
@@ -29,9 +27,7 @@ yaml_print_and_rewind(
  * We now allocate a sufficiently large buffer in mpioc_dt_get()
  * such that this function should not normally be called.
  */
-void
-yaml_realloc_buf(
-	struct yaml_context *yc)
+void yaml_realloc_buf(struct yaml_context *yc)
 {
 	void *buf;
 
@@ -43,9 +39,7 @@ yaml_realloc_buf(
 	yc->yaml_buf_sz *= 2;
 }
 
-static void
-yaml_indent(
-	struct yaml_context *yc)
+static void yaml_indent(struct yaml_context *yc)
 {
 	char *dst, *end;
 	size_t indent;
@@ -75,20 +69,13 @@ yaml_indent(
  * The assumption is that the buffer yaml users allocate is big
  * enough, such that the longest line can fit in 1/4 of yaml_buf.
  */
-static
-inline
-void
-yaml_emit(
-	struct yaml_context *yc)
+static inline void yaml_emit(struct yaml_context *yc)
 {
 	if ((yc->yaml_offset + yc->yaml_buf_sz / 4) > yc->yaml_buf_sz)
 		yc->yaml_emit(yc);
 }
 
-void
-yaml_start_element_type(
-	struct yaml_context *yc,
-	const char          *name)
+void yaml_start_element_type(struct yaml_context *yc, const char *name)
 {
 	if (!yc)
 		return;
@@ -127,9 +114,7 @@ yaml_start_element_type(
 		yaml_emit(yc);
 }
 
-void
-yaml_end_element_type(
-	struct yaml_context *yc)
+void yaml_end_element_type(struct yaml_context *yc)
 {
 	if (!yc)
 		return;
@@ -157,11 +142,7 @@ yaml_end_element_type(
 	}
 }
 
-void
-yaml_start_element(
-	struct yaml_context    *yc,
-	const char             *key,
-	const char             *value)
+void yaml_start_element(struct yaml_context *yc, const char *key, const char *value)
 {
 	if (!yc)
 		return;
@@ -188,9 +169,7 @@ yaml_start_element(
 		yaml_emit(yc);
 }
 
-void
-yaml_end_element(
-	struct yaml_context *yc)
+void yaml_end_element(struct yaml_context *yc)
 {
 	if (!yc)
 		return;
@@ -212,10 +191,7 @@ yaml_end_element(
 	yc->yaml_prev = Yaml_Context_Type_Element;
 }
 
-void
-yaml_element_list(
-	struct yaml_context *yc,
-	const char          *key)
+void yaml_element_list(struct yaml_context *yc, const char *key)
 {
 	if (!yc)
 		return;
@@ -253,11 +229,7 @@ yaml_element_list(
 		yaml_emit(yc);
 }
 
-void
-yaml_element_field(
-	struct yaml_context *yc,
-	const char          *key,
-	const char          *value)
+void yaml_element_field(struct yaml_context *yc, const char *key, const char *value)
 {
 	size_t  dstsz;
 	char   *dst;
@@ -307,21 +279,12 @@ yaml_element_field(
 		yaml_emit(yc);
 }
 
-void
-yaml_element_bool(
-	struct yaml_context *yc,
-	const char          *key,
-	bool                 val)
+void yaml_element_bool(struct yaml_context *yc, const char *key, bool val)
 {
 	yaml_element_field(yc, key, val ? "true" : "false");
 }
 
-void
-yaml_field_fmt(
-	struct yaml_context *yc,
-	const char          *key,
-	const char          *valfmt,
-	...)
+void yaml_field_fmt(struct yaml_context *yc, const char *key, const char *valfmt, ...)
 {
 	char val[64];
 	va_list ap;
@@ -333,11 +296,7 @@ yaml_field_fmt(
 	yaml_element_field(yc, key, val);
 }
 
-void
-yaml_list_fmt(
-	struct yaml_context *yc,
-	const char          *keyfmt,
-	...)
+void yaml_list_fmt(struct yaml_context *yc, const char *keyfmt, ...)
 {
 	char key[64];
 	va_list ap;

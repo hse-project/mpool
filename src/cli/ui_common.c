@@ -39,12 +39,8 @@ emit_err(
 		err = 0;
 	}
 
-	fprintf(fp, "%s: Unable to %s%s%s%s%s%s%s%s%s%s\n",
-		progname, verb,
-		object[0] ? " " : "", object,
-		msg || entity ? " (" : "",
-		msg ?: "",
-		entity ? " " : "", entity ?: "",
-		msg || entity ? ")" : "",
+	fprintf(fp, "%s: Unable to %s%s%s%s%s%s%s%s%s%s\n", progname, verb,
+		object[0] ? " " : "", object, msg || entity ? " (" : "",
+		msg ?: "", entity ? " " : "", entity ?: "", msg || entity ? ")" : "",
 		err ? ": " : "", err ? errbuf : "");
 }

@@ -46,10 +46,7 @@ struct help_s {
 	const char *example;
 };
 
-void
-mpool_generic_sub_help(
-	struct help_s      *h,
-	bool                terse);
+void mpool_generic_sub_help(struct help_s *h, bool terse);
 
 void
 mpool_generic_verb_help(
@@ -59,46 +56,16 @@ mpool_generic_verb_help(
 	struct param_inst  *pi,
 	u32                 flag);
 
-mpool_err_t
-split_mp_ds(
-	char     *path,
-	char    **mpool,
-	char    **dataset,
-	char    **rest);
-
 void flags_set_common(u32 *flags);
 
-mpool_err_t
-get_media_classp(
-	const char *str,
-	void       *dst,
-	size_t      dstsz);
+mpool_err_t get_media_classp(const char *str, void *dst, size_t dstsz);
 
-mpool_err_t
-show_media_classp(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused);
+mpool_err_t show_media_classp(char *str, size_t strsz, const void *val, size_t unused);
 
-size_t
-show_lookup(
-	const struct match_token *mt,
-	char       *str,
-	size_t      strsz,
-	s32         token);
+size_t show_lookup(const struct match_token *mt, char *str, size_t strsz, s32 token);
 
-mpool_err_t
-get_status(
-	const char *str,
-	void       *dst,
-	size_t      dstsz);
+mpool_err_t get_status(const char *str, void *dst, size_t dstsz);
 
-mpool_err_t
-show_status(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused);
+mpool_err_t show_status(char *str, size_t strsz, const void *val, size_t unused);
 
 #endif

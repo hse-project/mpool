@@ -28,69 +28,34 @@ struct yaml_context {
 	void                   *yaml_free;
 };
 
-void
-yaml_start_element_type(
-	struct yaml_context *yc,
-	const char          *name);
+void yaml_start_element_type(struct yaml_context *yc, const char *name);
 
-void
-yaml_end_element_type(
-	struct yaml_context *yc);
+void yaml_end_element_type(struct yaml_context *yc);
 
-void
-yaml_start_element(
-	struct yaml_context    *yc,
-	const char             *key,
-	const char             *value);
+void yaml_start_element(struct yaml_context *yc, const char *key, const char *value);
 
-void
-yaml_end_element(
-	struct yaml_context *yc);
+void yaml_end_element(struct yaml_context *yc);
 
-void
-yaml_element_field(
-	struct yaml_context *yc,
-	const char          *key,
-	const char          *value);
+void yaml_element_field(struct yaml_context *yc, const char *key, const char *value);
 
-void
-yaml_element_bool(
-	struct yaml_context *yc,
-	const char          *key,
-	bool                 val);
+void yaml_element_bool(struct yaml_context *yc, const char *key, bool val);
 
-void
-yaml_element_list(
-	struct yaml_context *yc,
-	const char          *key);
+void yaml_element_list(struct yaml_context *yc, const char *key);
 
-void
-yaml_field_fmt(
-	struct yaml_context *yc,
-	const char          *key,
-	const char          *valfmt,
-	...);
+void yaml_field_fmt(struct yaml_context *yc, const char *key, const char *valfmt, ...);
 
-void
-yaml_list_fmt(
-	struct yaml_context *yc,
-	const char          *keyfmt,
-	...);
+void yaml_list_fmt(struct yaml_context *yc, const char *keyfmt, ...);
 
 /**
  * yaml_print_and_rewind() - print yaml_buf and rewind yaml_offset
  * @yc:
  */
-void
-yaml_print_and_rewind(
-	struct yaml_context *yc);
+void yaml_print_and_rewind(struct yaml_context *yc);
 
 /**
  * yaml_realloc_buf() - realloc yaml_buf, double the buffer size
  * @yc:
  */
-void
-yaml_realloc_buf(
-	struct yaml_context *yc);
+void yaml_realloc_buf(struct yaml_context *yc);
 
 #endif /* MPOOL_PLATFORM_YAML_H */

@@ -34,12 +34,7 @@ devtype_table = {
 	{ -1, NULL }
 };
 
-merr_t
-show_devtype(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused)
+merr_t show_devtype(char *str, size_t strsz, const void *val, size_t unused)
 {
 	size_t n;
 
@@ -51,12 +46,7 @@ show_devtype(
 	return (n < strsz) ? 0 : merr(EINVAL);
 }
 
-static merr_t
-show_pct(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused)
+static merr_t show_pct(char *str, size_t strsz, const void *val, size_t unused)
 {
 	size_t n;
 
@@ -86,42 +76,34 @@ mpool_list_yaml_mclass(
 		yaml_start_element(yc, "mclass_name", value);
 
 		/* Total */
-		space_to_string(mcxv->mc_usage.mpu_total,
-				value, sizeof(value));
+		space_to_string(mcxv->mc_usage.mpu_total, value, sizeof(value));
 		yaml_element_field(yc, "total_space", value);
 		if (verbosity > 0) {
-			show_u64_dec(value, sizeof(value),
-				     &mcxv->mc_usage.mpu_total, 0);
+			show_u64_dec(value, sizeof(value), &mcxv->mc_usage.mpu_total, 0);
 			yaml_element_field(yc, "total_space_bytes", value);
 		}
 
 		/* Usable */
-		space_to_string(mcxv->mc_usage.mpu_usable,
-				value, sizeof(value));
+		space_to_string(mcxv->mc_usage.mpu_usable, value, sizeof(value));
 		yaml_element_field(yc, "usable_space", value);
 		if (verbosity > 0) {
-			show_u64_dec(value, sizeof(value),
-				     &mcxv->mc_usage.mpu_usable, 0);
+			show_u64_dec(value, sizeof(value), &mcxv->mc_usage.mpu_usable, 0);
 			yaml_element_field(yc, "usable_space_bytes", value);
 		}
 
 		/* Used */
-		space_to_string(mcxv->mc_usage.mpu_used,
-				value, sizeof(value));
+		space_to_string(mcxv->mc_usage.mpu_used, value, sizeof(value));
 		yaml_element_field(yc, "allocated_space", value);
 		if (verbosity > 0) {
-			show_u64_dec(value, sizeof(value),
-				     &mcxv->mc_usage.mpu_used, 0);
+			show_u64_dec(value, sizeof(value), &mcxv->mc_usage.mpu_used, 0);
 			yaml_element_field(yc, "allocated_space_bytes", value);
 		}
 
 		/* Available */
-		space_to_string(mcxv->mc_usage.mpu_fusable,
-				value, sizeof(value));
+		space_to_string(mcxv->mc_usage.mpu_fusable, value, sizeof(value));
 		yaml_element_field(yc, "avail_space", value);
 		if (verbosity > 0) {
-			show_u64_dec(value, sizeof(value),
-				     &mcxv->mc_usage.mpu_fusable, 0);
+			show_u64_dec(value, sizeof(value), &mcxv->mc_usage.mpu_fusable, 0);
 			yaml_element_field(yc, "avail_space_bytes", value);
 		}
 
@@ -136,8 +118,7 @@ mpool_list_yaml_mclass(
 		show_devtype(value, sizeof(value), &mcxv->mc_devtype, 0);
 		yaml_element_field(yc, "dev_type", value);
 
-		yaml_element_bool(yc, "mlog_target",
-				  mcxv->mc_features & MP_MC_FEAT_MLOG_TGT);
+		yaml_element_bool(yc, "mlog_target", mcxv->mc_features & MP_MC_FEAT_MLOG_TGT);
 
 		allocu = mcxv->mc_zonepg << PAGE_SHIFT;
 
@@ -293,8 +274,7 @@ mpool_ls_list_yaml(
 		err = mpool_devinfo(fqdn, devpath, sizeof(devpath));
 		if (err) {
 			mpool_strinfo(err, errbuf, sizeof(errbuf));
-			yaml_field_fmt(yc, "error",
-				       "\"mpool_devinfo %s %s\"",
+			yaml_field_fmt(yc, "error", "\"mpool_devinfo %s %s\"",
 				       xprops->ppx_pd_namev[i], errbuf);
 			yaml_end_element(yc);
 			continue;
@@ -385,16 +365,9 @@ mpool_ls_list_tab(
 	if (*headers) {
 		*headers = false;
 
-		snprintf_append(
-			obuf, obufsz, obufoff,
-			"%-*s %*s %*s %*s %9s %*s %9s\n",
-			mpwidth, "MPOOL",
-			width, "TOTAL",
-			width, "USED",
-			width, "AVAIL",
-			"CAPACITY",
-			labwidth, "LABEL",
-			"HEALTH");
+		snprintf_append(obuf, obufsz, obufoff, "%-*s %*s %*s %*s %9s %*s %9s\n",
+			mpwidth, "MPOOL", width, "TOTAL", width, "USED", width, "AVAIL",
+			"CAPACITY", labwidth, "LABEL", "HEALTH");
 	}
 
 	stp = suffixtab;
@@ -413,8 +386,7 @@ mpool_ls_list_tab(
 		++stp;
 	}
 	fmt = (usable < 10) ? "%.2lf%c" : "%4.0lf%c";
-	snprintf(usablestr, sizeof(usablestr), fmt,
-		 usable, *stp);
+	snprintf(usablestr, sizeof(usablestr), fmt, usable, *stp);
 
 	stp = suffixtab;
 	used = usage->mpu_used;
@@ -438,8 +410,7 @@ mpool_ls_list_tab(
 		capacity = usage->mpu_used * 100;
 		capacity /= usage->mpu_usable;
 	}
-	snprintf(capstr, sizeof(capstr), "%.2lf%c",
-		 capacity, parsable ? '\0' : '%');
+	snprintf(capstr, sizeof(capstr), "%.2lf%c", capacity, parsable ? '\0' : '%');
 
 	status = params->mp_stat;
 	show_status(statstr, sizeof(statstr), &status, 0);
@@ -447,16 +418,9 @@ mpool_ls_list_tab(
 	if (params->mp_label[0])
 		labelstr = params->mp_label;
 
-	snprintf_append(
-		obuf, obufsz, obufoff,
-		"%-*s %*s %*s %*s %9s %*s %9s\n",
-		mpwidth, params->mp_name,
-		width, totalstr,
-		width, usedstr,
-		width, freestr,
-		capstr,
-		labwidth, labelstr,
-		statstr);
+	snprintf_append(obuf, obufsz, obufoff, "%-*s %*s %*s %*s %9s %*s %9s\n",
+		mpwidth, params->mp_name, width, totalstr, width, usedstr, width, freestr,
+		capstr, labwidth, labelstr, statstr);
 }
 
 uint64_t
@@ -575,8 +539,7 @@ mpool_ls_list(
 			strlcpy(mpname, entryv[i].mp_name,
 				sizeof(props->pr_xprops.ppx_params.mp_name));
 
-			memcpy(xprops->ppx_params.mp_poolid,
-			       &entryv[i].mp_uuid, MPOOL_UUID_SIZE);
+			memcpy(xprops->ppx_params.mp_poolid, &entryv[i].mp_uuid, MPOOL_UUID_SIZE);
 
 			for (j = 0; j < MP_MED_NUMBER; ++j)
 				xprops->ppx_pd_mclassv[j] = MP_MED_INVALID;
@@ -637,9 +600,7 @@ mpool_ls_list(
 		if (yaml)
 			mpool_ls_list_yaml(props, verbosity, &yc);
 		else
-			mpool_ls_list_tab(props, verbosity,
-					  &headers, parsable,
-					  mpwidth, labwidth,
+			mpool_ls_list_tab(props, verbosity, &headers, parsable, mpwidth, labwidth,
 					  obuf, obufsz, &obufoff);
 	}
 
@@ -650,8 +611,7 @@ mpool_ls_list(
 		if (argmatchv[i])
 			continue;
 
-		fprintf(co.co_fp, "%s: mpool %s not found\n",
-			progname, argv[i]);
+		fprintf(co.co_fp, "%s: mpool %s not found\n", progname, argv[i]);
 	}
 
 	free(propv);
@@ -671,9 +631,7 @@ mpool_list_help(
 		.lhelp = "List properties of all or specified mpools",
 		.usage = "[<mpname> ...]",
 
-		.example =
-		"%*s %s\n"
-		"%*s %s -Y mp1 mp2 mp3\n",
+		.example = "%*s %s\n%*s %s -Y mp1 mp2 mp3\n",
 	};
 
 	mpool_generic_verb_help(v, &h, terse, NULL, 0);
@@ -702,14 +660,11 @@ mpool_list_func(
 	if (!buf)
 		return merr(ENOMEM);
 
-	err = mpool_ls_list(argc, argv, flags,
-			    co.co_verbose, !co.co_noheadings,
-			    co.co_nosuffix, co.co_yaml,
-			    buf, MPOOL_LIST_BUFSZ, &ei);
+	err = mpool_ls_list(argc, argv, flags, co.co_verbose, !co.co_noheadings,
+			    co.co_nosuffix, co.co_yaml, buf, MPOOL_LIST_BUFSZ, &ei);
 
 	if (err)
-		emit_err(co.co_fp, err, errbuf, sizeof(errbuf),
-			 "list mpools", "", &ei);
+		emit_err(co.co_fp, err, errbuf, sizeof(errbuf), "list mpools", "", &ei);
 	else
 		printf("%s", buf);
 
