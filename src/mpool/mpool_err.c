@@ -43,14 +43,12 @@ extern uint8_t __stop_mpool_merr;
 /**
  * mpool_merr_lineno() - Return the line number from given merr_t
  */
-static int
-mpool_merr_lineno(merr_t err)
+static int mpool_merr_lineno(merr_t err)
 {
 	return (err & MERR_LINE_MASK) >> MERR_LINE_SHIFT;
 }
 
-merr_t
-mpool_merr_pack(int errnum, const char *file, int line)
+merr_t mpool_merr_pack(int errnum, const char *file, int line)
 {
 	merr_t  err = 0;
 	s64     off;
@@ -63,8 +61,7 @@ mpool_merr_pack(int errnum, const char *file, int line)
 
 	/* Ignore files not from our section.
 	 */
-	if (file < (char *)&__start_mpool_merr ||
-	    file >= (char *)&__stop_mpool_merr)
+	if (file < (char *)&__start_mpool_merr || file >= (char *)&__stop_mpool_merr)
 		goto finish;
 
 	if (!file || !IS_ALIGNED((ulong)file, MERR_ALIGN))
@@ -83,8 +80,7 @@ finish:
 	return err;
 }
 
-static const char *
-mpool_merr_file(merr_t err)
+static const char *mpool_merr_file(merr_t err)
 {
 	const char *file;
 	size_t      len;
@@ -100,8 +96,7 @@ mpool_merr_file(merr_t err)
 
 	file = mpool_merr_base + (off * MERR_ALIGN);
 
-	if (file < (char *)&__start_mpool_merr ||
-	    file >= (char *)&__stop_mpool_merr)
+	if (file < (char *)&__start_mpool_merr || file >= (char *)&__stop_mpool_merr)
 		return mpool_merr_bug3;
 
 	len = strnlen(file, PATH_MAX);
@@ -118,11 +113,7 @@ mpool_merr_file(merr_t err)
 	return file;
 }
 
-char *
-mpool_strerror(
-	merr_t  err,
-	char   *buf,
-	size_t  bufsz)
+char *mpool_strerror(merr_t err, char *buf, size_t bufsz)
 {
 	int errnum = mpool_errno(err);
 
@@ -134,11 +125,7 @@ mpool_strerror(
 	return buf;
 }
 
-char *
-mpool_strinfo(
-	merr_t  err,
-	char   *buf,
-	size_t  bufsz)
+char *mpool_strinfo(merr_t err, char *buf, size_t bufsz)
 {
 	int n = 0;
 
@@ -148,9 +135,7 @@ mpool_strinfo(
 	}
 
 	if (mpool_merr_file(err))
-		n = snprintf(buf, bufsz, "%s:%d: ",
-			     mpool_merr_file(err),
-			     mpool_merr_lineno(err));
+		n = snprintf(buf, bufsz, "%s:%d: ", mpool_merr_file(err), mpool_merr_lineno(err));
 
 	if (n >= 0 && n < bufsz)
 		mpool_strerror(err, buf + n, bufsz - n);
@@ -161,8 +146,7 @@ mpool_strinfo(
 /**
  * merr_errno() - Return the errno from given merr_t
  */
-int
-mpool_errno(merr_t merr)
+int mpool_errno(merr_t merr)
 {
 	return merr & MERR_ERRNO_MASK;
 }

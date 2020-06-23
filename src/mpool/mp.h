@@ -49,12 +49,10 @@ struct mpool_dev_info {
 
 /**
  * struct mpool_descriptor - Media pool descriptor
- * @pds_pdvlock:  drive membership/state lock
  * @pds_pdv:      per drive info array
  * @pds_name:
  */
 struct mpool_descriptor {
-	struct rw_semaphore      pds_pdvlock;
 	struct mpool_dev_info   *pds_pdv;
 	char                     pds_name[MPOOL_NAME_LEN_MAX];
 };

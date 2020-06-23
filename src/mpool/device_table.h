@@ -62,12 +62,7 @@ struct dev_table_ent {
  * @log_nofile: if true, the fact that the file is not present is logged.
  * @val: value returned
  */
-merr_t
-sysfs_get_val_u64(
-	const char *sysfs_dpath,
-	const char *suffix,
-	bool        log_nofile,
-	u64        *val);
+merr_t sysfs_get_val_u64(const char *sysfs_dpath, const char *suffix, bool log_nofile, u64 *val);
 
 /**
  * sysfs_get_val_str() - read a string stored in the
@@ -80,12 +75,7 @@ sysfs_get_val_u64(
  * @str_sz: size of buffer str.
  */
 merr_t
-sysfs_get_val_str(
-	char  *sysfs_dpath,
-	char  *suffix,
-	bool  log_nofile,
-	char  *str,
-	size_t str_sz);
+sysfs_get_val_str(char *sysfs_dpath, char *suffix, bool log_nofile, char *str, size_t str_sz);
 
 /**
  * sysfs_get_dpath() - from the device path, eg. /dev/sda
@@ -95,30 +85,20 @@ sysfs_get_val_str(
  * @sysfs_dpath: device path in sysfs: /sys/block/<device name>
  * @sysfs_dpath_sz: size of buffer sysfs_dpath
  */
-merr_t
-sysfs_get_dpath(
-	const char *dpath,
-	char	   *sysfs_dpath,
-	size_t	    sysfs_dpath_sz);
+merr_t sysfs_get_dpath(const char *dpath, char *sysfs_dpath, size_t sysfs_dpath_sz);
 
 /**
  * sysfs_pd_disable_wbt() - disable PD write throttling
  * @ppath: partition path. e.g. /dev/nvme0n1p1, /dev/sdb1
  */
-merr_t
-sysfs_pd_disable_wbt(
-	const char            *ppath);
+merr_t sysfs_pd_disable_wbt(const char *ppath);
 
 /**
  * partname_to_diskname() -
  * @diskname: (output) Path of whole disk
  * @partname: Path of partition name
  */
-merr_t
-partname_to_diskname(
-	char       *diskname,
-	const char *partname,
-	size_t      diskname_len);
+merr_t partname_to_diskname(char *diskname, const char *partname, size_t diskname_len);
 
 /**
  * mpool_devinfo() -
@@ -126,10 +106,6 @@ partname_to_diskname(
  * @devpath:
  * @devpathsz:
  */
-merr_t
-mpool_devinfo(
-	const char *name,
-	char       *devpath,
-	size_t      devpathsz);
+merr_t mpool_devinfo(const char *name, char *devpath, size_t devpathsz);
 
 #endif

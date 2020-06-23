@@ -17,10 +17,7 @@
  * @path:
  * @pd_prop:
  */
-mpool_err_t
-imp_dev_get_prop(
-	const char     *path,
-	struct pd_prop *pd_prop);
+mpool_err_t imp_dev_get_prop(const char *path, struct pd_prop *pd_prop);
 
 /**
  * device_is_full_device() - Determine if path points to full device
@@ -29,8 +26,6 @@ imp_dev_get_prop(
  * Returns ESUCCESS if the path is to a device that is an entire device,
  * i.e. not a partition.
  */
-mpool_err_t
-device_is_full_device(
-	const char *path);
+mpool_err_t device_is_full_device(const char *path);
 
 #endif

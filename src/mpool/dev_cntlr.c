@@ -23,10 +23,7 @@
  * @dev:
  * @rcode:
  */
-merr_t
-generic_trim_device(
-	const char     *dev,
-	enum mpool_rc  *rcode)
+merr_t generic_trim_device(const char *dev, enum mpool_rc *rcode)
 {
 	u64            range[2];
 	merr_t         err = 0;
@@ -67,13 +64,11 @@ generic_trim_device(
 	/*
 	 * Get the maximum size that can be discarded in one command.
 	 */
-	err = sysfs_get_val_u64(sysfs_dpath, "/queue/discard_max_bytes",
-				0, &maxd_bytes);
+	err = sysfs_get_val_u64(sysfs_dpath, "/queue/discard_max_bytes", 0, &maxd_bytes);
 	if (err)
 		goto exit;
 
-	err = sysfs_get_val_u64(sysfs_dpath, "/queue/discard_granularity",
-				0, &grand_bytes);
+	err = sysfs_get_val_u64(sysfs_dpath, "/queue/discard_granularity", 0, &grand_bytes);
 	if (err)
 		goto exit;
 
@@ -129,10 +124,7 @@ exit:
  * @dev:
  * @datasz:
  */
-merr_t
-generic_get_awsz(
-	const char *dev,
-	u32        *datasz)
+merr_t generic_get_awsz(const char *dev, u32 *datasz)
 {
 	char   sysfs_dpath[PATH_MAX];
 	u64    awsz = 0;
@@ -159,8 +151,7 @@ generic_get_awsz(
 			return 0;
 
 		/* Get the awsz */
-		err = sysfs_get_val_u64(sysfs_dpath,
-					"/queue/physical_block_size", 0, &awsz);
+		err = sysfs_get_val_u64(sysfs_dpath, "/queue/physical_block_size", 0, &awsz);
 		if (err)
 			return 0;
 	}
@@ -176,10 +167,7 @@ generic_get_awsz(
  * @dev:
  * @iosz:
  */
-merr_t
-generic_get_optiosz(
-	const char *dev,
-	u32        *iosz)
+merr_t generic_get_optiosz(const char *dev, u32 *iosz)
 {
 	char   sysfs_dpath[PATH_MAX];
 	u64    sz = 0;
@@ -205,8 +193,7 @@ generic_get_optiosz(
 		if (err)
 			return 0;
 
-		err = sysfs_get_val_u64(sysfs_dpath, "/queue/optimal_io_size",
-					0, &sz);
+		err = sysfs_get_val_u64(sysfs_dpath, "/queue/optimal_io_size", 0, &sz);
 		if (err)
 			return 0;
 	}
@@ -232,8 +219,7 @@ static struct dev_interface dev_interface_table[] = {
 	{ DEVICE_PHYS_IF_TEST, "/dev/md"},
 };
 
-enum device_phys_if
-get_dev_interface(const char *path)
+enum device_phys_if get_dev_interface(const char *path)
 {
 	struct dev_interface   *cur, *first;
 	enum device_phys_if     unknown;

@@ -112,6 +112,8 @@ ecio_user_layout_alloc(
 	layout->eld_gen   = gen;
 	layout->eld_state = state;
 
+	init_rwsem(&layout->eld_rwlock);
+
 	mpool_uuid_copy(&layout->eld_uuid, uuid);
 
 	return layout;

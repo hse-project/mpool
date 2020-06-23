@@ -132,10 +132,7 @@ mp_sb_erase(
  * Return mpool_err_t, if either can't read superblock, or superblock
  * contains MPOOL magic value
  */
-mpool_err_t
-mp_sb_magic_check(
-	char                   *device,
-	struct mpool_devrpt    *devrpt);
+mpool_err_t mp_sb_magic_check(char *device, struct mpool_devrpt *devrpt);
 
 /**
  * mp_trim_device() -
@@ -145,11 +142,7 @@ mp_sb_magic_check(
  *
  * Format list of drives as per mpool's requirement
  */
-mpool_err_t
-mp_trim_device(
-	int                   devicec,
-	char                **devicev,
-	struct mpool_devrpt  *devrpt);
+mpool_err_t mp_trim_device(int devicec, char **devicev, struct mpool_devrpt *devrpt);
 
 /**
  * mp_dev_activated() - check if a device belongs to a activated mpool.
@@ -158,11 +151,6 @@ mp_trim_device(
  * @mp_name: if not NULL the mpool name is copied there.
  * @mp_name_sz:
  */
-uint64_t
-mp_dev_activated(
-	char   *devpath,
-	bool   *activated,
-	char   *mp_name,
-	size_t  mp_name_sz);
+uint64_t mp_dev_activated(char *devpath, bool *activated, char *mp_name, size_t mp_name_sz);
 
 #endif /* MPCTL_IMPOOL_H */

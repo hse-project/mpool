@@ -13,10 +13,6 @@
  * @mpname:   output buffer to store the mpool name
  * @mplen:    buffer len
  */
-merr_t
-mpool_name_get(
-	struct mpool   *ds,
-	char           *mpname,
-	size_t          mplen);
+merr_t mpool_name_get( struct mpool *ds, char *mpname, size_t mplen);
 
 #endif /* MPOOL_MPOOL_IDS_PRIV_H */

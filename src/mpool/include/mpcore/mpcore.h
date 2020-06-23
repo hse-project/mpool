@@ -167,11 +167,7 @@ enum pd_cmd_opt {
  * @devrpt: Device error report
  */
 mpool_err_t
-mpool_sb_erase(
-	int                   dcnt,
-	char                **dpaths,
-	struct pd_prop       *pd,
-	struct mpool_devrpt  *devrpt);
+mpool_sb_erase(int dcnt, char **dpaths, struct pd_prop *pd, struct mpool_devrpt *devrpt);
 
 /**
  * mpool_sb_magic_check() -
@@ -182,10 +178,7 @@ mpool_sb_erase(
  * has MPOOL magic code
  */
 mpool_err_t
-mpool_sb_magic_check(
-	char                   *dpath,
-	struct pd_prop         *pd_prop,
-	struct mpool_devrpt    *devrpt);
+mpool_sb_magic_check(char *dpath, struct pd_prop *pd_prop, struct mpool_devrpt *devrpt);
 
 /**
  * mpool_user_desc_alloc() - Allocate a minimal mpool descriptor for user

@@ -38,11 +38,7 @@ struct imp_entry {
  *
  * Returns: true if mpool is named in any block device, otherwise false
  */
-bool
-imp_mpool_exists(
-	const char          *name,
-	u32                  flags,
-	struct imp_entry   **entry);
+bool imp_mpool_exists(const char *name, u32 flags, struct imp_entry **entry);
 
 /**
  * imp_mpool_activated() - check if specified mpool is activated
@@ -53,9 +49,7 @@ imp_mpool_exists(
  *
  * Returns: true if mpool's special file exists
  */
-bool
-imp_mpool_activated(
-	const char *name);
+bool imp_mpool_activated(const char *name);
 
 /**
  * imp_device_allocated() - Determine if a given media device is in use
@@ -67,10 +61,7 @@ imp_mpool_activated(
  *
  * Returns: true if the named device is allocated to an mpool
  */
-bool
-imp_device_allocated(
-	const char *dpath,
-	u32         flags);
+bool imp_device_allocated(const char *dpath, u32 flags);
 
 /**
  * imp_entries_get() - given a pool UUID, get data from libblkid
@@ -99,9 +90,6 @@ imp_entries_get(
  * @entry_cnt:
  * @entries:
  */
-struct pd_prop *
-imp_entries2pd_prop(
-	int entry_cnt,
-	struct imp_entry *entries);
+struct pd_prop *imp_entries2pd_prop(int entry_cnt, struct imp_entry *entries);
 
 #endif

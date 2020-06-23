@@ -64,26 +64,15 @@ mpool_err_t mlog_close(struct mpool_descriptor *mp, struct mlog_descriptor *mlh)
 
 mpool_err_t mlog_flush(struct mpool_descriptor *mp, struct mlog_descriptor *mlh);
 
-mpool_err_t
-mlog_gen(struct mpool_descriptor *mp, struct mlog_descriptor *mlh, u64 *gen);
+mpool_err_t mlog_gen(struct mpool_descriptor *mp, struct mlog_descriptor *mlh, u64 *gen);
 
-mpool_err_t
-mlog_empty(
-	struct mpool_descriptor    *mp,
-	struct mlog_descriptor     *mlh,
-	bool                       *empty);
+mpool_err_t mlog_empty(struct mpool_descriptor *mp, struct mlog_descriptor *mlh, bool *empty);
 
-mpool_err_t
-mlog_len(
-	struct mpool_descriptor    *mp,
-	struct mlog_descriptor     *mlh,
-	u64                        *len);
+mpool_err_t mlog_len(struct mpool_descriptor *mp, struct mlog_descriptor *mlh, u64 *len);
 
-mpool_err_t
-mlog_append_cstart(struct mpool_descriptor *mp, struct mlog_descriptor *mlh);
+mpool_err_t mlog_append_cstart(struct mpool_descriptor *mp, struct mlog_descriptor *mlh);
 
-mpool_err_t
-mlog_append_cend(struct mpool_descriptor *mp, struct mlog_descriptor *mlh);
+mpool_err_t mlog_append_cend(struct mpool_descriptor *mp, struct mlog_descriptor *mlh);
 
 mpool_err_t
 mlog_append_data(
@@ -101,8 +90,7 @@ mlog_append_datav(
 	u64                         buflen,
 	int                         sync);
 
-mpool_err_t
-mlog_read_data_init(struct mpool_descriptor *mp, struct mlog_descriptor *mlh);
+mpool_err_t mlog_read_data_init(struct mpool_descriptor *mp, struct mlog_descriptor *mlh);
 
 /**
  * mlog_read_data_next()
@@ -146,14 +134,9 @@ mlog_user_desc_alloc(
 void mlog_user_desc_free(struct mlog_descriptor *mlh);
 
 mpool_err_t
-mlog_user_desc_set(
-	struct mpool_descriptor    *mp,
-	struct mlog_descriptor     *mlh,
-	u64                         gen,
-	u8                          state);
+mlog_user_desc_set(struct mpool_descriptor *mp, struct mlog_descriptor *mlh, u64 gen, u8 state);
 
-mpool_err_t
-mlog_stat_reinit(struct mpool_descriptor *mp, struct mlog_descriptor *mlh);
+mpool_err_t mlog_stat_reinit(struct mpool_descriptor *mp, struct mlog_descriptor *mlh);
 
 mpool_err_t
 mlog_layout_get(

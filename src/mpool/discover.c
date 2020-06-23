@@ -25,9 +25,7 @@
 #include <dirent.h>
 #include <string.h>
 
-bool
-imp_mpool_activated(
-	const char *name)
+bool imp_mpool_activated(const char *name)
 {
 	struct stat stat_buf;
 	char        path[NAME_MAX + sizeof(MPC_DEV_SUBDIR) + 8];
@@ -43,10 +41,7 @@ imp_mpool_activated(
 	return (rc == 0 && S_ISCHR(stat_buf.st_mode));
 }
 
-bool
-imp_device_allocated(
-	const char   *path,
-	u32           flags)
+bool imp_device_allocated(const char *path, u32 flags)
 {
 	merr_t  err;
 	int     cnt;
@@ -58,11 +53,7 @@ imp_device_allocated(
 	return (cnt > 0);
 }
 
-bool
-imp_mpool_exists(
-	const char          *name,
-	u32                  flags,
-	struct imp_entry   **entry)
+bool imp_mpool_exists(const char *name, u32 flags, struct imp_entry **entry)
 {
 	struct mpool_uuid   uuid;
 
@@ -73,16 +64,14 @@ imp_mpool_exists(
 	/* Is the passed-in name an mpool name or uuid? */
 	rc = mpool_parse_uuid(name, &uuid);
 
-	err = imp_entries_get(rc ? name : NULL, rc ? NULL : &uuid, NULL,
-			      &flags, entry, &cnt);
+	err = imp_entries_get(rc ? name : NULL, rc ? NULL : &uuid, NULL, &flags, entry, &cnt);
 	if (err)
 		return false;
 
 	return (cnt > 0);
 }
 
-static
-bool
+static bool
 imp_entry_match(
 	struct imp_entry           *entry,
 	const char                 *name,
@@ -225,8 +214,7 @@ second_pass_libblkid:
 		rc = imp_entry_match(&entry, name, uuid, rpath, invert);
 		if (rc) {
 			if (!first_pass) {
-				err = imp_dev_get_prop(filename,
-						       &entry.mp_pd_prop);
+				err = imp_dev_get_prop(filename, &entry.mp_pd_prop);
 				if (!err)
 					*my_entries++ = entry;
 			}
@@ -278,8 +266,7 @@ errout:
 	return err;
 }
 
-struct pd_prop *
-imp_entries2pd_prop(int entry_cnt, struct imp_entry *entries)
+struct pd_prop *imp_entries2pd_prop(int entry_cnt, struct imp_entry *entries)
 {
 	int		i;
 	struct pd_prop *pdp;

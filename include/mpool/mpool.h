@@ -802,7 +802,7 @@ char *mpool_strerror(mpool_err_t err, char *buf, size_t bufsz);
 char *mpool_strinfo(mpool_err_t err, char *buf, size_t bufsz);
 
 /**
- * mpool_strinfo() - Format file, line, and errno from merr_t
+ * mpool_errno() -
  * @err:
  */
 int mpool_errno(mpool_err_t err);

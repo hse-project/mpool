@@ -26,10 +26,7 @@ struct mpool_obj_layout;
  * Return:
  *   %0 on success, <%0 on error
  */
-merr_t
-mpool_mlog_xprops_get(
-	struct mpool_mlog      *mlogh,
-	struct mlog_props_ex   *props_ex);
+merr_t mpool_mlog_xprops_get(struct mpool_mlog *mlogh, struct mlog_props_ex *props_ex);
 
 /**
  * mpool_mlog_append_cstart() - Apppend a CSTART record
@@ -74,13 +71,7 @@ merr_t mpool_mlog_gen(struct mpool_mlog *mlogh, u64 *gen);
  * Return:
  *   %0 on success, <%0 on error
  */
-merr_t
-mpool_mlog_rw(
-	struct mpool_mlog  *mlogh,
-	struct iovec       *iov,
-	int                 iovc,
-	size_t              off,
-	u8                  rw);
+merr_t mpool_mlog_rw(struct mpool_mlog *mlogh, struct iovec *iov, int iovc, size_t off, u8 rw);
 
 /**
  * mpool_mlog_empty() - Returns if an mlog is empty

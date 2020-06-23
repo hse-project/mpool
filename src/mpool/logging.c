@@ -10,14 +10,7 @@
 
 #include <mpool/mpool.h>
 
-void
-mpool_log(
-	const char *file,
-	int         line,
-	int         pri,
-	mpool_err_t err,
-	const char *fmt,
-	...)
+void mpool_log(const char *file, int line, int pri, mpool_err_t err, const char *fmt, ...)
 {
 	const char         *dir;
 	char                msg[256];

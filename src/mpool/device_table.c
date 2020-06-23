@@ -30,18 +30,12 @@ static devp_get_t devtab_get_prop_generic_blk;
 
 static struct dev_table_ent dev_table[] = {
 	{MODEL_FILE, MP_PD_DEV_TYPE_FILE, devtab_get_prop_file},
-	{MODEL_GENERIC_SSD, MP_PD_DEV_TYPE_BLOCK_STD,
-		devtab_get_prop_generic_blk},
-	{MODEL_GENERIC_HDD, MP_PD_DEV_TYPE_BLOCK_STD,
-		devtab_get_prop_generic_blk},
-	{MODEL_GENERIC_NVDIMM_SECTOR, MP_PD_DEV_TYPE_BLOCK_NVDIMM,
-		devtab_get_prop_generic_blk},
-	{MODEL_MICRON_SSD, MP_PD_DEV_TYPE_BLOCK_STD,
-		devtab_get_prop_blk_micron},
-	{MODEL_GENERIC_TEST, MP_PD_DEV_TYPE_BLOCK_STD,
-		devtab_get_prop_generic_blk},
-	{MODEL_VIRTUAL_DEV, MP_PD_DEV_TYPE_BLOCK_STD,
-		devtab_get_prop_generic_blk},
+	{MODEL_GENERIC_SSD, MP_PD_DEV_TYPE_BLOCK_STD, devtab_get_prop_generic_blk},
+	{MODEL_GENERIC_HDD, MP_PD_DEV_TYPE_BLOCK_STD, devtab_get_prop_generic_blk},
+	{MODEL_GENERIC_NVDIMM_SECTOR, MP_PD_DEV_TYPE_BLOCK_NVDIMM, devtab_get_prop_generic_blk},
+	{MODEL_MICRON_SSD, MP_PD_DEV_TYPE_BLOCK_STD, devtab_get_prop_blk_micron},
+	{MODEL_GENERIC_TEST, MP_PD_DEV_TYPE_BLOCK_STD, devtab_get_prop_generic_blk},
+	{MODEL_VIRTUAL_DEV, MP_PD_DEV_TYPE_BLOCK_STD, devtab_get_prop_generic_blk},
 };
 
 /**
@@ -118,6 +112,7 @@ devtab_get_prop_file(
 			 err, dpath);
 		return err;
 	}
+
 	len = lseek64(fd, 0, SEEK_END);
 	if (len < 0) {
 		err = merr(errno);
@@ -126,12 +121,13 @@ devtab_get_prop_file(
 		close(fd);
 		return err;
 	}
+
 	close(fd);
+
 	pd_prop->pdp_devsz = len;
 	pd_prop->pdp_sectorsz = prop_file_sectsz;
 	pd_prop->pdp_optiosz = 1 << prop_file_sectsz;
-	strlcpy(pd_prop->pdp_didstr, ent->dev_model,
-		sizeof(pd_prop->pdp_didstr));
+	strlcpy(pd_prop->pdp_didstr, ent->dev_model, sizeof(pd_prop->pdp_didstr));
 	pd_prop->pdp_devtype = ent->devtype;
 	assert(pd_prop->pdp_devtype == MP_PD_DEV_TYPE_FILE);
 	pd_prop->pdp_mclassp = MP_MED_INVALID;
@@ -140,12 +136,7 @@ devtab_get_prop_file(
 	return 0;
 }
 
-merr_t
-sysfs_get_val_u64(
-	const char *sysfs_dpath,
-	const char *suffix,
-	bool        log_nofile,
-	u64        *val)
+merr_t sysfs_get_val_u64(const char *sysfs_dpath, const char *suffix, bool log_nofile, u64 *val)
 {
 	char    path[PATH_MAX], line[64], *end;
 	FILE   *fp;
@@ -157,10 +148,8 @@ sysfs_get_val_u64(
 	fp = fopen(path, "r");
 	if (!fp) {
 		err = merr(errno);
-		if (log_nofile || (merr_errno(err) != ENOENT)) {
-			mpool_elog(MPOOL_ERR "%s open(%s) failed",
-				 err, __func__, path);
-		}
+		if (log_nofile || (merr_errno(err) != ENOENT))
+			mpool_elog(MPOOL_ERR "%s open(%s) failed", err, __func__, path);
 		return err;
 	}
 
@@ -181,21 +170,14 @@ sysfs_get_val_u64(
 		err = merr(errno ?: EINVAL);
 		if (end && *end == '\n')
 			*end = '\000';
-		mpool_elog(MPOOL_ERR "%s %s strtoul(%s) failed",
-			 err, __func__, path, line);
+		mpool_elog(MPOOL_ERR "%s %s strtoul(%s) failed", err, __func__, path, line);
 		return err;
 	}
 
 	return 0;
 }
 
-merr_t
-sysfs_get_val_str(
-	char  *sysfs_dpath,
-	char  *suffix,
-	bool   log_nofile,
-	char  *str,
-	size_t strsz)
+merr_t sysfs_get_val_str(char *sysfs_dpath, char *suffix, bool log_nofile, char *str, size_t strsz)
 {
 	char    path[PATH_MAX];
 	merr_t  err;
@@ -212,10 +194,8 @@ sysfs_get_val_str(
 	fp = fopen(path, "r");
 	if (!fp) {
 		err = merr(errno);
-		if (log_nofile || (merr_errno(err) != ENOENT)) {
-			mpool_elog(MPOOL_ERR "%s open(%s) failed",
-				 err, __func__, path);
-		}
+		if (log_nofile || (merr_errno(err) != ENOENT))
+			mpool_elog(MPOOL_ERR "%s open(%s) failed", err, __func__, path);
 		return err;
 	}
 
@@ -277,11 +257,9 @@ devtab_get_prop_generic_blk(
 	strlcpy(pd_prop->pdp_didstr, model, sizeof(pd_prop->pdp_didstr));
 	pd_prop->pdp_devtype = ent->devtype;
 
-	err = sysfs_get_val_u64(sysfs_dpath, "/queue/discard_granularity", 1,
-		&val);
+	err = sysfs_get_val_u64(sysfs_dpath, "/queue/discard_granularity", 1, &val);
 	if (err) {
-		mpool_elog(MPOOL_ERR
-			   "Getting discard granularity for device %s failed, @@e",
+		mpool_elog(MPOOL_ERR "Getting discard granularity for device %s failed, @@e",
 			   err, dpath);
 		return err;
 	}
@@ -289,11 +267,9 @@ devtab_get_prop_generic_blk(
 		pd_prop->pdp_cmdopt |= MP_PD_CMD_DISCARD;
 	pd_prop->pdp_discard_granularity = val;
 
-	err = sysfs_get_val_u64(sysfs_dpath, "/queue/discard_zeroes_data", 1,
-		&val);
+	err = sysfs_get_val_u64(sysfs_dpath, "/queue/discard_zeroes_data", 1, &val);
 	if (err) {
-		mpool_elog(MPOOL_ERR
-			   "Getting if discard zeroes data for device %s failed, @@e",
+		mpool_elog(MPOOL_ERR "Getting if discard zeroes data for device %s failed, @@e",
 			   err, dpath);
 		return err;
 	}
@@ -307,8 +283,7 @@ devtab_get_prop_generic_blk(
 		return err;
 
 	if (!powerof2(sz)) {
-		mse_log(MPOOL_ERR "AWU size %u for %s not a power of 2",
-			sz, dpath);
+		mse_log(MPOOL_ERR "AWU size %u for %s not a power of 2", sz, dpath);
 		return merr(EINVAL);
 	}
 
@@ -331,9 +306,8 @@ devtab_get_prop_generic_blk(
 
 		pname = strrchr(ppath, '/');
 		if (pname == NULL) {
-			err =  merr(EBADF);
-			mpool_elog(MPOOL_ERR
-				   "Getting partition name from partition %s failed, @@e",
+			err = merr(EBADF);
+			mpool_elog(MPOOL_ERR "Getting partition name from partition %s failed, @@e",
 				   err, ppath);
 			return err;
 		}
@@ -376,13 +350,10 @@ devtab_get_prop_blk_micron(
 	struct dev_table_ent *ent,
 	struct pd_prop	     *pd_prop)
 {
-	return devtab_get_prop_generic_blk(dpath, ppath, sysfs_dpath,
-					   model, ent, pd_prop);
+	return devtab_get_prop_generic_blk(dpath, ppath, sysfs_dpath, model, ent, pd_prop);
 }
 
-merr_t
-device_is_full_device(
-	const char *path)
+merr_t device_is_full_device(const char *path)
 {
 	char           sysfs_dpath[PATH_MAX]; /* /sys/block/<device name> */
 	size_t         sysfs_dpath_sz = sizeof(sysfs_dpath);
@@ -396,8 +367,7 @@ device_is_full_device(
 	if (rc) {
 		err = merr(errno);
 		(void)strerror_r(merr_errno(err), errbuf, sizeof(errbuf));
-		mse_log(MPOOL_ERR
-			"Getting device properties, getting file %s status failed %s",
+		mse_log(MPOOL_ERR "Getting device properties, getting file %s status failed %s",
 			path, errbuf);
 		return err;
 	}
@@ -413,8 +383,7 @@ device_is_full_device(
 
 	err = partname_to_diskname(dpath, path, sizeof(dpath));
 	if (err) {
-		mpool_elog(MPOOL_ERR
-			   "Getting device path of partition %s failed, @@e",
+		mpool_elog(MPOOL_ERR "Getting device path of partition %s failed, @@e",
 			   err, path);
 		return err;
 	}
@@ -426,19 +395,14 @@ device_is_full_device(
 	rc = stat(sysfs_dpath, &st);
 	if (rc) {
 		err = merr(ENOTBLK);
-		mpool_elog(MPOOL_ERR "Device %s is not whole block device, @@e",
-				err, path);
+		mpool_elog(MPOOL_ERR "Device %s is not whole block device, @@e", err, path);
 		return err;
 	}
 
 	return 0;
 }
 
-merr_t
-sysfs_get_dpath(
-	const char *dpath,
-	char	   *sysfs_dpath,
-	size_t	    sysfs_dpath_sz)
+merr_t sysfs_get_dpath(const char *dpath, char *sysfs_dpath, size_t sysfs_dpath_sz)
 {
 	char  *dname; /* device name */
 	char   rpath[PATH_MAX];
@@ -450,11 +414,11 @@ sysfs_get_dpath(
 	dname = strrchr(rpath, '/');
 	if (dname == NULL) {
 		err = merr(EBADF);
-		mpool_elog(MPOOL_ERR "Getting device path %s failed, @@e",
-			   err, dpath);
+		mpool_elog(MPOOL_ERR "Getting device path %s failed, @@e", err, dpath);
 		return err;
 	}
 	dname++;
+
 	strlcpy(sysfs_dpath, "/sys/block/", sysfs_dpath_sz);
 	strncat(sysfs_dpath, dname, sysfs_dpath_sz - strlen(sysfs_dpath) - 1);
 
@@ -473,10 +437,7 @@ sysfs_get_dpath(
  *	hctl points on the "8".
  * @host: in the case the device is scsi, return the host number.
  */
-static bool
-sysfs_is_scsi(
-	char *hctl,
-	u32  *host)
+static bool sysfs_is_scsi(char *hctl, u32 *host)
 {
 	u32 channel;
 	u32 target;
@@ -501,10 +462,7 @@ sysfs_is_scsi(
  *	DEVICE_PHYS_IF_VIRTUAL and no error is returned.
  */
 static merr_t
-sysfs_device_phys_if(
-	char		    *sysfs_dpath,
-	const char          *dpath,
-	enum device_phys_if *phys_if)
+sysfs_device_phys_if(char *sysfs_dpath, const char *dpath, enum device_phys_if *phys_if)
 {
 	char    lpath[PATH_MAX];
 	char    rpath[PATH_MAX];
@@ -519,27 +477,21 @@ sysfs_device_phys_if(
 	strncat(lpath, "/device", sizeof(lpath) - strlen(lpath) - 1);
 
 	if (!realpath(lpath, rpath)) {
-		mse_log(MPOOL_DEBUG
-			"Cannot determine interface for %s, using \"virtual\"",
-			lpath);
+		mse_log(MPOOL_DEBUG "Cannot determine interface for %s, using \"virtual\"", lpath);
 		return 0;
 	}
 
 	first = strrchr(rpath, '/');
 	if (!first) {
-		mse_log(MPOOL_DEBUG
-			"Cannot determine interface for %s, using \"virtual\"",
-			rpath);
+		mse_log(MPOOL_DEBUG "Cannot determine interface for %s, using \"virtual\"", rpath);
 		return 0;
 	}
 
 	first++;
 	if (!strncmp(first, "virt", strlen("virt"))) {
-		/* virtual device */
 		*phys_if = DEVICE_PHYS_IF_VIRTUAL;
 		return 0;
 	} else if (!strncmp(first, "nvme", strlen("nvme"))) {
-		/* nvme interface */
 		*phys_if = DEVICE_PHYS_IF_NVME;
 		return 0;
 	} else if (!strncmp(first, "btt", strlen("btt"))) {
@@ -550,14 +502,12 @@ sysfs_device_phys_if(
 	}
 
 	if (sysfs_is_scsi(first, &host)) {
-		/* scsi interface, determine if sas or sata */
+		/* SCSI interface, determine if SAS or SATA */
 		*phys_if = get_dev_interface(dpath);
 		return 0;
 	}
 
-	mse_log(MPOOL_DEBUG
-		"Device discovery falling back to virtual interface for %s",
-		first);
+	mse_log(MPOOL_DEBUG "Device discovery falling back to virtual interface for %s", first);
 
 	return 0;
 }
@@ -572,10 +522,7 @@ sysfs_device_phys_if(
  * Or it just use the actual model, for example S600 series SAS devices
  * S630DC/S650DC
  */
-static bool
-is_micron_ssd(
-	char    *model,
-	size_t   sz)
+static bool is_micron_ssd(char *model, size_t sz)
 {
 	return ((sz > 4) && strncmp(model, "MTFD", 4) == 0) ||
 		((sz >= 6) && strncmp(model, "Micron", 6) == 0) ||
@@ -590,11 +537,7 @@ is_micron_ssd(
  * @ppath: partition path e.g. "/dev/nvme1n1p1"
  * @pd_prop:
  */
-static merr_t
-dev_get_prop(
-	const char     *dpath,
-	const char     *ppath,
-	struct pd_prop *pd_prop)
+static merr_t dev_get_prop(const char *dpath, const char *ppath, struct pd_prop *pd_prop)
 {
 	struct dev_table_ent *dev_ent;
 	enum device_phys_if   phys_if = DEVICE_PHYS_IF_UNKNOWN;
@@ -625,8 +568,7 @@ dev_get_prop(
 		phys_if = DEVICE_PHYS_IF_VIRTUAL;
 		hdd = 0;
 	} else {
-		err = sysfs_get_val_str(sysfs_dpath, "/device/model", 0, model,
-			sizeof(model));
+		err = sysfs_get_val_str(sysfs_dpath, "/device/model", 0, model, sizeof(model));
 		if (err && (merr_errno(err) != ENOENT))
 			return err;
 
@@ -638,8 +580,7 @@ dev_get_prop(
 				 * The device table contains an entry
 				 * specifically for this model. Use it.
 				 */
-				err = dev_ent->dev_prop_get(dpath, ppath,
-							    sysfs_dpath, model,
+				err = dev_ent->dev_prop_get(dpath, ppath, sysfs_dpath, model,
 							    dev_ent, pd_prop);
 				return err;
 			}
@@ -653,15 +594,13 @@ dev_get_prop(
 		err = sysfs_device_phys_if(sysfs_dpath, dpath, &phys_if);
 		if (phys_if == DEVICE_PHYS_IF_UNKNOWN) {
 			err = merr(ENOENT);
-			mpool_elog(MPOOL_DEBUG
-				   "Getting device %s physical interface failed, @@e",
+			mpool_elog(MPOOL_DEBUG "Getting device %s physical interface failed, @@e",
 				   err, dpath);
 			return err;
 		}
 
 		/* HDD? */
-		err = sysfs_get_val_u64(sysfs_dpath, "/queue/rotational", 1,
-					&hdd);
+		err = sysfs_get_val_u64(sysfs_dpath, "/queue/rotational", 1, &hdd);
 		if (err != 0) {
 			mpool_elog(MPOOL_ERR
 				   "Getting device %s properties failed, can't get if rotational device @@e",
@@ -694,17 +633,13 @@ dev_get_prop(
 		return err;
 	}
 
-	err = dev_ent->dev_prop_get(dpath, ppath, sysfs_dpath,
-				    model, dev_ent, pd_prop);
+	err = dev_ent->dev_prop_get(dpath, ppath, sysfs_dpath, model, dev_ent, pd_prop);
 	pd_prop->pdp_phys_if = phys_if;
 
 	return err;
 }
 
-merr_t
-imp_dev_get_prop(
-	const char     *path,
-	struct pd_prop *pd_prop)
+merr_t imp_dev_get_prop(const char *path, struct pd_prop *pd_prop)
 {
 	struct dev_table_ent   *dev_ent;
 	struct stat	        st;
@@ -726,8 +661,7 @@ imp_dev_get_prop(
 
 	if (S_ISREG(st.st_mode)) {
 		dev_ent = devtab_find_ent(MODEL_FILE);
-		err = dev_ent->dev_prop_get(path, NULL, NULL, NULL,
-					    dev_ent, pd_prop);
+		err = dev_ent->dev_prop_get(path, NULL, NULL, NULL, dev_ent, pd_prop);
 		return err;
 	}
 
@@ -742,8 +676,7 @@ imp_dev_get_prop(
 
 	err = partname_to_diskname(dpath, path, sizeof(dpath));
 	if (err) {
-		mpool_elog(MPOOL_ERR
-			   "Getting device path of partition %s failed, @@e",
+		mpool_elog(MPOOL_ERR "Getting device path of partition %s failed, @@e",
 			   err, path);
 		return err;
 	}
@@ -754,19 +687,14 @@ imp_dev_get_prop(
 	/* Get device properties */
 	err = dev_get_prop(dpath, path, pd_prop);
 	if (err) {
-		mpool_elog(MPOOL_ERR "Getting device %s properties failed, @@e",
-			   err, dpath);
+		mpool_elog(MPOOL_ERR "Getting device %s properties failed, @@e", err, dpath);
 		return err;
 	}
 
 	return err;
 }
 
-merr_t
-imp_dev_alloc_get_prop(
-	int		 dcnt,
-	char	       **devices,
-	struct pd_prop **pd_prop)
+merr_t imp_dev_alloc_get_prop(int dcnt, char **devices, struct pd_prop **pd_prop)
 {
 	struct pd_prop *pdp;
 	merr_t		err = 0;
@@ -784,20 +712,17 @@ imp_dev_alloc_get_prop(
 	pdp = *pd_prop;
 	for (i = 0; i < dcnt; i++, pdp++) {
 		err = imp_dev_get_prop(devices[i], pdp);
-		if (err)
-			goto out;
+		if (err) {
+			free(*pd_prop);
+			*pd_prop = NULL;
+			return err;
+		}
 	}
-	return 0;
 
-out:
-	free(*pd_prop);
-	*pd_prop = NULL;
-	return err;
+	return 0;
 }
 
-merr_t
-sysfs_pd_disable_wbt(
-	const char *path)
+merr_t sysfs_pd_disable_wbt(const char *path)
 {
 	char    sysfs_path[NAME_MAX + 1];
 	char    dpath[PATH_MAX];
@@ -814,8 +739,7 @@ sysfs_pd_disable_wbt(
 	dname = strrchr(dpath, '/');
 
 	/* Sysfs file path */
-	n = snprintf(sysfs_path, sizeof(sysfs_path),
-		     "/sys/block%s/queue/wbt_lat_usec", dname);
+	n = snprintf(sysfs_path, sizeof(sysfs_path), "/sys/block%s/queue/wbt_lat_usec", dname);
 	if (n >= sizeof(sysfs_path))
 		return merr(ENAMETOOLONG);
 
@@ -835,11 +759,7 @@ sysfs_pd_disable_wbt(
 	return 0;
 }
 
-merr_t
-partname_to_diskname(
-	char          *diskname,
-	const char    *partname,
-	size_t         diskname_len)
+merr_t partname_to_diskname(char *diskname, const char *partname, size_t diskname_len)
 {
 	struct stat   st;
 	char          devname[32];
@@ -856,8 +776,7 @@ partname_to_diskname(
 		return merr(ENOTBLK);
 
 	/* Get the whole disk's devno from the partition */
-	if (blkid_devno_to_wholedisk(st.st_rdev, devname,
-				sizeof(devname), &disk))
+	if (blkid_devno_to_wholedisk(st.st_rdev, devname, sizeof(devname), &disk))
 		return merr(ENXIO);
 
 	if (st.st_rdev == disk) {
@@ -876,11 +795,7 @@ partname_to_diskname(
 	return 0;
 }
 
-merr_t
-mpool_devinfo(
-	const char  *name,
-	char        *devpath,
-	size_t       devpathsz)
+merr_t mpool_devinfo(const char *name, char *devpath, size_t devpathsz)
 {
 	char        sysfs_dpath[PATH_MAX];
 	char        dm[PATH_MAX];
@@ -911,6 +826,9 @@ mpool_devinfo(
 
 	devpath += strlen(devpath);
 
+	if (n + strlen(dm) >= devpathsz)
+		return merr(ENOSPC);
+
 	p = dm;
 	while (*p) {
 		if (*p == '-' && *(p + 1) != '-')
@@ -919,9 +837,6 @@ mpool_devinfo(
 		if (*p == '-')
 			++p;
 
-		/* [HSE_REVISIT] Shouldn't this loop terminate
-		 * in failure when (strlen(device) >= devpathsz) ???
-		 */
 		*devpath++ = *p++;
 	}
 	*devpath = '\000';

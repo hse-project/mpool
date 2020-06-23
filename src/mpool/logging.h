@@ -56,12 +56,6 @@
 
 
 void
-mpool_log(
-	const char *file,
-	int         line,
-	int         pri,
-	merr_t      err,
-	const char *fmt,
-	...) __printf(5, 6);
+mpool_log(const char *file, int line, int pri, merr_t err, const char *fmt, ...) __printf(5, 6);
 
 #endif
