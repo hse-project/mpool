@@ -1,5 +1,5 @@
 #
-# SPDX-License-Identifier: GPL-2.0-only
+# SPDX-License-Identifier: MIT
 #
 # Copyright (C) 2015-2020 Micron Technology, Inc.  All rights reserved.
 #
