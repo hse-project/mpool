@@ -52,4 +52,4 @@ typedef unsigned long      pgoff_t;
 # define S64_MIN         ((s64)(-S64_MAX - 1))
 #endif
 
-#endif
+#endif /* MPOOL_UTIL_INTTYPES_H */

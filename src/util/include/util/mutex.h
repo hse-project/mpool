@@ -78,49 +78,12 @@ struct mutex {
 #define DEFINE_MUTEX(mutexname) \
 	struct mutex mutexname = { .pth_mutex = PTHREAD_MUTEX_INITIALIZER }
 
-#define mutex_lock_nested(lock, subclass)       mutex_lock((lock))
-
-BullseyeCoverageSaveOff
-
 static inline
 void
 mutex_init(struct mutex *mutex)
 {
 	DEFINE_MUTEX(tmp);
 	*mutex = tmp;
-}
-
-static inline
-void
-mutex_init_adaptive(struct mutex *mutex)
-{
-	pthread_mutexattr_t attr;
-	int                 rc;
-
-	DEFINE_MUTEX(tmp);
-
-	rc = pthread_mutexattr_init(&attr);
-	if (rc) {
-		*mutex = tmp;
-		assert(0);
-		return;
-	}
-
-	rc = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ADAPTIVE_NP);
-	if (rc) {
-		pthread_mutexattr_destroy(&attr);
-		*mutex = tmp;
-		assert(0);
-		return;
-	}
-
-	rc = pthread_mutex_init(&mutex->pth_mutex, &attr);
-	if (rc) {
-		pthread_mutexattr_destroy(&attr);
-		*mutex = tmp;
-		assert(0);
-		return;
-	}
 }
 
 static __always_inline
@@ -158,24 +121,5 @@ mutex_unlock(struct mutex *mutex)
 	if (unlikely(rc))
 		abort();
 }
-
-/*
- * NOTE: mutex_trylock() returns 1 if the mutex has been acquired
- * successfully, and 0 if not.
- */
-static __always_inline
-int
-mutex_trylock(struct mutex *mutex)
-{
-	int rc;
-
-	rc = pthread_mutex_trylock(&mutex->pth_mutex);
-
-	assert(rc == 0 || rc == EBUSY);
-
-	return !rc;
-}
-
-BullseyeCoverageRestore
 
 #endif /* MPOOL_UTIL_MUTEX_H */

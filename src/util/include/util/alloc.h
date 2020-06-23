@@ -27,4 +27,4 @@ unsigned long __get_free_page(unsigned int flags);
 unsigned long get_zeroed_page(unsigned int flags);
 void free_page(unsigned long addr);
 
-#endif
+#endif /* MPOOL_UTIL_ALLOC_H */

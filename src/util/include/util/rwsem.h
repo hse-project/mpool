@@ -33,14 +33,7 @@ struct rw_semaphore {
 	pthread_rwlock_t rwsemlock;
 };
 
-#define __RWSEM_INITIALIZER(name) { .rwsemlock = PTHREAD_RWLOCK_INITIALIZER }
-
-#define DECLARE_RWSEM(name) \
-	struct rw_semaphore name = __RWSEM_INITIALIZER(name)
-
-static inline
-void
-init_rwsem(struct rw_semaphore *sem)
+static inline void init_rwsem(struct rw_semaphore *sem)
 {
 	struct rw_semaphore  tmp;
 	pthread_rwlockattr_t attr;
@@ -70,21 +63,7 @@ init_rwsem(struct rw_semaphore *sem)
 	*sem = tmp;
 }
 
-static inline
-void
-init_rwsem_reader(struct rw_semaphore *sem)
-{
-	int rc;
-
-	rc = pthread_rwlock_init(&sem->rwsemlock, NULL);
-	if (rc)
-		fprintf(stderr, "%s: pthread_rwlock_init() failed: %d",
-			__func__, rc);
-}
-
-static __always_inline
-void
-down_read(struct rw_semaphore *sem)
+static __always_inline void down_read(struct rw_semaphore *sem)
 {
 	int rc __maybe_unused;
 
@@ -92,9 +71,7 @@ down_read(struct rw_semaphore *sem)
 	assert(rc == 0);
 }
 
-static __always_inline
-void
-down_write(struct rw_semaphore *sem)
+static __always_inline void down_write(struct rw_semaphore *sem)
 {
 	int rc __maybe_unused;
 
@@ -102,9 +79,7 @@ down_write(struct rw_semaphore *sem)
 	assert(rc == 0);
 }
 
-static __always_inline
-void
-up_read(struct rw_semaphore *sem)
+static __always_inline void up_read(struct rw_semaphore *sem)
 {
 	int rc __maybe_unused;
 
@@ -112,9 +87,7 @@ up_read(struct rw_semaphore *sem)
 	assert(rc == 0);
 }
 
-static __always_inline
-void
-up_write(struct rw_semaphore *sem)
+static __always_inline void up_write(struct rw_semaphore *sem)
 {
 	int rc __maybe_unused;
 
@@ -122,7 +95,4 @@ up_write(struct rw_semaphore *sem)
 	assert(rc == 0);
 }
 
-#define down_read_nested(sem, subclass)    down_read(sem)
-#define down_write_nested(sem, subclass)   down_write(sem)
-
-#endif
+#endif /* MPOOL_UTIL_RWSEM_H */

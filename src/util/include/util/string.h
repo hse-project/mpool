@@ -61,4 +61,4 @@ size_t strlcat(char *dest, const char *src, size_t size);
  */
 char *strimpull(char *buf);
 
-#endif
+#endif /* MPOOL_UTIL_STRING_H */

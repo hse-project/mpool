@@ -11,27 +11,12 @@
 #include <mpool/mpool.h>
 
 mpool_err_t
-parse_u64_range(
-	const char  *str,
-	char       **endptr,
-	u64          min_accept,
-	u64          max_accept,
-	u64         *result);
+parse_u64_range(const char *str, char **endptr, u64 min_accept, u64 max_accept, u64 *result);
 
 mpool_err_t
-parse_s64_range(
-	const char  *str,
-	char       **endptr,
-	s64          min_accept,
-	s64          max_accept,
-	s64         *result);
+parse_s64_range(const char *str, char **endptr, s64 min_accept, s64 max_accept, s64 *result);
 
-mpool_err_t
-parse_size_range(
-	const char  *str,
-	u64          min_accept,
-	u64          max_accept,
-	u64         *result);
+mpool_err_t parse_size_range(const char *str, u64 min_accept, u64 max_accept, u64 *result);
 
 static inline mpool_err_t parse_size(const char *str, u64 *result)
 {
@@ -62,40 +47,20 @@ static inline mpool_err_t parse_size(const char *str, u64 *result)
 
 /* Declarations (for readability) */
 static inline mpool_err_t parse_u8(const char *str, u8 *result);
-static inline mpool_err_t parse_s8(const char *str, s8 *result);
-
 static inline mpool_err_t parse_u16(const char *str, u16 *result);
-static inline mpool_err_t parse_s16(const char *str, s16 *result);
-
 static inline mpool_err_t parse_u32(const char *str, u32 *result);
-static inline mpool_err_t parse_s32(const char *str, s32 *result);
-
 static inline mpool_err_t parse_u64(const char *str, u64 *result);
 static inline mpool_err_t parse_s64(const char *str, s64 *result);
 
-static inline mpool_err_t parse_uint(const char *str, unsigned int *result);
-static inline mpool_err_t parse_int(const  char *str, int *result);
-
-static inline mpool_err_t parse_ulong(const char *str, unsigned long *result);
-static inline mpool_err_t parse_long(const  char *str, long *result);
-
 /* definitions */
 __parse_unsigned_func(parse_u8,   u8,  (u8)0,   U8_MAX)
-__parse_signed_func(parse_s8,     s8,  S8_MIN,  S8_MAX)
 
 __parse_unsigned_func(parse_u16,  u16, (u16)0,  U16_MAX)
-__parse_signed_func(parse_s16,    s16, S16_MIN, S16_MAX)
 
 __parse_unsigned_func(parse_u32,  u32, (u32)0,  U32_MAX)
-__parse_signed_func(parse_s32,    s32, S32_MIN, S32_MAX)
 
 __parse_unsigned_func(parse_u64,  u64, (u64)0,  U64_MAX)
+
 __parse_signed_func(parse_s64,    s64, S64_MIN, S64_MAX)
 
-__parse_unsigned_func(parse_uint,  unsigned int,  (unsigned int)0,  UINT_MAX)
-__parse_signed_func(parse_int,     int,           INT_MIN,           INT_MAX)
-
-__parse_unsigned_func(parse_ulong,  unsigned long, (unsigned long)0, ULONG_MAX)
-__parse_signed_func(parse_long,     long,          LONG_MIN,          LONG_MAX)
-
-#endif
+#endif /* MPOOL_UTIL_PARSE_NUM_H */

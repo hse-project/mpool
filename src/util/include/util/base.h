@@ -28,4 +28,4 @@
 #define MPOOL_UTIL_AUTHOR  "Micron Technology"
 #define MPOOL_UTIL_DESC    "Object storate media pool util"
 
-#endif
+#endif /* MPOOL_UTIL_BASE_H */

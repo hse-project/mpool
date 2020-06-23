@@ -9,8 +9,7 @@
 #include <string.h>
 
 #ifndef __USE_ISOC11
-void *
-aligned_alloc(size_t align, size_t size)
+void *aligned_alloc(size_t align, size_t size)
 {
 	void   *mem = NULL;
 
@@ -21,14 +20,12 @@ aligned_alloc(size_t align, size_t size)
 }
 #endif
 
-unsigned long __weak
-__get_free_page(unsigned int flags)
+unsigned long __weak __get_free_page(unsigned int flags)
 {
 	return (unsigned long)aligned_alloc(4096, 4096);
 }
 
-unsigned long __weak
-get_zeroed_page(unsigned int flags)
+unsigned long __weak get_zeroed_page(unsigned int flags)
 {
 	void *mem;
 
@@ -39,8 +36,7 @@ get_zeroed_page(unsigned int flags)
 	return (unsigned long)mem;
 }
 
-void __weak
-free_page(unsigned long addr)
+void __weak free_page(unsigned long addr)
 {
 	free((void *)addr);
 }

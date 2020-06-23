@@ -53,8 +53,7 @@ size_t strlcat(char *dest, const char *src, size_t count)
 	return res;
 }
 
-char
-*strimpull(char *buf)
+char *strimpull(char *buf)
 {
 	char *beg = buf;
 	char *end;

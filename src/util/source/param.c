@@ -22,8 +22,7 @@
 
 struct common_opts co;
 
-static bool
-is_mutest_enabled(void)
+static bool is_mutest_enabled(void)
 {
 	char *mutest;
 
@@ -35,10 +34,7 @@ is_mutest_enabled(void)
 	return mutest ? atoi(mutest) : false;
 }
 
-static int
-excludes(
-	const struct xoption *given,
-	const struct xoption *xoptionv)
+static int excludes(const struct xoption *given, const struct xoption *xoptionv)
 {
 	const struct xoption *opt;
 
@@ -56,12 +52,7 @@ excludes(
 	return 0;
 }
 
-int
-xgetopt(
-	int                     argc,
-	char                  **argv,
-	const char             *optstring,
-	const struct xoption   *xoptionv)
+int xgetopt(int argc, char **argv, const char *optstring, const struct xoption *xoptionv)
 {
 	const struct xoption   *opt;
 	struct option           longopts[32];
@@ -135,8 +126,7 @@ xgetopt(
 			break;
 
 		if (longind >= 0)
-			snprintf(name, sizeof(name),
-				 "--%s", longopts[longind].name);
+			snprintf(name, sizeof(name), "--%s", longopts[longind].name);
 		else if (optopt || (c && c != '?'))
 			snprintf(name, sizeof(name), "-%c", optopt ?: c);
 		else
@@ -148,8 +138,7 @@ xgetopt(
 
 		x = excludes(opt, xoptionv);
 		if (x) {
-			fprintf(co.co_fp,
-				"%s: option -%c excludes -%c, use -h for help\n",
+			fprintf(co.co_fp, "%s: option -%c excludes -%c, use -h for help\n",
 				progname, x, opt->optopt);
 			return EX_USAGE;
 		}
@@ -174,14 +163,12 @@ xgetopt(
 			break;
 
 		case ':':
-			fprintf(co.co_fp,
-				"%s: option %s requires an argument, use -h for help\n",
+			fprintf(co.co_fp, "%s: option %s requires an argument, use -h for help\n",
 				progname, name);
 			return EX_USAGE;
 
 		case '?':
-			fprintf(co.co_fp,
-				"%s: invalid option %s, use -h for help\n",
+			fprintf(co.co_fp, "%s: invalid option %s, use -h for help\n",
 				progname, name);
 			return -1;
 
@@ -194,8 +181,7 @@ xgetopt(
 			if (opt->optflag)
 				break;
 
-			fprintf(co.co_fp,
-				"%s: unhandled option %s, use -h for help\n",
+			fprintf(co.co_fp, "%s: unhandled option %s, use -h for help\n",
 				progname, name);
 			return EX_USAGE;
 		}
@@ -203,8 +189,7 @@ xgetopt(
 
 	if (!co.co_mutest && co.co_log) {
 		fprintf(co.co_fp, "%s: invalid option %s, use -h for help\n",
-			progname,
-			co.co_log ? "--log|-L" : "bad option");
+			progname, co.co_log ? "--log|-L" : "bad option");
 
 		return EX_USAGE;
 	}
@@ -212,10 +197,7 @@ xgetopt(
 	return 0;
 }
 
-void
-xgetopt_usage(
-	const char             *optstring,
-	const struct xoption   *xoptionv)
+void xgetopt_usage(const char *optstring, const struct xoption *xoptionv)
 {
 	const char *hdr = "\nOptions:\n";
 	const char *valname = "ARG";
@@ -247,31 +229,22 @@ xgetopt_usage(
 		if (opt->opthidden && !co.co_mutest)
 			continue;
 
-		snprintf(excludes, sizeof(excludes),
-			 opt->optexcl ? " (excludes -%s)" : "",
+		snprintf(excludes, sizeof(excludes), opt->optexcl ? " (excludes -%s)" : "",
 			 opt->optexcl);
 
 		fmt = opt->optlong ? ", --%s" : "";
 		if (opt->optval)
 			fmt = opt->optlong ? ", --%s=%s" : " %s%s";
-		snprintf(argbuf, sizeof(argbuf), fmt,
-			 opt->optlong ?: "", valname);
+		snprintf(argbuf, sizeof(argbuf), fmt, opt->optlong ?: "", valname);
 
-		fprintf(co.co_fp, "%s  -%c%-*s    %s%s\n",
-			hdr, opt->optopt,
-			width, argbuf,
-			opt->optdesc,
-			excludes);
+		fprintf(co.co_fp, "%s  -%c%-*s    %s%s\n", hdr, opt->optopt, width, argbuf,
+			opt->optdesc, excludes);
 
 		hdr = "";
 	}
 }
 
-mpool_err_t
-get_u8(
-	const char *src,
-	void       *dst,
-	size_t      dstsz)
+mpool_err_t get_u8(const char *src, void *dst, size_t dstsz)
 {
 	if (PARAM_GET_INVALID(u8, dst, dstsz))
 		return merr(EINVAL);
@@ -279,56 +252,7 @@ get_u8(
 	return parse_u8(src, dst);
 }
 
-mpool_err_t
-get_u8_list(
-	const char *src,
-	void       *dst,
-	size_t      dstsz)
-{
-	mpool_err_t      err = 0;
-	const char *start = src;
-	const char *next;
-	u8         *dstu8 = (u8 *)dst;
-	char        tmp[4]; /* 3 char for 255 then one 0 */
-	size_t      len;
-
-	if (PARAM_GET_INVALID(u8, dst, dstsz))
-		return merr(EINVAL);
-
-	while (true) {
-		next = strchr(start, ',');
-		if (next == NULL)
-			len = strlen(start);
-		else
-			len = next - start;
-
-		if (len > 3) {
-			err = merr(EINVAL);
-			break;
-		}
-		memcpy(tmp, start, len);
-		tmp[len] = 0;
-
-		err = get_u8(tmp, dstu8, 1);
-		if (err)
-			break;
-		dstu8++;
-		dstsz--;
-		if ((next == NULL) || (dstsz == 0))
-			break;
-		start = next + 1;
-		if (*start == 0)
-			break;
-	}
-	return err;
-}
-
-mpool_err_t
-show_u8(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused)
+mpool_err_t show_u8(char *str, size_t strsz, const void *val, size_t unused)
 {
 	size_t n;
 
@@ -340,53 +264,16 @@ show_u8(
 	return (n < strsz) ? 0 : merr(EINVAL);
 }
 
-mpool_err_t
-show_u8_list(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      val_nb)
+mpool_err_t check_u8(uintptr_t min, uintptr_t max, void *val)
 {
-	size_t n;
-	int    i;
-	bool   ending_comma = false;
-	const u8 *valu8 = (u8 *)val;
-
-	for (i = 0; i < val_nb; i++, valu8++) {
-		n = snprintf(str, strsz, "%u", *valu8);
-		if (n >= strsz)
-			/* string provided is too short. */
-			return merr(EINVAL);
-		str += n;
-		strsz -= n;
-		if (strsz == 1) {
-			i++;
-			ending_comma = false;
-			break;
-		}
-
-		ending_comma = true;
-		*str = ',';
-		str++;
-		strsz--;
-	}
-	if (i < val_nb)
-		/* string provided is too short. */
-		return merr(EINVAL);
-
-	/* Overwrite the last ',' with a zero. */
-	if (ending_comma)
-		*(str - 1) = 0;
-
+	if (*(u8 *)val < (u8)min || *(u8 *)val >= (u8)max)
+		return merr(ERANGE);
 
 	return 0;
 }
 
-mpool_err_t
-get_u16(
-	const char *src,
-	void       *dst,
-	size_t      dstsz)
+
+mpool_err_t get_u16(const char *src, void *dst, size_t dstsz)
 {
 	if (PARAM_GET_INVALID(u16, dst, dstsz))
 		return merr(EINVAL);
@@ -394,12 +281,7 @@ get_u16(
 	return parse_u16(src, dst);
 }
 
-mpool_err_t
-show_u16(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused)
+mpool_err_t show_u16(char *str, size_t strsz, const void *val, size_t unused)
 {
 	size_t n;
 
@@ -411,12 +293,7 @@ show_u16(
 	return (n < strsz) ? 0 : merr(EINVAL);
 }
 
-mpool_err_t
-show_u16_dec(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused)
+mpool_err_t show_u16_dec(char *str, size_t strsz, const void *val, size_t unused)
 {
 	size_t n;
 
@@ -428,11 +305,16 @@ show_u16_dec(
 	return (n < strsz) ? 0 : merr(EINVAL);
 }
 
-mpool_err_t
-get_u32(
-	const char *src,
-	void       *dst,
-	size_t      dstsz)
+mpool_err_t check_u16(uintptr_t min, uintptr_t max, void *val)
+{
+	if (*(u16 *)val < (u16)min || *(u16 *)val >= (u16)max)
+		return merr(ERANGE);
+
+	return 0;
+}
+
+
+mpool_err_t get_u32(const char *src, void *dst, size_t dstsz)
 {
 	if (PARAM_GET_INVALID(u32, dst, dstsz))
 		return merr(EINVAL);
@@ -440,12 +322,7 @@ get_u32(
 	return parse_u32(src, dst);
 }
 
-mpool_err_t
-show_u32(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused)
+mpool_err_t show_u32(char *str, size_t strsz, const void *val, size_t unused)
 {
 	size_t n;
 
@@ -458,11 +335,7 @@ show_u32(
 }
 
 
-mpool_err_t
-check_u32(
-	uintptr_t min,
-	uintptr_t max,
-	void     *val)
+mpool_err_t check_u32(uintptr_t min, uintptr_t max, void *val)
 {
 	if (*(u32 *)val < (u32)min || *(u32 *)val >= (u32)max)
 		return merr(ERANGE);
@@ -470,36 +343,7 @@ check_u32(
 	return 0;
 }
 
-mpool_err_t
-check_u16(
-	uintptr_t min,
-	uintptr_t max,
-	void     *val)
-{
-	if (*(u16 *)val < (u16)min || *(u16 *)val >= (u16)max)
-		return merr(ERANGE);
-
-	return 0;
-}
-
-mpool_err_t
-check_u8(
-	uintptr_t min,
-	uintptr_t max,
-	void     *val)
-{
-	if (*(u8 *)val < (u8)min || *(u8 *)val >= (u8)max)
-		return merr(ERANGE);
-
-	return 0;
-}
-
-mpool_err_t
-show_u32_dec(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused)
+mpool_err_t show_u32_dec(char *str, size_t strsz, const void *val, size_t unused)
 {
 	size_t n;
 
@@ -511,28 +355,7 @@ show_u32_dec(
 	return (n < strsz) ? 0 : merr(EINVAL);
 }
 
-mpool_err_t
-show_u8_dec(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused)
-{
-	size_t n;
-
-	if (PARAM_SHOW_INVALID(u8, val))
-		return merr(EINVAL);
-
-	n = snprintf(str, strsz, "%u", *(const u8 *)val);
-
-	return (n < strsz) ? 0 : merr(EINVAL);
-}
-
-mpool_err_t
-get_u32_size(
-	const char *src,
-	void       *dst,
-	size_t      dstsz)
+mpool_err_t get_u32_size(const char *src, void *dst, size_t dstsz)
 {
 	u64 v;
 	mpool_err_t err;
@@ -545,11 +368,19 @@ get_u32_size(
 	return err;
 }
 
-size_t
-space_to_string(
-	u64     spc,
-	char   *string,
-	size_t  strsz)
+mpool_err_t show_u32_size(char *str, size_t strsz, const void *val, size_t unused)
+{
+	size_t n;
+
+	if (PARAM_SHOW_INVALID(u32, val))
+		return merr(EINVAL);
+
+	n = space_to_string(*(const u32 *)val, str, strsz);
+
+	return (n < strsz) ? 0 : merr(EINVAL);
+}
+
+size_t space_to_string(u64 spc, char *string, size_t strsz)
 {
 	static const char  suffixtab[] = "\0kmgtpezy";
 	double      space = spc;
@@ -564,98 +395,7 @@ space_to_string(
 	return snprintf(string, strsz, "%4.2lf%c", space, *stp);
 }
 
-mpool_err_t
-show_space(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused)
-{
-	space_to_string(*(const u64 *)val, str, strsz);
-	return 0;
-}
-
-mpool_err_t
-get_space_from_arg(
-	const char *str,
-	u64        *dst,
-	size_t      dstsz)
-{
-	static const char  kmgtp[] = "KkMmGgTtPp";
-	const char *pos;
-	char       *endptr;
-	double      d;
-
-	if (PARAM_GET_INVALID(u64, dst, dstsz))
-		return merr(EINVAL);
-
-	errno = 0;
-	d = strtod(str, &endptr);
-	if (errno || endptr == str || d < 0)
-		return errno ? merr(errno) : merr(EINVAL);
-
-	while (isspace(*endptr))
-		++endptr; /* allow white space to precede suffix */
-
-	if (*endptr) {
-		ulong mult = 1;
-
-		pos = strchr(kmgtp, *endptr++);
-		if (!pos)
-			return merr(EINVAL);
-
-		while (isspace(*endptr))
-			++endptr; /* allow trailing white space */
-		if (*endptr)
-			return merr(EINVAL);
-
-		mult <<= ((pos - kmgtp) / 2 + 1) * 10;
-		d *= mult;
-	}
-
-	if (d > U64_MAX) {
-		*dst = U64_MAX;
-		return merr(ERANGE);
-	}
-
-	*dst = d;
-	return 0;
-}
-
-mpool_err_t
-get_space(
-	const char *str,
-	void       *dst,
-	size_t      dstsz)
-{
-	if (PARAM_GET_INVALID(u64, dst, dstsz))
-		return merr(EINVAL);
-
-	return get_space_from_arg(str, dst, dstsz);
-}
-
-mpool_err_t
-show_u32_size(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused)
-{
-	size_t n;
-
-	if (PARAM_SHOW_INVALID(u32, val))
-		return merr(EINVAL);
-
-	n = space_to_string(*(const u32 *)val, str, strsz);
-
-	return (n < strsz) ? 0 : merr(EINVAL);
-}
-
-mpool_err_t
-get_u64(
-	const char *src,
-	void       *dst,
-	size_t      dstsz)
+mpool_err_t get_u64(const char *src, void *dst, size_t dstsz)
 {
 	if (PARAM_GET_INVALID(u64, dst, dstsz))
 		return merr(EINVAL);
@@ -663,12 +403,7 @@ get_u64(
 	return parse_u64(src, dst);
 }
 
-mpool_err_t
-show_u64(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused)
+mpool_err_t show_u64(char *str, size_t strsz, const void *val, size_t unused)
 {
 	u64 hex_threshold = 64 * 1024;
 	const char *fmt;
@@ -683,12 +418,7 @@ show_u64(
 	return (n < strsz) ? 0 : merr(EINVAL);
 }
 
-mpool_err_t
-show_u64_dec(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused)
+mpool_err_t show_u64_dec(char *str, size_t strsz, const void *val, size_t unused)
 {
 	size_t n;
 
@@ -700,53 +430,7 @@ show_u64_dec(
 	return (n < strsz) ? 0 : merr(EINVAL);
 }
 
-mpool_err_t
-show_u64_list(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      val_nb)
-{
-	size_t n;
-	int    i;
-	bool   ending_comma = false;
-	const u64 *valu64 = (u64 *)val;
-
-	for (i = 0; i < val_nb; i++, valu64++) {
-		n = snprintf(str, strsz, "%lu", (ulong)*valu64);
-		if (n >= strsz)
-			/* string provided is too short. */
-			return merr(EINVAL);
-		str += n;
-		strsz -= n;
-		if (strsz == 1) {
-			i++;
-			ending_comma = false;
-			break;
-		}
-
-		ending_comma = true;
-		*str = ',';
-		str++;
-		strsz--;
-	}
-	if (i < val_nb)
-		/* string provided is too short. */
-		return merr(EINVAL);
-
-	/* Overwrite the last ',' with a zero. */
-	if (ending_comma)
-		*(str - 1) = 0;
-
-
-	return 0;
-}
-
-mpool_err_t
-get_u64_size(
-	const char *src,
-	void       *dst,
-	size_t      dstsz)
+mpool_err_t get_u64_size(const char *src, void *dst, size_t dstsz)
 {
 	if (PARAM_GET_INVALID(u64, dst, dstsz))
 		return merr(EINVAL);
@@ -754,12 +438,7 @@ get_u64_size(
 	return parse_size(src, dst);
 }
 
-mpool_err_t
-show_u64_size(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused)
+mpool_err_t show_u64_size(char *str, size_t strsz, const void *val, size_t unused)
 {
 	size_t n;
 
@@ -771,11 +450,7 @@ show_u64_size(
 	return (n < strsz) ? 0 : merr(EINVAL);
 }
 
-mpool_err_t
-get_s64(
-	const char *src,
-	void       *dst,
-	size_t      dstsz)
+mpool_err_t get_s64(const char *src, void *dst, size_t dstsz)
 {
 	if (PARAM_GET_INVALID(s64, dst, dstsz))
 		return merr(EINVAL);
@@ -783,57 +458,7 @@ get_s64(
 	return parse_s64(src, dst);
 }
 
-mpool_err_t
-get_s32(
-	const char *src,
-	void       *dst,
-	size_t      dstsz)
-{
-	if (PARAM_GET_INVALID(s32, dst, dstsz))
-		return merr(EINVAL);
-
-	return parse_s32(src, dst);
-}
-
-mpool_err_t
-show_s32(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused)
-{
-	size_t n;
-
-	if (PARAM_SHOW_INVALID(s32, val))
-		return merr(EINVAL);
-
-	n = snprintf(str, strsz, "0x%x", *(const s32 *)val);
-
-	return (n < strsz) ? 0 : merr(EINVAL);
-}
-
-mpool_err_t
-show_s64(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused)
-{
-	size_t n;
-
-	if (PARAM_SHOW_INVALID(s64, val))
-		return merr(EINVAL);
-
-	n = snprintf(str, strsz, "0x%lx", (ulong) *(const s64 *)val);
-
-	return (n < strsz) ? 0 : merr(EINVAL);
-}
-
-mpool_err_t
-get_string(
-	const char *src,
-	void       *dst,
-	size_t      dstsz)
+mpool_err_t get_string(const char *src, void *dst, size_t dstsz)
 {
 	size_t n;
 
@@ -844,39 +469,18 @@ get_string(
 	return (n < dstsz) ? 0 : merr(EINVAL);
 }
 
-mpool_err_t
-get_stringptr(
-	const char *src,
-	void       *dst,
-	size_t      dstsz)
-{
-	*(void **)dst = strdup(src);
-
-	return *(void **)dst ? 0 : merr(ENOMEM);
-}
-
-mpool_err_t
-show_string(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused)
+mpool_err_t show_string(char *str, size_t strsz, const void *val, size_t unused)
 {
 	size_t n;
 
-	assert((const char *)val >= str + strsz ||
-	       str >= (const char *)val + strsz);
+	assert((const char *)val >= str + strsz || str >= (const char *)val + strsz);
 
 	n = strlcpy(str, val, strsz);
 
 	return (n < strsz) ? 0 : merr(EINVAL);
 }
 
-mpool_err_t
-get_bool(
-	const char *str,
-	void       *dst,
-	size_t      dstsz)
+mpool_err_t get_bool(const char *str, void *dst, size_t dstsz)
 {
 	long    v = 0;
 
@@ -912,12 +516,7 @@ get_bool(
 	return 0;
 }
 
-mpool_err_t
-show_bool(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused)
+mpool_err_t show_bool(char *str, size_t strsz, const void *val, size_t unused)
 {
 	size_t n;
 
@@ -929,11 +528,7 @@ show_bool(
 	return (n < strsz) ? 0 : merr(EINVAL);
 }
 
-mpool_err_t
-get_uid(
-	const char *str,
-	void       *dst,
-	size_t      dstsz)
+mpool_err_t get_uid(const char *str, void *dst, size_t dstsz)
 {
 	struct passwd  *pw;
 	char           *end;
@@ -959,12 +554,7 @@ get_uid(
 	return 0;
 }
 
-mpool_err_t
-show_uid(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused)
+mpool_err_t show_uid(char *str, size_t strsz, const void *val, size_t unused)
 {
 	struct passwd  *pw;
 	size_t          n;
@@ -983,11 +573,7 @@ show_uid(
 	return (n < strsz) ? 0 : merr(EINVAL);
 }
 
-mpool_err_t
-get_gid(
-	const char *str,
-	void       *dst,
-	size_t      dstsz)
+mpool_err_t get_gid(const char *str, void *dst, size_t dstsz)
 {
 	u64             num;
 	char           *ep = NULL;
@@ -1010,12 +596,7 @@ get_gid(
 	return 0;
 }
 
-mpool_err_t
-show_gid(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused)
+mpool_err_t show_gid(char *str, size_t strsz, const void *val, size_t unused)
 {
 	struct group   *gr;
 	size_t          len;
@@ -1041,11 +622,7 @@ show_gid(
  *
  * Return: EINVAL if ill formatted or if the result is greater than 0777
  */
-mpool_err_t
-get_mode(
-	const char *str,
-	void       *dst,
-	size_t      dstsz)
+mpool_err_t get_mode(const char *str, void *dst, size_t dstsz)
 {
 	u64   num;
 	char *ep = NULL;
@@ -1067,12 +644,7 @@ get_mode(
 	return 0;
 }
 
-mpool_err_t
-show_mode(
-	char       *str,
-	size_t      strsz,
-	const void *val,
-	size_t      unused)
+mpool_err_t show_mode(char *str, size_t strsz, const void *val, size_t unused)
 {
 	size_t n;
 
@@ -1087,12 +659,7 @@ show_mode(
 	return (n < strsz) ? 0 : merr(EINVAL);
 }
 
-void
-shuffle(
-	int    argc,
-	char **argv,
-	int    insert,
-	int    check)
+static void shuffle(int argc, char **argv, int insert, int check)
 {
 	char *saved = argv[check];
 	int   i;
@@ -1102,11 +669,8 @@ shuffle(
 	argv[insert] = saved;
 }
 
-mpool_err_t
-param_gen_match_table(
-	struct param_inst      *piv,
-	struct match_token    **table,
-	int                    *entry_cnt)
+static mpool_err_t
+param_gen_match_table(struct param_inst *piv, struct match_token **table, int *entry_cnt)
 {
 	struct match_token *t;
 	struct param_inst  *pi;
@@ -1136,22 +700,14 @@ param_gen_match_table(
 	return 0;
 }
 
-void
-param_free_match_table(
-	struct match_token *table)
+static void param_free_match_table(struct match_token *table)
 {
 	kfree(table);
 }
 
 bool show_advanced_params;
 
-mpool_err_t
-process_params(
-	int                 argc,
-	char              **argv,
-	struct param_inst  *piv,
-	int                *argindp,
-	u32                 flag)
+mpool_err_t process_params(int argc, char **argv, struct param_inst *piv, int *argindp, u32 flag)
 {
 	struct match_token *table;
 	substring_t         val;
@@ -1187,17 +743,14 @@ process_params(
 		if (flag && !(flag & pi->pi_flags))
 			continue; /* skip if type not requested */
 
-		err = pi->pi_type.param_str_to_val(
-			val.from, pi->pi_value, pi->pi_type.param_size);
+		err = pi->pi_type.param_str_to_val(val.from, pi->pi_value, pi->pi_type.param_size);
 		if (err)
 			goto out;
 
 		/* Validate if pi_value is within allowed range */
 		if (pi->pi_type.param_range_check) {
-			err = pi->pi_type.param_range_check(
-				pi->pi_type.param_min,
-				pi->pi_type.param_max,
-				pi->pi_value);
+			err = pi->pi_type.param_range_check(pi->pi_type.param_min,
+							    pi->pi_type.param_max, pi->pi_value);
 			if (err) {
 				char   *token = pi->pi_type.param_token;
 				size_t  len = strcspn(token, "=");
@@ -1225,12 +778,7 @@ out:
 	return err;
 }
 
-static void
-param_get_name(
-	int                       index,
-	char                     *buf,
-	size_t                    buf_sz,
-	const struct param_inst  *table)
+static void param_get_name(int index, char *buf, size_t buf_sz, const struct param_inst *table)
 {
 	char  *key;
 	size_t len;
@@ -1246,10 +794,7 @@ param_get_name(
 
 /* Set the values in table params to defaults before calling this function
  */
-void
-show_default_params(
-	struct param_inst *params,
-	u32                flag)
+void show_default_params(struct param_inst *params, u32 flag)
 {
 	const char *hdr = "\nParams:\n";
 
@@ -1266,11 +811,9 @@ show_default_params(
 		param_get_name(0, name, sizeof(name), params);
 
 		value[0] = '\000';
-		params->pi_type.param_val_to_str(value, sizeof(value),
-						 params->pi_value, 1);
+		params->pi_type.param_val_to_str(value, sizeof(value), params->pi_value, 1);
 
-		fprintf(co.co_fp, "%s  %-8s  %s (default: %s)\n",
-			hdr, name, params->pi_msg, value);
+		fprintf(co.co_fp, "%s  %-8s  %s (default: %s)\n", hdr, name, params->pi_msg, value);
 
 		hdr = "";
 	}
