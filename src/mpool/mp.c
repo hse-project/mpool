@@ -93,7 +93,7 @@ mpool_sb_magic_check(
 	if (!dpath || !pd_prop || !devrpt)
 		return merr(EINVAL);
 
-	pd = kcalloc(1, sizeof(*pd), GFP_KERNEL);
+	pd = calloc(1, sizeof(*pd));
 	if (!pd) {
 		mpool_devrpt(devrpt, MPOOL_RC_ERRMSG, -1,
 			     "mpool dev info alloc failed");
@@ -102,7 +102,7 @@ mpool_sb_magic_check(
 
 	err = mpool_dev_init_all(pd, 1, &dpath, devrpt, pd_prop);
 	if (err) {
-		kfree(pd);
+		free(pd);
 		return err;
 	}
 
@@ -119,7 +119,7 @@ mpool_sb_magic_check(
 	}
 
 	pd_file_close(&pd->pdi_parm);
-	kfree(pd);
+	free(pd);
 
 	return err;
 }
@@ -139,7 +139,7 @@ mpool_sb_erase(
 	    dcnt < 1 || dcnt > MPOOL_DRIVES_MAX)
 		return merr(EINVAL);
 
-	pdv = kcalloc((MPOOL_DRIVES_MAX + 1), sizeof(*pdv), GFP_KERNEL);
+	pdv = calloc((MPOOL_DRIVES_MAX + 1), sizeof(*pdv));
 	if (!pdv)
 		return merr(ENOMEM);
 
@@ -163,7 +163,7 @@ mpool_sb_erase(
 	}
 
 exit:
-	kfree(pdv);
+	free(pdv);
 
 	return err;
 }
@@ -211,7 +211,7 @@ struct mpool_descriptor *mpool_user_desc_alloc(char *mpname)
 	if (!mpname || !(*mpname))
 		return NULL;
 
-	mp = kzalloc(sizeof(*mp), GFP_KERNEL);
+	mp = calloc(1, sizeof(*mp));
 	if (!mp)
 		return NULL;
 
@@ -222,5 +222,5 @@ struct mpool_descriptor *mpool_user_desc_alloc(char *mpname)
 
 void mpool_user_desc_free(struct mpool_descriptor *mp)
 {
-	kfree(mp);
+	free(mp);
 }

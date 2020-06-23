@@ -9,7 +9,7 @@
 #include <util/platform.h>
 #include <util/omf.h>
 
-struct ecio_layout_descriptor;
+struct pmd_layout;
 
 /*
  * Common defs: versioned via version number field of enclosing structs
@@ -177,7 +177,7 @@ omf_logrec_desc_unpack_letoh(
 /**
  * omf_logblock_header_cksum_le() - add checksum to log block buffer
  * @mp: struct mpool_descriptor *
- * @layout: struct ecio_layout_descriptor *
+ * @layout: struct pmd_layout *
  * @sidx: u8
  * @lpoff: u64
  * @lbuf: char *
@@ -189,7 +189,7 @@ omf_logrec_desc_unpack_letoh(
 merr_t
 omf_logblock_header_cksum_le(
 	struct mpool_descriptor        *mp,
-	struct ecio_layout_descriptor  *layout,
+	struct pmd_layout  *layout,
 	u8                              sidx,
 	u64                             lpoff,
 	char                           *lbuf);
@@ -197,7 +197,7 @@ omf_logblock_header_cksum_le(
 /**
  * omf_logblock_header_validate_le() - validate cksum on log block buffer
  * @mp: struct mpool_descriptor *
- * @layout: struct ecio_layout_descriptor *
+ * @layout: struct pmd_layout *
  * @sidx: u8
  * @lpoff: u64
  * @lbuf: char *
@@ -209,7 +209,7 @@ omf_logblock_header_cksum_le(
 merr_t
 omf_logblock_header_validate_le(
 	struct mpool_descriptor        *mp,
-	struct ecio_layout_descriptor  *layout,
+	struct pmd_layout  *layout,
 	u8                              sidx,
 	u64                             lpoff,
 	char                           *lbuf);

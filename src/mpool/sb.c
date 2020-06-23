@@ -105,7 +105,7 @@ int sb_magic_check(struct mpool_dev_info *pd)
 
 	assert(SB_AREA_SZ >= OMF_SB_DESC_PACKLEN);
 
-	inbuf = kcalloc(SB_AREA_SZ, sizeof(char), GFP_KERNEL);
+	inbuf = calloc(SB_AREA_SZ, sizeof(char));
 	if (!inbuf) {
 		err = merr(ENOMEM);
 		mp_pr_err("sb(%s) magic check: buffer alloc failed",
@@ -125,12 +125,12 @@ int sb_magic_check(struct mpool_dev_info *pd)
 			mp_pr_err("sb(%s, %d) magic: read failed, woff %lu",
 				  err, pd->pdi_name, i, (ulong)woff);
 		} else if (omf_sb_has_magic_le(inbuf)) {
-			kfree(inbuf);
+			free(inbuf);
 			return 1;
 		}
 	}
 
-	kfree(inbuf);
+	free(inbuf);
 	return rval;
 }
 
@@ -160,7 +160,7 @@ merr_t sb_erase(struct mpool_dev_info *pd)
 
 	assert(SB_AREA_SZ >= OMF_SB_DESC_PACKLEN);
 
-	buf = kcalloc(SB_AREA_SZ, sizeof(char), GFP_KERNEL);
+	buf = calloc(SB_AREA_SZ, sizeof(char));
 	if (!buf)
 		return merr(EINVAL);
 
@@ -177,7 +177,7 @@ merr_t sb_erase(struct mpool_dev_info *pd)
 		}
 	}
 
-	kfree(buf);
+	free(buf);
 
 	return err;
 }

@@ -225,7 +225,7 @@ mpool_mdc_open(
 	if (!mp || !mdc_out)
 		return merr(EINVAL);
 
-	mdc = kzalloc(sizeof(*mdc), GFP_KERNEL);
+	mdc = calloc(1, sizeof(*mdc));
 	if (!mdc)
 		return merr(ENOMEM);
 
@@ -371,7 +371,7 @@ mpool_mdc_open(
 
 exit:
 	if (err)
-		kfree(mdc);
+		free(mdc);
 
 	return err;
 }
@@ -493,7 +493,7 @@ uint64_t mpool_mdc_close(struct mpool_mdc *mdc)
 	mdc_invalidate(mdc);
 	mdc_release(mdc, false);
 
-	kfree(mdc);
+	free(mdc);
 
 	return rval;
 }

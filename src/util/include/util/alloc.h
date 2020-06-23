@@ -14,11 +14,6 @@
 
 #define GFP_KERNEL                          0x00000004
 
-#define kmalloc(_size, _flags)              malloc((_size))
-#define kcalloc(_n, _size, _flags)          calloc((_n), (_size))
-#define kzalloc(_size, _flags)              calloc(1, (_size))
-#define kfree(_ptr)                         free((void *)(_ptr))
-
 #ifndef __USE_ISOC11
 void *aligned_alloc(size_t align, size_t size);
 #endif

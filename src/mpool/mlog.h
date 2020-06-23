@@ -13,79 +13,6 @@
 
 #define MB       (1024 * 1024)
 
-struct mlog_stat;
-struct ecio_layout_descriptor;
-
-/*
- * enum ecio_layout_state - object state flags
- *
- * ECIO_LYT_NONE:      no flags set
- * ECIO_LYT_COMMITTED: object is committed to media
- * ECIO_LYT_REMOVED:   object logically removed (aborted or deleted)
- */
-enum ecio_layout_state {
-	ECIO_LYT_NONE       = 0,
-	ECIO_LYT_COMMITTED  = 1,
-	ECIO_LYT_REMOVED    = 2,
-};
-
-/*
- * struct ecio_layout_mlo - information used only by mlog objects.
- * "mlo" = mlog only
- * @mlo_lstat:   mlog status
- * @mlo_mlog:    Used only for user space mlogs
- * @mlo_layout:  back pointer to the layout
- * @mlo_uuid:    unique ID per mlog
- */
-struct ecio_layout_mlo {
-	struct mlog_stat              *mlo_lstat;
-	struct mlog_user              *mlo_mlog;
-	struct ecio_layout_descriptor *mlo_layout;
-	struct mpool_uuid              mlo_uuid;
-};
-
-/*
- * Object layout descriptor (in-memory version)
- *
- * LOCKING:
- * + objid: constant; no locking required
- * + lstat: lstat and *lstat are protected by pmd_obj_*lock()
- * + refcnt and isdel: protected by mmi_reflock of object's MDC
- * + all other fields: see notes
- */
-/**
- * struct ecio_layout_descriptor
- *
- * The size of this structure should stay <= 128 bytes.
- * It contains holes that can be used to add new fields/information.
- *
- * NOTE:
- * + committed object fields (other): to update hold pmd_obj_wrlock()
- *   AND
- *   compactlock for object's mdc; to read hold pmd_obj_*lock()
- *   See the comments associated with struct pmd_mdc_info for
- *   further details.
- *
- * @eld_rwlock:  implements pmd_obj_*lock() for this layout
- * @eld_state:   enum ecio_layout_state
- * @eld_flags:   enum mlog_open_flags for mlogs
- * @eld_objid:   object id associated with layout
- * @eld_mlo:     info. specific to an mlog, NULL for mblocks.
- * @eld_gen:     object generation
- */
-struct ecio_layout_descriptor {
-	struct rw_semaphore             eld_rwlock;
-	u8                              eld_state;
-	u8                              eld_flags;
-	u64                             eld_objid;
-	struct ecio_layout_mlo         *eld_mlo;
-	u64                             eld_gen;
-};
-
-/* Shortcuts */
-#define eld_lstat   eld_mlo->mlo_lstat
-#define eld_uuid    eld_mlo->mlo_uuid
-
 /**
  * calc_io_len() -
  * @iov:
@@ -113,22 +40,6 @@ static inline enum obj_type_omf pmd_objid_type(u64 objid)
 		return OMF_OBJ_UNDEF;
 	else
 		return otype;
-}
-
-static inline bool objtype_user(enum obj_type_omf otype)
-{
-	return (otype == OMF_OBJ_MBLOCK || otype == OMF_OBJ_MLOG);
-}
-
-static inline u8 objid_slot(u64 objid)
-{
-	return (objid & 0xFF);
-}
-
-/* True if objid is an mpool user object (versus mpool metadata object). */
-static inline bool pmd_objid_isuser(u64 objid)
-{
-	return objtype_user(objid_type(objid)) && objid_slot(objid);
 }
 
 /**
@@ -160,9 +71,9 @@ struct mlog_fsetparms {
  * @mfp_secshift: Sector size (2 exponent) obtained from PD prop
  */
 struct mlog_user {
-	struct mpool_mlog *ml_mlh;
-	u32             ml_totsec;
-	u16             ml_secshift;
+	struct mpool_mlog  *ml_mlh;
+	u32                 ml_totsec;
+	u16                 ml_secshift;
 };
 
 /*
@@ -177,18 +88,18 @@ struct mlog_user {
  * @lri_valid:  1 if iterator is valid; 0 otherwise
  */
 struct mlog_read_iter {
-	struct ecio_layout_descriptor *lri_layout;
-	off_t lri_soff;
-	u64   lri_gen;
-	u16   lri_roff;
-	u16   lri_rbidx;
-	u8    lri_sidx;
-	u8    lri_valid;
+	struct pmd_layout  *lri_layout;
+	off_t               lri_soff;
+	u64                 lri_gen;
+	u16                 lri_roff;
+	u16                 lri_rbidx;
+	u8                  lri_sidx;
+	u8                  lri_valid;
 };
 
 /**
  * struct mlog_stat - mlog open status (referenced by associated
- * struct ecio_layout_descriptor)
+ * struct pmd_layout)
  *
  * @lst_citr:    Current mlog read iterator
  * @lst_mfp:     Mlog flush set parameters
@@ -209,23 +120,23 @@ struct mlog_read_iter {
  * @lst_cend:    valid compaction end marker in log?
  */
 struct mlog_stat {
-	struct mlog_read_iter  lst_citr;
-	struct mlog_fsetparms  lst_mfp;
-	char  **lst_abuf;
-	char  **lst_rbuf;
-	off_t   lst_rsoff;
-	off_t   lst_rseoff;
-	off_t   lst_asoff;
-	off_t   lst_wsoff;
-	bool    lst_abdirty;
-	u32     lst_pfsetid;
-	u32     lst_cfsetid;
-	u16     lst_cfssoff;
-	u16     lst_aoff;
-	u16     lst_abidx;
-	u8      lst_csem;
-	u8      lst_cstart;
-	u8      lst_cend;
+	struct mlog_read_iter    lst_citr;
+	struct mlog_fsetparms    lst_mfp;
+	char                   **lst_abuf;
+	char                   **lst_rbuf;
+	off_t                    lst_rsoff;
+	off_t                    lst_rseoff;
+	off_t                    lst_asoff;
+	off_t                    lst_wsoff;
+	bool                     lst_abdirty;
+	u32                      lst_pfsetid;
+	u32                      lst_cfsetid;
+	u16                      lst_cfssoff;
+	u16                      lst_aoff;
+	u16                      lst_abidx;
+	u8                       lst_csem;
+	u8                       lst_cstart;
+	u8                       lst_cend;
 };
 
 #define MLOG_TOTSEC(lstat)  ((lstat)->lst_mfp.mfp_totsec)
@@ -236,16 +147,59 @@ struct mlog_stat {
 #define MLOG_NSECLPG(lstat) ((lstat)->lst_mfp.mfp_nseclpg)
 
 #define IS_SECPGA(lstat)    ((lstat)->lst_mfp.mfp_secpga)
-#define FORCE_4KA(lstat)    (!(IS_SECPGA(lstat)) && mlog_force_4ka)
+
+/*
+ * enum pmd_layout_state - object state flags
+ *
+ * PMD_LYT_NONE:      no flags set
+ * PMD_LYT_COMMITTED: object is committed to media
+ * PMD_LYT_REMOVED:   object logically removed (aborted or deleted)
+ */
+enum pmd_layout_state {
+	PMD_LYT_NONE       = 0,
+	PMD_LYT_COMMITTED  = 1,
+	PMD_LYT_REMOVED    = 2,
+};
+
+/*
+ * struct pmd_layout_mlpriv - information used only by mlog objects.
+ * @mlp_uuid:    unique ID per mlog
+ * @mlp_lstat:   mlog status
+ * @mlp_mlog:    mlog user data
+ */
+struct pmd_layout_mlpriv {
+	struct mpool_uuid   mlp_uuid;
+	struct mlog_stat    mlp_lstat;
+	struct mlog_user    mlp_mlog;
+};
+
+
+/**
+ * struct pmd_layout
+ *
+ * @eld_rwlock:  implements pmd_obj_*lock() for this layout
+ * @eld_mlpriv:  mlog private data
+ * @eld_objid:   object id associated with layout
+ * @eld_gen:     object generation
+ * @eld_state:   enum pmd_layout_state
+ * @eld_flags:   enum mlog_open_flags for mlogs
+ */
+struct pmd_layout {
+	struct rw_semaphore        eld_rwlock;
+	struct pmd_layout_mlpriv   eld_mlpriv;
+	u64                        eld_objid;
+	u64                        eld_gen;
+	u8                         eld_state;
+	u8                         eld_flags;
+};
+
+/* Shortcuts */
+#define eld_lstat   eld_mlpriv.mlp_lstat
+#define eld_uuid    eld_mlpriv.mlp_uuid
 
 static inline bool mlog_objid(u64 objid)
 {
 	return objid && pmd_objid_type(objid) == OMF_OBJ_MLOG;
 }
 
-s64
-mlog_append_dmax(
-	struct mpool_descriptor        *mp,
-	struct ecio_layout_descriptor  *layout);
-
-#endif
+#endif /* MPOOL_MLOG_PRIV_H */

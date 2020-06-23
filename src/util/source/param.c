@@ -680,7 +680,7 @@ param_gen_match_table(struct param_inst *piv, struct match_token **table, int *e
 	for (pi = piv; pi->pi_type.param_token; ++pi)
 		++cnt;
 
-	t = kcalloc(cnt + 1, sizeof(*piv), GFP_KERNEL);
+	t = calloc(cnt + 1, sizeof(*piv));
 	if (!t)
 		return merr(ENOMEM);
 
@@ -702,7 +702,7 @@ param_gen_match_table(struct param_inst *piv, struct match_token **table, int *e
 
 static void param_free_match_table(struct match_token *table)
 {
-	kfree(table);
+	free(table);
 }
 
 bool show_advanced_params;

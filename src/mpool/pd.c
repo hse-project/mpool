@@ -61,7 +61,7 @@ merr_t pd_file_open(const char *path, struct pd_dev_parm *dparm)
 	struct pd_file_private *priv;
 	int  fd;
 
-	priv = kcalloc(1, sizeof(*priv), GFP_KERNEL);
+	priv = calloc(1, sizeof(*priv));
 	if (!priv)
 		return merr(ENOMEM);
 
@@ -70,7 +70,7 @@ merr_t pd_file_open(const char *path, struct pd_dev_parm *dparm)
 	if (fd == -1) {
 		merr_t err = merr(errno);
 
-		kfree(priv);
+		free(priv);
 		return err;
 	}
 
@@ -97,7 +97,7 @@ merr_t pd_file_close(struct pd_dev_parm *dparm)
 		err = merr(errno);
 
 	dparm->dpr_dev_private = NULL;
-	kfree(priv);
+	free(priv);
 
 	return err;
 }
