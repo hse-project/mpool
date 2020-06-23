@@ -13,7 +13,6 @@
 enum thread_state { NOT_STARTED, STARTED };
 extern volatile enum thread_state mpft_thread_state;
 
-
 typedef void *(thread_func_t)(void *arg);
 
 struct mpft_thread_args {
@@ -32,14 +31,12 @@ struct mpft_thread_resp {
 
 mpool_err_t
 mpft_thread(
-	int            thread_cnt,
-	thread_func_t  func,
-	struct mpft_thread_args *targs,
-	struct mpft_thread_resp *tresp);
+	int                         thread_cnt,
+	thread_func_t               func,
+	struct mpft_thread_args    *targs,
+	struct mpft_thread_resp    *tresp);
 
-void
-mpft_thread_wait_for_start(
-	struct mpft_thread_args *targs);
+void mpft_thread_wait_for_start(struct mpft_thread_args *targs);
 
 #endif /* MPOOL_MLOG_THREAD_H */
 

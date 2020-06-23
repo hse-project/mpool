@@ -133,8 +133,7 @@ int     debug;
 volatile sig_atomic_t sigalrm;
 volatile sig_atomic_t sigint;
 
-void
-syntax(const char *fmt, ...)
+void syntax(const char *fmt, ...)
 {
 	char msg[256];
 	va_list ap;
@@ -148,8 +147,7 @@ syntax(const char *fmt, ...)
 
 /* Error print.
  */
-static void
-eprint(const char *fmt, ...)
+static void eprint(const char *fmt, ...)
 {
 	char msg[256];
 	va_list ap;
@@ -165,22 +163,19 @@ eprint(const char *fmt, ...)
 
 /* Note that we received a signal.
  */
-RETSIGTYPE
-sigalrm_isr(int sig)
+RETSIGTYPE sigalrm_isr(int sig)
 {
 	++sigalrm;
 }
 
-RETSIGTYPE
-sigint_isr(int sig)
+RETSIGTYPE sigint_isr(int sig)
 {
 	++sigint;
 }
 
 /* Reliable signal.
  */
-int
-signal_reliable(int signo, __sighandler_t func)
+int signal_reliable(int signo, __sighandler_t func)
 {
 	struct sigaction nact;
 
@@ -204,10 +199,7 @@ signal_reliable(int signo, __sighandler_t func)
 
 /* Accumulate src stats into dst stats.
  */
-void
-stats_accum(
-	struct stats       *dst,
-	const struct stats *src)
+void stats_accum( struct stats *dst, const struct stats *src)
 {
 	dst->mbwrite += src->mbwrite;
 	dst->mbread += src->mbread;
@@ -221,11 +213,7 @@ stats_accum(
 	dst->getpagescmperr += src->getpagescmperr;
 }
 
-void
-stats_print(
-	struct stats   *stats,
-	const char     *header,
-	int             idx)
+void stats_print(struct stats *stats, const char *header, int idx)
 {
 	printf("%3d: %-6s  wr=%lu del=%lu"
 	       " rd=%lu rderr=%lu rdcmperr=%lu"
@@ -240,13 +228,7 @@ stats_print(
 
 /* Initialize runtime parameters for the given test.
  */
-void
-test_init(
-	struct test    *testv,
-	int             idx,
-	ulong           iter,
-	const char     *mpname,
-	struct mpool   *ds)
+void test_init(struct test *testv, int idx, ulong iter, const char *mpname, struct mpool *ds)
 {
 	struct test *t = testv + idx;
 
@@ -298,13 +280,10 @@ verify_page_vec(
 
 		rc = memcmp(addr, pagev[i], mcverifysz);
 		if (rc) {
-			eprint("%s:"
-			       " mbidv[%d]=%lx %lx offsetv[%d]=%-6zu"
+			eprint("%s: mbidv[%d]=%lx %lx offsetv[%d]=%-6zu"
 			       " page[%d]=%p miscompare @ %d\n",
 			       __func__, objnumv[i], (ulong)mbidv[objnumv[i]],
-			       (ulong)(minfo - objnumv[i])->objid,
-			       i, offsetv[i],
-			       i, pagev[i], rc);
+			       (ulong)(minfo - objnumv[i])->objid, i, offsetv[i], i, pagev[i], rc);
 			++stats->getpagescmperr;
 			return 1;
 		}
@@ -377,8 +356,7 @@ verify_with_mcache(
 
 	/* If we don't already have a map, create it */
 	if (!minfo->map) {
-		err = mpool_mcache_mmap(ds, mbidc, mbidv,
-				     MPC_VMA_COLD, &minfo->map);
+		err = mpool_mcache_mmap(ds, mbidc, mbidv, MPC_VMA_COLD, &minfo->map);
 		if (err)
 			goto mcache_map_err;
 
@@ -386,12 +364,11 @@ verify_with_mcache(
 	}
 
 	for (i = 0; i < mbidc; ++i) {
-		err = mpool_mcache_madvise(minfo->map, i,
-					0, wcc, MADV_WILLNEED);
+		err = mpool_mcache_madvise(minfo->map, i, 0, wcc, MADV_WILLNEED);
 		if (err) {
 			mpool_strinfo(err, errbuf, sizeof(errbuf));
-			eprint("mpool_mcache_madvise failed: map=0x%lx "
-			       "mbid=%d: %s\n", minfo->map, i, errbuf);
+			eprint("mpool_mcache_madvise failed: map=0x%lx mbid=%d: %s\n",
+			       minfo->map, i, errbuf);
 		}
 	}
 
@@ -399,18 +376,15 @@ verify_with_mcache(
 		err = mpool_mcache_getpages(minfo->map, 1, objnumv[i], offsetv + i, pagev + i);
 		if (err) {
 			mpool_strinfo(err, errbuf, sizeof(errbuf));
-			eprint("mpool_mcache_getpages: %d "
-			       "objid=0x%lx len=%zu: %s\n",
-			       test->t_idx, objid, wcc + wobble,
-			       errbuf);
+			eprint("mpool_mcache_getpages: %d objid=0x%lx len=%zu: %s\n",
+			       test->t_idx, objid, wcc + wobble, errbuf);
 			goto err_out;
 		}
 	}
 
 	++stats->getpages;
 
-	fail = verify_page_vec(minfo, pagev, objnumv, offsetv,
-			       mbidv, pagec, stats);
+	fail = verify_page_vec(minfo, pagev, objnumv, offsetv, mbidv, pagec, stats);
 	if (fail)
 		goto err_out;
 
@@ -421,8 +395,7 @@ verify_with_mcache(
 
 mcache_map_err:
 	mpool_strinfo(err, errbuf, sizeof(errbuf));
-	eprint("mpool_mcache_map_create failed:"
-	       " objid=0x%lx: %s\n", objid, errbuf);
+	eprint("mpool_mcache_map_create failed: objid=0x%lx: %s\n", objid, errbuf);
 
 err_out:
 	if (buf)
@@ -433,15 +406,14 @@ err_out:
 
 /* pthread worker main entry point.
  */
-void *
-test_start(void *arg)
+void *test_start(void *arg)
 {
 	struct minfo   *minfov;
 	struct stats   *stats;
 	struct test    *test;
 	struct iovec   *iov;
 	struct mpool   *ds;
-	mpool_err_t          err = 0;
+	mpool_err_t     err = 0;
 
 	size_t  wander, wobble, wcc;
 	char    errbuf[64];
@@ -519,8 +491,7 @@ test_start(void *arg)
 		wander = (random() % test->t_wandermax) & PAGE_MASK;
 		wobble = (random() % test->t_wobblemax) & PAGE_MASK;
 
-		err = mpool_mblock_alloc(ds, MP_MED_CAPACITY, false,
-					 &objid, &props);
+		err = mpool_mblock_alloc(ds, MP_MED_CAPACITY, false, &objid, &props);
 		if (err) {
 			if (mpool_errno(err) == ENOSPC)
 				break;
@@ -553,9 +524,8 @@ test_start(void *arg)
 		err = mpool_mblock_write(ds, objid, iov, niov);
 		if (err) {
 			mpool_strinfo(err, errbuf, sizeof(errbuf));
-			eprint("mpool_mblock_write: %d objid=0x%lx"
-				" len=%zu: %s\n", test->t_idx, minfo->objid,
-				wcc + wobble, errbuf);
+			eprint("mpool_mblock_write: %d objid=0x%lx len=%zu: %s\n",
+			       test->t_idx, minfo->objid, wcc + wobble, errbuf);
 			break;
 		}
 
@@ -564,8 +534,8 @@ test_start(void *arg)
 		err = mpool_mblock_commit(ds, objid);
 		if (err) {
 			mpool_strinfo(err, errbuf, sizeof(errbuf));
-			eprint("mb_mblock_commit failed:"
-				" objid=0x%lx: %s\n", minfo->objid, errbuf);
+			eprint("mb_mblock_commit failed: objid=0x%lx: %s\n",
+			       minfo->objid, errbuf);
 			break;
 		}
 
@@ -580,16 +550,14 @@ test_start(void *arg)
 			err = mpool_mblock_read(ds, objid, iov, 1, 0);
 			if (err) {
 				mpool_strinfo(err, errbuf, sizeof(errbuf));
-				eprint("mpool_mblock_read: %d objid=0x%lx"
-					" len=%zu: %s\n", test->t_idx,
-					minfo->objid, wcc + wobble, errbuf);
+				eprint("mpool_mblock_read: %d objid=0x%lx len=%zu: %s\n",
+				       test->t_idx, minfo->objid, wcc + wobble, errbuf);
 				break;
 			}
 
 			rc = memcmp(wbuf + wander, rbuf, wcc + wobble);
 			if (rc) {
-				eprint("mpool_mblock_read: %d"
-					" objidx=0x%lx len=%zu miscompare\n",
+				eprint("mpool_mblock_read: %d objidx=0x%lx len=%zu miscompare\n",
 				       test->t_idx, minfo->objid, wcc + wobble);
 				++stats->mbreadcmperr;
 				break;
@@ -604,7 +572,7 @@ test_start(void *arg)
 		 */
 		if ((random() % 100) < mcverify)
 			if (verify_with_mcache(ds, objid, minfo, minfov,
-				wcc, wobble, stats, test, rss, vss))
+					       wcc, wobble, stats, test, rss, vss))
 				break;
 
 		if (verbosity > 0) {
@@ -612,10 +580,8 @@ test_start(void *arg)
 				printf("\n%4s %4s %4s %8s %8s %9s %8s %8s "
 				       "%9s %6s %8s %5s %9s %5s %16s\n",
 				       "TID", "TDS", "ITER", "RLOOPS", "WLOOPS",
-				       "WCC", "WANDER", "WOBBLE",
-				       "VSS", "RSS",
-				       "GETPAGES", "PREAD", "MCVERIFY", "MCERR",
-				       "OBJID");
+				       "WCC", "WANDER", "WOBBLE", "VSS", "RSS",
+				       "GETPAGES", "PREAD", "MCVERIFY", "MCERR", "OBJID");
 				fflush(stdout);
 			}
 
@@ -623,8 +589,7 @@ test_start(void *arg)
 			       "%9zu %6zu %8lu %5lu %9lu %5lu %16lx\n",
 			       test->t_idx, td_run, test->t_iter, 0, wloops,
 			       test->t_wcc, wander, wobble, vss, rss,
-			       stats->getpages, stats->pread,
-			       stats->getpagescmp,
+			       stats->getpages, stats->pread, stats->getpagescmp,
 			       stats->getpagescmperr, minfo->objid);
 		}
 	}
@@ -666,10 +631,8 @@ test_start(void *arg)
 				printf("\n%4s %4s %4s %8s %8s %9s %8s %8s "
 				       "%9s %6s %8s %5s %9s %5s %16s\n",
 				       "TID", "TDS", "ITER", "RLOOPS", "WLOOPS",
-				       "WCC", "WANDER", "WOBBLE",
-				       "VSS", "RSS",
-				       "GETPAGES", "PREAD", "MCVERIFY", "MCERR",
-				       "OBJID");
+				       "WCC", "WANDER", "WOBBLE", "VSS", "RSS",
+				       "GETPAGES", "PREAD", "MCVERIFY", "MCERR", "OBJID");
 				fflush(stdout);
 			}
 
@@ -678,18 +641,8 @@ test_start(void *arg)
 			       test->t_idx, td_run, test->t_iter, rloops,
 			       wloops, test->t_wcc, wander, wobble, vss, rss,
 			       stats->getpages, stats->pread,
-			       stats->getpagescmp, stats->getpagescmperr,
-			       minfo->objid);
+			       stats->getpagescmp, stats->getpagescmperr, minfo->objid);
 		}
-
-#if 0
-		/* Read loop wasn't using mcache before */
-		if ((random() % 100) < mcverify && !sigint && !sigalrm)
-			if (verify_with_mcache(ds, minfo->objid, minfo, minfov,
-					       wcc, wobble, stats, test,
-					       rss, vss))
-				break;
-#endif
 
 		if ((random() % 100) < rdverify && !sigint && !sigalrm) {
 			iov[0].iov_base = rbuf;
@@ -705,10 +658,8 @@ test_start(void *arg)
 
 			if (!err &&
 			    0 != memcmp(wbuf + wander, rbuf, wcc + wobble)) {
-				eprint("mpool_mblock_read: %d"
-					" objidx=0x%lx len=%zu miscompare\n",
-					test->t_idx, minfo->objid,
-					wcc + wobble);
+				eprint("mpool_mblock_read: %d objidx=0x%lx len=%zu miscompare\n",
+					test->t_idx, minfo->objid, wcc + wobble);
 				++stats->mbreadcmperr;
 			}
 
@@ -765,11 +716,7 @@ errout:
 	return NULL;
 }
 
-int
-cvt_strtoul(
-	const char *value,
-	int         base,
-	ulong      *resultp)
+int cvt_strtoul(const char *value, int base, ulong *resultp)
 {
 	ulong   result;
 	char   *end;
@@ -794,11 +741,7 @@ cvt_strtoul(
  * Returns an error code from errno.h on failure.
  * Returns 0 on success.
  */
-int
-prop_decode(
-	const char *list,
-	const char *sep,
-	const char *valid)
+int prop_decode(const char *list, const char *sep, const char *valid)
 {
 	char   *nvlist, *nvlist_base;
 	char   *name, *value;
@@ -823,8 +766,7 @@ prop_decode(
 		name = strsep(&value, "=");
 
 		if (debug)
-			printf("%s: scanned name=%-16s value=%s\n",
-			       __func__, name, value);
+			printf("%s: scanned name=%-16s value=%s\n", __func__, name, value);
 
 		if (!name || !*name)
 			continue;
@@ -873,8 +815,7 @@ prop_decode(
 			if (rc)
 				break;
 
-			mcmaxmblocks = clamp_t(ulong, mcmaxmblocks,
-					       mcmaxmblocks_min,
+			mcmaxmblocks = clamp_t(ulong, mcmaxmblocks, mcmaxmblocks_min,
 					       mcmaxmblocks_max);
 			continue;
 		}
@@ -891,8 +832,7 @@ prop_decode(
 		if (0 == strcmp(name, "put"))
 			continue;
 
-		eprint("%s property '%s' ignored\n",
-		       valid ? "unhandled" : "invalid", name);
+		eprint("%s property '%s' ignored\n", valid ? "unhandled" : "invalid", name);
 	}
 
 	if (rc && value)
@@ -904,16 +844,14 @@ prop_decode(
 }
 
 
-void
-usage(void)
+void usage(void)
 {
 	printf("usage: %s [options] <mpool> \n", progname);
 
 	printf("-b           open dataset non-blocking\n");
 	printf("-d           increase debug verbosity\n");
 	printf("-h           print this list\n");
-	printf("-i iter_max  number of iterations (default: %lu)\n",
-	       iter_max);
+	printf("-i iter_max  number of iterations (default: %lu)\n", iter_max);
 	printf("-j <num>     specify number of concurrent jobs (threads)"
 	       " (default: %lu)\n", td_max);
 	printf("-l <num>     maximum number of mblocks per job"
@@ -969,8 +907,7 @@ usage(void)
 	printf("\n");
 }
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	struct stats        stats;
 	struct test        *testv;
@@ -1151,8 +1088,7 @@ main(int argc, char **argv)
 	 */
 	err = mpool_open(mpname, 0, &ds2, &ei);
 	if ((oflags & O_EXCL) && !err) {
-		eprint("mpool_open(%s): re-open exclusive didn't fail\n",
-		       mpname);
+		eprint("mpool_open(%s): re-open exclusive didn't fail\n", mpname);
 		exit(1);
 	} else if (!(oflags & O_EXCL) && err) {
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
@@ -1162,8 +1098,7 @@ main(int argc, char **argv)
 		err = mpool_close(ds2);
 		if (err) {
 			mpool_strinfo(err, errbuf, sizeof(errbuf));
-			eprint("mpool_close(%s): ds2 close failed: %s\n",
-			       mpname, errbuf);
+			eprint("mpool_close(%s): ds2 close failed: %s\n", mpname, errbuf);
 			exit(1);
 		}
 	}
@@ -1237,8 +1172,7 @@ main(int argc, char **argv)
 		for (i = 0; i < td_max; ++i) {
 			test_init(testv, i, iter, mpname, ds);
 
-			rc = pthread_create(&testv[i].t_td, NULL,
-					    test_start, &testv[i]);
+			rc = pthread_create(&testv[i].t_td, NULL, test_start, &testv[i]);
 			if (rc) {
 				eprint("pthread_create(%lx) idx=%d: %s\n",
 				       testv[i].t_td, testv[i].t_idx);

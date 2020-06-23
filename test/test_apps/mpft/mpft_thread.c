@@ -16,9 +16,7 @@
 
 volatile enum thread_state mpft_thread_state = NOT_STARTED;
 
-void
-mpft_thread_wait_for_start(
-	struct mpft_thread_args   *targs)
+void mpft_thread_wait_for_start(struct mpft_thread_args *targs)
 {
 
 	/* Wait for starting flag */
@@ -46,8 +44,7 @@ mpft_thread(
 	int                i, rc;
 
 	if (!targs || !tresp) {
-		fprintf(stderr, "%s: targs and/or tresp not passed in\n",
-			__func__);
+		fprintf(stderr, "%s: targs and/or tresp not passed in\n", __func__);
 		return merr(EINVAL);
 	}
 
@@ -55,9 +52,7 @@ mpft_thread(
 	thread = calloc(thread_cnt, sizeof(*thread));
 	attr = calloc(thread_cnt, sizeof(*attr));
 	if (!thread || !attr) {
-		fprintf(stderr,
-			"%s: Unable to allocate memory for thread data\n",
-			__func__);
+		fprintf(stderr, "%s: Unable to allocate memory for thread data\n", __func__);
 		return merr(ENOMEM);
 	}
 

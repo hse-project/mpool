@@ -44,25 +44,20 @@ static struct group_s *m_group[] = {
 	NULL
 };
 
-void
-list_groups(
-	struct group_s **m_group)
+void list_groups(struct group_s **m_group)
 {
 	struct group_s   *g;
 	int               i = 0;
 
 	while ((g = m_group[i])) {
-		fprintf(co.co_fp, "  %-8s  %s\n",
-			g->group_name, "");
+		fprintf(co.co_fp, "  %-8s  %s\n", g->group_name, "");
 		i++;
 	};
 
-	fprintf(co.co_fp, "  %-8s  %s\n",
-		"all", "run all the above tests");
+	fprintf(co.co_fp, "  %-8s  %s\n", "all", "run all the above tests");
 }
 
-void
-usage(char *progname)
+void usage(char *progname)
 {
 	fprintf(co.co_fp, "usage: %s [options] [group]\n", progname);
 
@@ -75,10 +70,7 @@ usage(char *progname)
 /**
  * find_group() assumes that the passed-in group is a null-terminated string.
  */
-struct group_s *
-find_group(
-	struct group_s   **group,
-	char              *grp)
+struct group_s *find_group(struct group_s **group, char *grp)
 {
 	struct group_s    *g, *best_fit = NULL;
 	int                i = 0;
@@ -94,8 +86,7 @@ find_group(
 		if (!strncasecmp(grp, g->group_name, strlen(grp))) {
 			/* fail if there already was one */
 			if (best_fit) {
-				fprintf(stderr, "Multiple groups match %s\n",
-					grp);
+				fprintf(stderr, "Multiple groups match %s\n", grp);
 				return NULL;
 			}
 			best_fit = g;
@@ -108,9 +99,7 @@ find_group(
 	return g;
 }
 
-void
-help_groups(
-	struct group_s  **group)
+void help_groups(struct group_s **group)
 {
 	int     i = 0;
 
@@ -137,9 +126,7 @@ struct tt_match test_types[] = {
 	{ NULL,          MPFT_TEST_TYPE_INVALID },
 };
 
-enum mpft_test_type
-find_type(
-	char  *type)
+enum mpft_test_type find_type(char *type)
 {
 	struct tt_match *tt = test_types;
 	struct tt_match *best_fit = NULL;
@@ -155,9 +142,7 @@ find_type(
 		if (!strncasecmp(type, tt->type_name, strlen(type))) {
 			/* fail if there already was one */
 			if (best_fit) {
-				fprintf(stderr,
-					"Multiple test types match %s\n",
-					type);
+				fprintf(stderr, "Multiple test types match %s\n", type);
 				return MPFT_TEST_TYPE_INVALID;
 			}
 			best_fit = tt;
@@ -171,12 +156,7 @@ find_type(
 	return MPFT_TEST_TYPE_INVALID;
 }
 
-static
-mpool_err_t
-show_type(
-	char *str,
-	size_t strsz,
-	enum mpft_test_type test_type)
+static mpool_err_t show_type(char *str, size_t strsz, enum mpft_test_type test_type)
 {
 	struct tt_match *tt = test_types;
 
@@ -191,10 +171,7 @@ show_type(
 	return 0;
 }
 
-struct test_s *
-find_test(
-	struct group_s    *g,
-	char              *test)
+struct test_s *find_test(struct group_s *g, char *test)
 {
 	struct test_s *t = g->group_test;
 	struct test_s *best_fit = NULL;
@@ -207,8 +184,7 @@ find_test(
 		if (!strncasecmp(test, t->test_name, strlen(test))) {
 			/* fail if there already was one */
 			if (best_fit) {
-				fprintf(stderr, "Multiple tests match %s\n",
-					test);
+				fprintf(stderr, "Multiple tests match %s\n", test);
 				return NULL;
 			}
 			best_fit = t;
@@ -221,15 +197,11 @@ find_test(
 	return t;
 }
 
-void
-help_tests(
-	struct group_s   *g)
+void help_tests(struct group_s *g)
 {
 	struct test_s  *t;
 
-	fprintf(co.co_fp,
-		"No valid test for group %s found, possible tests:\n",
-		g->group_name);
+	fprintf(co.co_fp, "No valid test for group %s found, possible tests:\n", g->group_name);
 
 	t = g->group_test;
 	while (t && t->test_name) {
@@ -258,8 +230,7 @@ execute_test(
 		save_args[i] = argv[i];
 
 	show_type(ttype, sizeof(ttype), test_type);
-	snprintf(test_name, sizeof(test_name), "%s.%s.%s",
-		g->group_name, ttype, t->test_name);
+	snprintf(test_name, sizeof(test_name), "%s.%s.%s", g->group_name, ttype, t->test_name);
 	argv[0] = test_name;
 
 	fprintf(stdout, "Test %s\n", test_name);
@@ -337,8 +308,7 @@ execute_group(
 				t->test_help();
 			} else {
 				if (!strcmp(t->test_name, o_test)) {
-					err = execute_test(results, g,
-						t->test_type, t, argc, argv);
+					err = execute_test(results, g, t->test_type, t, argc, argv);
 					if (err != 0)
 						return err;
 				}
@@ -363,8 +333,7 @@ execute_group(
 				t->test_help();
 			} else {
 				if (t->test_type == test_type) {
-					err = execute_test(results, g,
-						t->test_type, t, argc, argv);
+					err = execute_test(results, g, t->test_type, t, argc, argv);
 					if (err != 0)
 						return err;
 				}
@@ -386,18 +355,16 @@ execute_group(
 			 * wildcarded.
 			 */
 			if ((t->test_type == MPFT_TEST_TYPE_ACTOR) &&
-				 (strcmp(t->test_name, o_test))) {
+			    (strcmp(t->test_name, o_test))) {
 				t++;
 				continue;
 			}
 
-			if ((t->test_type == test_type) &&
-				(!strcmp(t->test_name, o_test))) {
+			if ((t->test_type == test_type) && (!strcmp(t->test_name, o_test))) {
 				if (co.co_help) {
 					t->test_help();
 				} else {
-					err = execute_test(results, g,
-						t->test_type, t, argc, argv);
+					err = execute_test(results, g, t->test_type, t, argc, argv);
 					if (err != 0)
 						return err;
 				}
@@ -409,10 +376,7 @@ execute_group(
 	return 0;
 }
 
-static
-u8
-c_to_n(
-	u8 c)
+static u8 c_to_n(u8 c)
 {
 	u8 n = 255;
 
@@ -431,9 +395,7 @@ c_to_n(
 u8 *pattern;
 u32 pattern_len;
 
-int
-pattern_base(
-	char *base)
+int pattern_base(char *base)
 {
 	int i;
 	int len = strlen(base);
@@ -448,12 +410,9 @@ pattern_base(
 		return -1;
 
 	if (len == 0) {	           /* No pattern given, so make one up */
-
 		for (i = 0; i < pattern_len; i++)
 			pattern[i] = i % 256;
-
 	} else {
-
 		for (i = 0; i < pattern_len; i++) {
 			pattern[i] = c_to_n(base[i]);
 
@@ -468,10 +427,7 @@ pattern_base(
 	return 0;
 }
 
-void
-pattern_fill(
-	char *buf,
-	u32   buf_sz)
+void pattern_fill(char *buf, u32 buf_sz)
 {
 	u32 remaining = buf_sz;
 	u32 idx;
@@ -483,10 +439,7 @@ pattern_fill(
 	}
 }
 
-int
-pattern_compare(
-	char *buf,
-	u32   buf_sz)
+int pattern_compare(char *buf, u32 buf_sz)
 {
 	u32 remaining = buf_sz;
 	u32 idx;
@@ -503,10 +456,7 @@ pattern_compare(
 }
 
 #define LOG_MSG_SIZE 1024
-void
-log_command_line(
-	int    argc,
-	char **argv)
+void log_command_line(int argc, char **argv)
 {
 	char log_buf[LOG_MSG_SIZE];
 	size_t offset = 0;
@@ -515,14 +465,11 @@ log_command_line(
 	snprintf_append(log_buf, LOG_MSG_SIZE, &offset, "cmd:");
 	for (i = 0; i < argc; i++)
 		snprintf_append(log_buf, LOG_MSG_SIZE, &offset, "%s ", argv[i]);
-
-	//mse_log(MPOOL_INFO "%s", log_buf);
 }
 
 static char *executable_name;
 
-mpool_err_t
-mpft_launch_actor(char *actor, ...)
+mpool_err_t mpft_launch_actor(char *actor, ...)
 {
 	va_list argp;
 	char *arg;
@@ -563,8 +510,7 @@ mpft_launch_actor(char *actor, ...)
 
 		argv = calloc(argc + 1, sizeof(*argv));
 		if (argv == NULL) {
-			fprintf(stderr, "%s: Unable to alloc space for argv\n",
-				__func__);
+			fprintf(stderr, "%s: Unable to alloc space for argv\n", __func__);
 			_exit(-1);
 		}
 
@@ -595,16 +541,14 @@ static char opt_group[GROUP_NAME_MAX];
 static char opt_type[TYPE_NAME_MAX];
 static char opt_test[TEST_NAME_MAX];
 
-static
-struct param_inst mpft_params[] = {
+static struct param_inst mpft_params[] = {
 	PARAM_INST_STRING(opt_group, sizeof(opt_group), "group", "Test group"),
 	PARAM_INST_STRING(opt_type, sizeof(opt_type), "type", "Test type"),
 	PARAM_INST_STRING(opt_test, sizeof(opt_test), "test", "Test name"),
 	PARAM_INST_END
 };
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 
 	mpool_err_t  err = 0;
@@ -697,8 +641,7 @@ main(int argc, char **argv)
 	}
 
 	if (co.co_verbose)
-		fprintf(stdout, "group %s, type %s, test %s\n",
-			opt_group, opt_type, opt_test);
+		fprintf(stdout, "group %s, type %s, test %s\n", opt_group, opt_type, opt_test);
 
 	/**
 	 * At this point we have group, type, and test determined from
@@ -728,7 +671,7 @@ main(int argc, char **argv)
 			if (co.co_verbose)
 				fprintf(co.co_fp, "group:%s\n", g->group_name);
 			execute_group(&results, g, opt_type, opt_test,
-				argc-next_arg, &argv[next_arg]);
+				      argc-next_arg, &argv[next_arg]);
 		}
 	}
 

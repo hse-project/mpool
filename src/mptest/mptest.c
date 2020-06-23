@@ -79,22 +79,12 @@ const char *mpool_status_strv[] = {
 #define ENUM_NAME2VAL(a, name) \
 	enum_name2val(a ## _strv, NELEM(a ## _strv) - 1, (name))
 
-static
-const char *
-enum_val2name(
-	const char    **strv,
-	uint            strc,
-	uint            val)
+static const char *enum_val2name(const char **strv, uint strc, uint val)
 {
 	return strv[(val < strc && strv[val]) ? val : strc];
 }
 
-static
-uint
-enum_name2val(
-	const char    **strv,
-	uint            strc,
-	const char     *name)
+static uint enum_name2val(const char **strv, uint strc, const char *name)
 {
 	uint i;
 
@@ -105,11 +95,7 @@ enum_name2val(
 	return -1;
 }
 
-static
-void
-syntax(
-	const char *fmt,
-	...)
+static void syntax(const char *fmt, ...)
 {
 	char msg[256];
 	va_list ap;
@@ -121,11 +107,7 @@ syntax(
 	fprintf(stderr, "%s: %s, use -h for help\n", progname, msg);
 }
 
-static
-void
-eprint(
-	const char *fmt,
-	...)
+static void eprint(const char *fmt, ...)
 {
 	char msg[256];
 	va_list ap;
@@ -139,11 +121,7 @@ eprint(
 
 /* Note: This function is not thread-safe.
  */
-static
-const char *
-strerrinfo(
-	struct mpool_devrpt  *ei,
-	mpool_err_t              err)
+static const char *strerrinfo(struct mpool_devrpt *ei, mpool_err_t err)
 {
 	static char errbuf[128];
 
@@ -174,8 +152,7 @@ strerrinfo(
 /* Handler for common options specified by COMOPTS_OPTIONS.
  * Also handles ':' and '?' as returned by getopt().
  */
-static
-void
+static void
 comopts_handler(
 	int             c,
 	char           *optarg,
@@ -227,58 +204,7 @@ comopts_handler(
 	}
 }
 
-#if 0
-/* Append string nv to string *bufp, (re)allocating *bufp as necessary.
- * Prepends sep if *bufp is not nil.
- *
- * Returns an error code from errno.h on failure.
- * Returns 0 on success.
- */
-static
-int
-nv_accum(
-	char      **bufp,
-	size_t     *bufszp,
-	const char *nv,
-	const char *sep)
-{
-	size_t buflen, nvlen;
-	size_t bufsz;
-	char *buf;
-
-	if (!bufp || !bufszp || !nv)
-		return EINVAL;
-
-	buf = *bufp;
-	bufsz = *bufszp;
-	buflen = buf ? strlen(buf) : 0;
-
-	nvlen = strlen(nv);
-
-	if (!buf || buflen + nvlen + 2 >= bufsz) {
-		bufsz = buflen + nvlen + 1024;
-
-		buf = realloc(buf, bufsz);
-		if (!buf)
-			return ENOMEM;
-
-		*bufszp = bufsz;
-		*bufp = buf;
-	}
-
-	buf += buflen;
-	if (sep && buflen > 0)
-		strcat(buf, sep);
-	strcat(buf, nv);
-
-	return 0;
-}
-#endif
-
-static
-void
-prop_init(
-	struct mpioc_prop  *prop)
+static void prop_init(struct mpioc_prop *prop)
 {
 	memset(prop, 0, sizeof(*prop));
 
@@ -291,11 +217,7 @@ prop_init(
 	prop->pr_xprops.ppx_params.mp_mode = -1;
 }
 
-static
-void
-prop_dump(
-	const struct mpioc_prop    *prop,
-	const char                 *which)
+static void prop_dump(const struct mpioc_prop *prop, const char *which)
 {
 	const struct mpool_mdparm  *mdparm;
 	const struct mpool_params  *props;
@@ -349,12 +271,10 @@ prop_dump(
 	mdparm = &prop->pr_xprops.ppx_mdparm;
 
 	if (headers)
-		printf("%-*s  %-10s  %s\n",
-		       len, "NAME", "PROPERTY", "VALUE");
+		printf("%-*s  %-10s  %s\n", len, "NAME", "PROPERTY", "VALUE");
 
 	if (!which || strstr(which, "fusable"))
-		printf("%-*s  fusable     %lu\n",
-		       len, name, prop->pr_usage.mpu_fusable);
+		printf("%-*s  fusable     %lu\n", len, name, prop->pr_usage.mpu_fusable);
 
 	if (!which || strstr(which, "label"))
 		printf("%-*s  label       %s\n", len, name, props->mp_label);
@@ -363,43 +283,36 @@ prop_dump(
 		printf("%-*s  gid         %s\n", len, name, gidstr);
 
 	if (!which || strstr(which, "mclassp"))
-		printf("%-*s  mclassp     %s\n",
-		       len, name,
+		printf("%-*s  mclassp     %s\n", len, name,
 		       ENUM_VAL2NAME(mp_media_classp, mdparm->mdp_mclassp));
 
 	if (!which || strstr(which, "mode"))
 		printf("%-*s  mode        %s\n", len, name, modestr);
 
 	if (!which || strstr(which, "mlog0"))
-		printf("%-*s  mlog0       0x%lx\n",
-		       len, name, (ulong)props->mp_oidv[0]);
+		printf("%-*s  mlog0       0x%lx\n", len, name, (ulong)props->mp_oidv[0]);
 
 	if (!which || strstr(which, "mlog1"))
-		printf("%-*s  mlog1       0x%lx\n",
-		       len, name, (ulong)props->mp_oidv[1]);
+		printf("%-*s  mlog1       0x%lx\n", len, name, (ulong)props->mp_oidv[1]);
 
 	if (!which || strstr(which, "poolid"))
 		printf("%-*s  uuid        %s\n", len, name, uuidstr);
 
 	if (!which || strstr(which, "status"))
-		printf("%-*s  status      %s\n",
-		       len, name,
+		printf("%-*s  status      %s\n", len, name,
 		       ENUM_VAL2NAME(mpool_status, props->mp_stat));
 
 	if (!which || strstr(which, "total"))
-		printf("%-*s  total       %lu\n",
-		       len, name, prop->pr_usage.mpu_total);
+		printf("%-*s  total       %lu\n", len, name, prop->pr_usage.mpu_total);
 
 	if (!which || strstr(which, "uid"))
 		printf("%-*s  uid         %s\n", len, name, uidstr);
 
 	if (!which || strstr(which, "usable"))
-		printf("%-*s  usable      %lu\n",
-		       len, name, prop->pr_usage.mpu_usable);
+		printf("%-*s  usable      %lu\n", len, name, prop->pr_usage.mpu_usable);
 
 	if (!which || strstr(which, "used"))
-		printf("%-*s  used        %lu\n",
-		       len, name, prop->pr_usage.mpu_used);
+		printf("%-*s  used        %lu\n", len, name, prop->pr_usage.mpu_used);
 
 	printf("\n");
 }
@@ -414,13 +327,8 @@ prop_dump(
  * Returns an error code from errno.h on failure.
  * Returns 0 on success.
  */
-static
-int
-prop_decode(
-	struct mpioc_prop  *prop,
-	const char         *list,
-	const char         *sep,
-	const char         *valid)
+static int
+prop_decode(struct mpioc_prop *prop, const char *list, const char *sep, const char *valid)
 {
 	char   *nvlist, *nvlist_base;
 	char   *name, *value;
@@ -447,8 +355,7 @@ prop_decode(
 		name = strsep(&value, "=");
 
 		if (verbosity > 1)
-			printf("%s: scanned name=%s value=%s\n", __func__, name,
-			       value);
+			printf("%s: scanned name=%s value=%s\n", __func__, name, value);
 
 		if (!name || !*name)
 			continue;
@@ -468,8 +375,7 @@ prop_decode(
 		if (0 == strcmp(name, "mclassp")) {
 			idx = ENUM_NAME2VAL(mp_media_classp, value);
 			if (idx != -1) {
-				prop->pr_xprops.ppx_mdparm.
-					mdp_mclassp = idx;
+				prop->pr_xprops.ppx_mdparm.mdp_mclassp = idx;
 				continue;
 			}
 
@@ -485,14 +391,11 @@ prop_decode(
 			end = NULL;
 			result = strtoul(value, &end, 0);
 
-			if ((result == ULONG_MAX && errno) || end == value ||
-			    *end) {
-				rc = getpwnam_r(value, &passwd, buf,
-						sizeof(buf), &pw);
+			if ((result == ULONG_MAX && errno) || end == value || *end) {
+				rc = getpwnam_r(value, &passwd, buf, sizeof(buf), &pw);
 				if (rc || !pw) {
 					rc = rc ? errno : EINVAL;
-					eprint("invalid uid '%s': %s",
-					       value, strerror(rc));
+					eprint("invalid uid '%s': %s", value, strerror(rc));
 					break;
 				}
 
@@ -510,14 +413,11 @@ prop_decode(
 			end = NULL;
 			result = strtoul(value, &end, 0);
 
-			if ((result == ULONG_MAX && errno) || end == value ||
-			    *end) {
-				rc = getgrnam_r(value, &group, buf, sizeof(buf),
-						&gr);
+			if ((result == ULONG_MAX && errno) || end == value || *end) {
+				rc = getgrnam_r(value, &group, buf, sizeof(buf), &gr);
 				if (rc || !gr) {
 					rc = rc ? errno : EINVAL;
-					eprint("invalid gid '%s': %s",
-					       value, strerror(rc));
+					eprint("invalid gid '%s': %s", value, strerror(rc));
 					break;
 				}
 
@@ -533,11 +433,9 @@ prop_decode(
 			end = NULL;
 			result = strtoul(value, &end, 8);
 
-			if ((result == ULONG_MAX && errno) || end == value ||
-			    *end) {
+			if ((result == ULONG_MAX && errno) || end == value || *end) {
 				rc = end ? EINVAL : errno;
-				eprint("invalid mode '%s': %s",
-				       value, strerror(rc));
+				eprint("invalid mode '%s': %s", value, strerror(rc));
 				break;
 			}
 
@@ -558,10 +456,7 @@ prop_decode(
 
 /* Dynamically build optstring from longopts[] for getopt_long().
  */
-static
-char *
-mkoptstring(
-	const struct option    *longopts)
+static char *mkoptstring(const struct option *longopts)
 {
 	const struct option    *longopt;
 
@@ -590,10 +485,7 @@ mkoptstring(
 	return strdup(optstring);
 }
 
-static
-const char *
-name_is_invalid(
-	const char *mpname)
+static const char *name_is_invalid(const char *mpname)
 {
 	int     i;
 
@@ -646,11 +538,7 @@ name_is_invalid(
 static const char *create_proplist = "mclassp,uid,gid,mode";
 static const char *mount_proplist = "uid,gid,mode";
 
-static
-void
-create_help(
-	int     argc,
-	char  **argv)
+static void create_help(int argc, char  **argv)
 {
 	const char *proplist;
 	bool        create;
@@ -659,8 +547,7 @@ create_help(
 	proplist = create ? create_proplist : mount_proplist;
 
 	printf("\n");
-	printf("usage: %s %s [options] <mpool> <disk> ...\n",
-	       progname, argv[0]);
+	printf("usage: %s %s [options] <mpool> <disk> ...\n", progname, argv[0]);
 	printf("usage: %s -h\n", progname);
 	printf("usage: %s -V\n", progname);
 	printf("-h, --help                 print this help list\n");
@@ -675,8 +562,7 @@ create_help(
 	printf("Examples:\n");
 
 	if (create) {
-		printf("  %s create -o mclassp=CAPACITY mpool1 %s\n",
-		       progname, "sdb7 sdc7 sdd7");
+		printf("  %s create -o mclassp=CAPACITY mpool1 %s\n", progname, "sdb7 sdc7 sdd7");
 	} else {
 		printf("  %s activate mpool1 sdb7 sdc7 sdd7\n", progname);
 		/* TODO more examples... */
@@ -688,11 +574,7 @@ create_help(
 /* The create command handles both the "create" and "activate"
  * subcommands as they very similar.
  */
-static
-int
-create_command(
-	int     argc,
-	char  **argv)
+static int create_command(int argc, char **argv)
 {
 	struct option   longopts[] = {
 		{ "pd",		required_argument,	NULL, 'd' },
@@ -779,8 +661,7 @@ create_command(
 
 	if (argc > 0) {
 		if (argc - 1 > MPOOL_DRIVES_MAX) {
-			syntax("an mpool may contain no more than %d drives",
-			       MPOOL_DRIVES_MAX);
+			syntax("an mpool may contain no more than %d drives", MPOOL_DRIVES_MAX);
 			exit(EX_USAGE);
 		}
 
@@ -804,12 +685,10 @@ create_command(
 	}
 
 	if (devicec >= MPOOL_DRIVES_MAX) {
-		syntax("an mpool may contain no more than %d drives",
-		       MPOOL_DRIVES_MAX);
+		syntax("an mpool may contain no more than %d drives", MPOOL_DRIVES_MAX);
 		exit(EX_USAGE);
 	} else if (devicec < 1) {
-		syntax("at least one drive must be specified to %s an mpool",
-		       subcmd);
+		syntax("at least one drive must be specified to %s an mpool", subcmd);
 		exit(EX_USAGE);
 	}
 
@@ -885,8 +764,7 @@ create_command(
 
 			err = mpool_create(mpname, devicev[0], &params, 0, &ei);
 			if (err) {
-				eprint("%s failed: %s",
-				       subcmd, strerrinfo(&ei, err));
+				eprint("%s failed: %s", subcmd, strerrinfo(&ei, err));
 				free(mp.mp_dpaths);
 				exit(EX_DATAERR);
 			}
@@ -898,8 +776,7 @@ create_command(
 
 			err = mpool_activate(mpname, &params, 0, &ei);
 			if (err) {
-				eprint("%s failed: %s",
-				       subcmd, strerrinfo(&ei, err));
+				eprint("%s failed: %s", subcmd, strerrinfo(&ei, err));
 				free(mp.mp_dpaths);
 				exit(EX_DATAERR);
 			}
@@ -918,11 +795,7 @@ out:
 	return 0;
 }
 
-static
-void
-destroy_help(
-	int     argc,
-	char  **argv)
+static void destroy_help(int argc, char **argv)
 {
 	printf("\n");
 	printf("usage: %s %s [options] <mpool>\n", progname, argv[0]);
@@ -932,11 +805,7 @@ destroy_help(
 	printf("\n");
 }
 
-static
-int
-destroy_command(
-	int     argc,
-	char  **argv)
+static int destroy_command(int argc, char **argv)
 {
 	struct option longopts[] = {
 		COMOPTS_OPTIONS,
@@ -1034,15 +903,10 @@ destroy_command(
 	return 0;
 }
 
-static
-void
-get_help(
-	int     argc,
-	char  **argv)
+static void get_help(int argc, char **argv)
 {
 	printf("\n");
-	printf("usage: %s get [options] <property>[,<property>...] <mpool>\n",
-	       progname);
+	printf("usage: %s get [options] <property>[,<property>...] <mpool>\n", progname);
 	printf("usage: %s -h\n", progname);
 	printf("usage: %s -V\n", progname);
 	printf("<mpool>     mpool name\n");
@@ -1050,11 +914,7 @@ get_help(
 	printf("\n");
 }
 
-static
-int
-get_command(
-	int     argc,
-	char  **argv)
+static int get_command(int argc, char **argv)
 {
 	struct option longopts[] = {
 		COMOPTS_OPTIONS,
@@ -1159,11 +1019,7 @@ get_command(
 	return 0;
 }
 
-static
-void
-set_help(
-	int     argc,
-	char  **argv)
+static void set_help(int argc, char **argv)
 {
 	printf("\n");
 	printf("usage: %s set [options] property=value mpool\n", progname);
@@ -1174,11 +1030,7 @@ set_help(
 	printf("\n");
 }
 
-static
-int
-set_command(
-	int     argc,
-	char  **argv)
+static int set_command(int argc, char **argv)
 {
 	struct option longopts[] = {
 		COMOPTS_OPTIONS,
@@ -1222,11 +1074,7 @@ set_command(
 	return 0;
 }
 
-static
-void
-list_help(
-	int     argc,
-	char  **argv)
+static void list_help(int argc, char **argv)
 {
 	printf("\n");
 	printf("usage: %s list [options] [<mpool> ...]\n", progname);
@@ -1240,11 +1088,7 @@ list_help(
 	printf("\n");
 }
 
-static
-int
-list_command(
-	int     argc,
-	char  **argv)
+static int list_command(int argc, char **argv)
 {
 	struct option longopts[] = {
 		{ "parsable",	no_argument,	NULL, 'p' },
@@ -1385,13 +1229,8 @@ list_command(
 				headers = false;
 
 				printf("%-*s %*s %*s %*s %9s %*s %9s\n",
-				       mpwidth, "MPOOL",
-				       width, "TOTAL",
-				       width, "USED",
-				       width, "AVAIL",
-				       "CAPACITY",
-				       labwidth, "LABEL",
-				       "HEALTH");
+				       mpwidth, "MPOOL", width, "TOTAL", width, "USED",
+				       width, "AVAIL", "CAPACITY", labwidth, "LABEL", "HEALTH");
 			}
 
 			width = parsable ? 16 : 7;
@@ -1412,8 +1251,7 @@ list_command(
 				++stp;
 			}
 			fmt = (usable < 10) ? "%.2lf%c" : "%4.0lf%c";
-			snprintf(usablestr, sizeof(usablestr), fmt,
-				 usable, *stp);
+			snprintf(usablestr, sizeof(usablestr), fmt, usable, *stp);
 
 			stp = suffixtab;
 			used = prop->pr_usage.mpu_used;
@@ -1442,14 +1280,9 @@ list_command(
 				 capacity, parsable ? '\0' : '%');
 
 			printf("%-*s %*s %*s %*s %9s %*s %9s\n",
-			       mpwidth, mpname,
-			       width, totalstr,
-			       width, usedstr,
-			       width, freestr,
-			       capstr,
-			       labwidth, prop->pr_xprops.ppx_params.mp_label,
-			       ENUM_VAL2NAME(mpool_status,
-					     prop->pr_xprops.ppx_params.mp_stat));
+			       mpwidth, mpname, width, totalstr, width, usedstr, width, freestr,
+			       capstr, labwidth, prop->pr_xprops.ppx_params.mp_label,
+			       ENUM_VAL2NAME(mpool_status, prop->pr_xprops.ppx_params.mp_stat));
 		}
 
 		free(propv_base);
@@ -1458,37 +1291,27 @@ list_command(
 	return 0;
 }
 
-static
-void
-mb_dump(
-	struct mblock_props *props)
+static void mb_dump(struct mblock_props *props)
 {
 	char    name[32];
 
 	snprintf(name, sizeof(name), "0x%08lx", props->mpr_objid);
 
 	if (headers)
-		printf("%*s  PROPERTY    VALUE\n",
-		       (int)strlen(name), "MBID");
+		printf("%*s  PROPERTY    VALUE\n", (int)strlen(name), "MBID");
 
 	printf("%s  objid       0x%lx\n", name, props->mpr_objid);
 	printf("%s  alloc_cap   %u\n", name, props->mpr_alloc_cap);
 	printf("%s  write_len   %u\n", name, props->mpr_write_len);
 	printf("%s  stripe_len  %u\n", name, props->mpr_write_len);
-	printf("%s  mclassp     %s\n",
-	       name, ENUM_VAL2NAME(mp_media_classp, props->mpr_mclassp));
+	printf("%s  mclassp     %s\n", name, ENUM_VAL2NAME(mp_media_classp, props->mpr_mclassp));
 	printf("%s  committed   %u\n", name, props->mpr_iscommitted);
 }
 
-static
-void
-mb_help(
-	int     argc,
-	char  **argv)
+static void mb_help(int argc, char **argv)
 {
 	printf("\n");
-	printf("usage: %s %s [options] <mpool> <objid>...\n",
-	       progname, argv[0]);
+	printf("usage: %s %s [options] <mpool> <objid>...\n", progname, argv[0]);
 
 	printf("usage: %s -h\n", progname);
 	printf("usage: %s -V\n", progname);
@@ -1501,15 +1324,10 @@ mb_help(
 	printf("\n");
 }
 
-static
-void
-mballoc_help(
-	int     argc,
-	char  **argv)
+static void mballoc_help(int argc, char **argv)
 {
 	printf("\n");
-	printf("usage: %s %s [options] <mpool> [<count>]\n",
-	       progname, argv[0]);
+	printf("usage: %s %s [options] <mpool> [<count>]\n", progname, argv[0]);
 
 	printf("usage: %s -h\n", progname);
 	printf("usage: %s -V\n", progname);
@@ -1522,11 +1340,7 @@ mballoc_help(
 	printf("\n");
 }
 
-static
-int
-mb_command(
-	int     argc,
-	char  **argv)
+static int mb_command(int argc, char **argv)
 {
 	struct option   longopts[] = {
 		COMOPTS_OPTIONS,
@@ -1610,11 +1424,9 @@ mb_command(
 			struct mblock_props     props;
 			uint64_t                mbh;
 
-			err = mpool_mblock_alloc(ds, MP_MED_CAPACITY, false,
-						 &mbh, &props);
+			err = mpool_mblock_alloc(ds, MP_MED_CAPACITY, false, &mbh, &props);
 			if (err) {
-				eprint("%s failed: %s",
-				       subcmd,
+				eprint("%s failed: %s", subcmd,
 				       mpool_strinfo(err, errbuf, sizeof(errbuf)));
 				exit(EX_NOINPUT);
 			}
@@ -1625,16 +1437,13 @@ mb_command(
 				maxcap = props.mpr_alloc_cap;
 
 				if (headers) {
-					printf("%12s %10s\n", "MBID",
-					       "CAPACITY");
+					printf("%12s %10s\n", "MBID", "CAPACITY");
 					headers = false;
 				}
 
-				printf("%#12lx %10lu\n",
-				       props.mpr_objid, maxcap);
+				printf("%#12lx %10lu\n", props.mpr_objid, maxcap);
 			} else {
-				printf("%s0x%lx",
-				       sep, props.mpr_objid);
+				printf("%s0x%lx", sep, props.mpr_objid);
 				sep = " ";
 			}
 		}
@@ -1657,8 +1466,7 @@ mb_command(
 
 			err = mpool_mblock_props_get(ds, mbh, &props);
 			if (err) {
-				eprint("%s 0x%lx failed: %s",
-				       subcmd, mbh,
+				eprint("%s 0x%lx failed: %s", subcmd, mbh,
 				       mpool_strinfo(err, errbuf, sizeof(errbuf)));
 				continue;
 			}
@@ -1669,14 +1477,11 @@ mb_command(
 			}
 
 			if (headers) {
-				printf("%12s %10s\n",
-				       "MBID", "CAPACITY");
+				printf("%12s %10s\n", "MBID", "CAPACITY");
 				headers = false;
 			}
 
-			printf("%#12lx %10u\n",
-			       props.mpr_objid,
-			       props.mpr_alloc_cap);
+			printf("%#12lx %10u\n", props.mpr_objid, props.mpr_alloc_cap);
 		}
 	} else if (0 == strcmp(subcmd, "mbcommit") ||
 		   0 == strcmp(subcmd, "mbdelete") ||
@@ -1701,8 +1506,7 @@ mb_command(
 				err = mpool_mblock_commit(ds, mbh);
 
 			if (err) {
-				eprint("%s 0x%lx failed: %s",
-				       subcmd, mbh,
+				eprint("%s 0x%lx failed: %s", subcmd, mbh,
 				       mpool_strinfo(err, errbuf, sizeof(errbuf)));
 			}
 		}
@@ -1716,15 +1520,10 @@ mb_command(
 	return 0;
 }
 
-static
-void
-mbrw_help(
-	int     argc,
-	char  **argv)
+static void mbrw_help(int argc, char **argv)
 {
 	printf("\n");
-	printf("usage: %s %s [options] <mpool> <objid> ...\n",
-	       progname, argv[0]);
+	printf("usage: %s %s [options] <mpool> <objid> ...\n", progname, argv[0]);
 
 	printf("usage: %s -h\n", progname);
 	printf("usage: %s -V\n", progname);
@@ -1739,11 +1538,7 @@ mbrw_help(
 	printf("\n");
 }
 
-static
-int
-mbrw_command(
-	int     argc,
-	char  **argv)
+static int mbrw_command(int argc, char **argv)
 {
 	struct option   longopts[] = {
 		{ "iofile",	required_argument,	NULL, 'f' },
@@ -1881,14 +1676,12 @@ mbrw_command(
 
 			err = mpool_mblock_props_get(ds, mbh, &props);
 			if (err) {
-				eprint("%s mp_mb_lookup(0x%lx) failed: %s",
-				       subcmd, mbh,
+				eprint("%s mp_mb_lookup(0x%lx) failed: %s", subcmd, mbh,
 				       mpool_strinfo(err, errbuf, sizeof(errbuf)));
 				continue;
 			}
 
-			offmax = min(props.mpr_alloc_cap,
-				     (u32)(rw_offset + rw_length));
+			offmax = min(props.mpr_alloc_cap, (u32)(rw_offset + rw_length));
 			wmax = bufsz;
 			off = rw_offset;
 
@@ -1921,8 +1714,7 @@ mbrw_command(
 				}
 
 				if (err) {
-					eprint("%s mpool_mblock_read(0x%lx) "
-					       "failed: %s",
+					eprint("%s mpool_mblock_read(0x%lx) failed: %s",
 					       subcmd, mbh,
 					       mpool_strinfo(err, errbuf, sizeof(errbuf)));
 					exit(EX_OSERR);
@@ -1970,14 +1762,12 @@ err_ok:
 
 			err = mpool_mblock_props_get(ds, mbh, &props);
 			if (err) {
-				eprint("%s mp_mb_lookup(0x%lx) failed: %s",
-				       subcmd, mbh,
+				eprint("%s mp_mb_lookup(0x%lx) failed: %s", subcmd, mbh,
 				       mpool_strinfo(err, errbuf, sizeof(errbuf)));
 				continue;
 			}
 
-			offmax = min(props.mpr_alloc_cap,
-				     (u32)(rw_offset + rw_length));
+			offmax = min(props.mpr_alloc_cap, (u32)(rw_offset + rw_length));
 			wmax = bufsz;
 			off = 0;
 
@@ -1992,8 +1782,7 @@ err_ok:
 
 				cc = read(ifile_fd, buf, wmax);
 				if (cc == -1) {
-					eprint("%s read %s failed: %s",
-					       subcmd, iofile_path,
+					eprint("%s read %s failed: %s", subcmd, iofile_path,
 					       strerror(errno));
 					exit(EX_OSERR);
 				} else if (cc == 0) {
@@ -2028,15 +1817,10 @@ err_ok:
 	return 0;
 }
 
-static
-void
-mmrd_help(
-	int     argc,
-	char  **argv)
+static void mmrd_help(int argc, char **argv)
 {
 	printf("\n");
-	printf("usage: %s %s [options] <mpool> <objid> ...\n",
-	       progname, argv[0]);
+	printf("usage: %s %s [options] <mpool> <objid> ...\n", progname, argv[0]);
 
 	printf("usage: %s -h\n", progname);
 	printf("usage: %s -V\n", progname);
@@ -2051,11 +1835,7 @@ mmrd_help(
 	printf("\n");
 }
 
-static
-int
-mmrd_command(
-	int     argc,
-	char  **argv)
+static int mmrd_command(int argc, char **argv)
 {
 	struct option   longopts[] = {
 		{ "iofile",	required_argument,	NULL, 'f' },
@@ -2202,8 +1982,7 @@ mmrd_command(
 
 			err = mpool_mblock_find(ds, mbidv[i], &props);
 			if (err) {
-				eprint("mpool_mblock_find(%lx): %s",
-				       mbidv[i],
+				eprint("mpool_mblock_find(%lx): %s", mbidv[i],
 				       mpool_strinfo(err, errbuf, sizeof(errbuf)));
 				exit(EX_DATAERR);
 			}
@@ -2222,11 +2001,9 @@ mmrd_command(
 			ssize_t cc;
 			void *mem;
 
-			err = mpool_mcache_madvise(
-				map, i, 0, mblenv[i], MADV_WILLNEED);
+			err = mpool_mcache_madvise(map, i, 0, mblenv[i], MADV_WILLNEED);
 			if (err) {
-				eprint("mpool_mcache_madvise(%d, %lu): %s",
-				       i, mbidv[i],
+				eprint("mpool_mcache_madvise(%d, %lu): %s", i, mbidv[i],
 				       mpool_strinfo(err, errbuf, sizeof(errbuf)));
 			}
 
@@ -2234,8 +2011,7 @@ mmrd_command(
 
 			cc = write(fd, mem, mblenv[i]);
 			if (cc != mblenv[i]) {
-				eprint("i %d, write cc %ld != mblen %lu",
-				       i, cc, (ulong)mblenv[i]);
+				eprint("i %d, write cc %ld != mblen %lu", i, cc, (ulong)mblenv[i]);
 				exit(EX_OSERR);
 			}
 		}
@@ -2262,15 +2038,10 @@ mmrd_command(
 	return 0;
 }
 
-static
-void
-test_help(
-	int     argc,
-	char  **argv)
+static void test_help(int argc, char **argv)
 {
 	printf("\n");
-	printf("usage: %s %s [options] <mpool> <errno> ...\n",
-	       progname, argv[0]);
+	printf("usage: %s %s [options] <mpool> <errno> ...\n", progname, argv[0]);
 
 	printf("usage: %s -h\n", progname);
 	printf("usage: %s -V\n", progname);
@@ -2282,11 +2053,7 @@ test_help(
 	printf("\n");
 }
 
-static
-int
-test_command(
-	int     argc,
-	char  **argv)
+static int test_command(int argc, char **argv)
 {
 	struct option   longopts[] = {
 		COMOPTS_OPTIONS,
@@ -2376,8 +2143,7 @@ test_command(
 			err = rc ? errno : test.mpt_cmn.mc_err;
 
 			printf("argv[%d] %d: uerr %lx, kerr %lx, mpool_errno %d, mpool_strinfo %s\n",
-			       i, atoi(argv[i]), err,
-			       test.mpt_sval[1], mpool_errno(err),
+			       i, atoi(argv[i]), err, test.mpt_sval[1], mpool_errno(err),
 			       mpool_strinfo(err, errbuf, sizeof(errbuf)));
 		}
 	} else {
@@ -2390,11 +2156,7 @@ test_command(
 	return 0;
 }
 
-static
-void
-main_help(
-	int     argc,
-	char  **argv)
+static void main_help(int argc, char **argv)
 {
 	int i;
 
@@ -2410,13 +2172,11 @@ main_help(
 	printf("<command>  a command to execute (see below)\n");
 	printf("\n");
 
-	printf("The %s command creates, modifies, and manages media pools.\n",
-	       progname);
+	printf("The %s command creates, modifies, and manages media pools.\n", progname);
 
 	printf("\nCommands:\n");
 	for (i = 0; mpool_cmds[i].cmd; i++)
-		printf("  %-10s  %s\n",
-		       mpool_cmds[i].cmd, mpool_cmds[i].synopsis);
+		printf("  %-10s  %s\n", mpool_cmds[i].cmd, mpool_cmds[i].synopsis);
 
 	printf("\nFor help on a specific %s command:\n", progname);
 	printf("  %s help <command>\n", progname);
@@ -2435,16 +2195,11 @@ main_help(
 	printf("%8zu  mpioc_mlog\n", sizeof(struct mpioc_mlog));
 	printf("%8zu  mpioc_prop\n", sizeof(struct mpioc_prop));
 	printf("%8zu  mpool_xprops\n", sizeof(struct mpool_xprops));
-	printf("%8zu  mpool_mclass_xprops\n",
-	       sizeof(struct mpool_mclass_xprops));
+	printf("%8zu  mpool_mclass_xprops\n", sizeof(struct mpool_mclass_xprops));
 	printf("%8zu  mp_usage\n", sizeof(struct mp_usage));
 }
 
-static
-int
-help_command(
-	int     argc,
-	char  **argv)
+static int help_command(int argc, char **argv)
 {
 	int i;
 
@@ -2467,8 +2222,7 @@ help_command(
 	return 0;
 }
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	struct option longopts[] = {
 		COMOPTS_OPTIONS,

@@ -70,10 +70,7 @@ static sig_atomic_t     sigbus;
  */
 jmp_buf    *sigbus_jmp;
 
-static
-void
-sigbus_handler(
-	int sig)
+static void sigbus_handler(int sig)
 {
 	++sigbus;
 
@@ -93,11 +90,7 @@ sigbus_handler(
 }
 
 
-static
-int
-signal_reliable(
-	int signo,
-	__sighandler_t func)
+static int signal_reliable(int signo, __sighandler_t func)
 {
 	struct sigaction nact;
 
@@ -120,11 +113,7 @@ signal_reliable(
 }
 
 
-static
-void
-eprint(
-	const char *fmt,
-	...)
+static void eprint(const char *fmt, ...)
 {
 	char msg[256];
 	va_list ap;
@@ -139,14 +128,9 @@ eprint(
 }
 
 
-static
-void
-usage(void)
+static void usage(void)
 {
-	printf(
-	       "usage: %s [options] <media-class> <mpool>/<dataset>\n\n",
-	       progname
-	);
+	printf("usage: %s [options] <media-class> <mpool>/<dataset>\n\n", progname);
 	printf("-a,--all             run all tests\n");
 	printf("-b,--boundary        run mcache mmap boundary test\n");
 	printf("-m,--madvise         call madvise() on the mapped mblocks\n");
@@ -157,9 +141,7 @@ usage(void)
 }
 
 
-static
-int
-fill_rndbuf(void)
+static int fill_rndbuf(void)
 {
 	size_t  fileptr;
 	ssize_t bytes_read;
@@ -183,11 +165,7 @@ fill_rndbuf(void)
 	}
 
 	if (!rndbuf) {
-		fprintf(
-			stderr,
-			"Couldn't allocate rndbuf: %s\n",
-			strerror(errno)
-		);
+		fprintf(stderr, "Couldn't allocate rndbuf: %s\n", strerror(errno));
 		rc = 1;
 		goto rndbuf_cleanup;
 	}
@@ -195,13 +173,8 @@ fill_rndbuf(void)
 	for (fileptr = 0; fileptr < rndbufsz; fileptr += bytes_read) {
 		bytes_read = read(fd, rndbuf + fileptr, rndbufsz - fileptr);
 		if (bytes_read < 1) {
-			fprintf(
-				stderr,
-				"read(%s): bytes_read=%ld rndbufsz=%zu: %s\n",
-				rndfile,
-				bytes_read,
-				rndbufsz,
-				strerror(errno)
+			fprintf(stderr, "read(%s): bytes_read=%ld rndbufsz=%zu: %s\n",
+				rndfile, bytes_read, rndbufsz, strerror(errno)
 			);
 			rc = 1;
 			goto rndbuf_cleanup;
@@ -221,9 +194,7 @@ rndbuf_exit:
 }
 
 
-static
-enum mp_media_classp
-mclsname_to_mcls(const char *mclassname)
+static enum mp_media_classp mclsname_to_mcls(const char *mclassname)
 {
 	if (!strcmp(mclassname, "STAGING"))
 		return MP_MED_STAGING;
@@ -248,8 +219,7 @@ mclsname_to_mcls(const char *mclassname)
  *
  * Return: mpool_err_t
  */
-static
-mpool_err_t
+static mpool_err_t
 make_mblock(
 	struct mpool         *ds,
 	uint64_t              mbsize,
@@ -264,10 +234,8 @@ make_mblock(
 
 	if (((rndbuf_cursor - rndbuf) + mbsize) > rndbufsz) {
 		fprintf(
-			stderr,
-			"%s %s",
-			"Requested random fill data runs off the end of",
-			"rndbuf\n");
+			stderr, "%s %s",
+			"Requested random fill data runs off the end of", "rndbuf\n");
 		err = merr(EINVAL);
 
 		goto make_mblock_exit;
@@ -283,10 +251,7 @@ make_mblock(
 	if (props->mpr_alloc_cap != mbsize) {
 		err = merr(ENOSPC);
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
-		eprint(
-		    "mpool_mblock_alloc returned mblock of wrong size: %s\n",
-		    errbuf
-		);
+		eprint("mpool_mblock_alloc returned mblock of wrong size: %s\n", errbuf);
 		goto make_mblock_cleanup;
 	}
 	iov = malloc(sizeof(*iov));
@@ -314,11 +279,7 @@ make_mblock(
 
 	if (err) {
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
-		eprint(
-		    "mb_mblock_commit failed: objid=0x%lx: %s\n",
-		    *objid,
-		    errbuf
-		);
+		eprint("mb_mblock_commit failed: objid=0x%lx: %s\n", *objid, errbuf);
 		goto make_mblock_cleanup;
 	}
 
@@ -329,21 +290,13 @@ make_mblock_cleanup:
 
 	if (err2) {
 		mpool_strinfo(err2, errbuf, sizeof(errbuf));
-		eprint(
-		       "mpool_mblock_abort failed: objid=0x%lx: %s\n",
-		       *objid,
-		       errbuf
-		);
+		eprint("mpool_mblock_abort failed: objid=0x%lx: %s\n", *objid, errbuf);
 	} else {
 		err2 = mpool_mblock_delete(ds, *objid);
 
 		if (err2) {
 			mpool_strinfo(err2, errbuf, sizeof(errbuf));
-			eprint(
-			       "mpool_mblock_delete failed: objid=0x%lx: %s\n",
-			       *objid,
-			       errbuf
-			);
+			eprint("mpool_mblock_delete failed: objid=0x%lx: %s\n", *objid, errbuf);
 		}
 	}
 
@@ -380,9 +333,9 @@ mcache_boundary_test(
 	if (rc)
 		goto mcache_boundary_cleanup;
 
-	mpool_err_t              err;
+	mpool_err_t         err;
 	struct mpool       *ds;
-	struct mpool_devrpt   ei;
+	struct mpool_devrpt ei;
 
 	err = mpool_open(mpname, O_RDWR, &ds, &ei);
 	if (err) {
@@ -472,23 +425,13 @@ mcache_boundary_test(
 
 	if (call_madvise)
 		for (i = 0; i < num_mblocks; i++) {
-			err = mpool_mcache_madvise(
-				map,
-				test_map_info[i].mblockidx,
-				0,
-				test_map_info[i].mblocklen,
-				MADV_WILLNEED
-			);
+			err = mpool_mcache_madvise(map, test_map_info[i].mblockidx, 0,
+						   test_map_info[i].mblocklen, MADV_WILLNEED);
 
 			if (err) {
 				mpool_strinfo(err, errbuf, sizeof(errbuf));
-				eprint(
-				       "mpool_mcache_madvise failed: map=0x%lx "
-				       "mbid=0x%lx: %s\n",
-				       map,
-				       test_map_info[i].mblockid,
-				       errbuf
-				);
+				eprint("mpool_mcache_madvise failed: map=0x%lx mbid=0x%lx: %s\n",
+				       map, test_map_info[i].mblockid, errbuf);
 				rc = 1;
 				goto mcache_boundary_map_cleanup;
 			}
@@ -526,23 +469,12 @@ mcache_boundary_test(
 
 	printf("Reading initial mblock.\n");
 
-	err = mpool_mcache_getpages(
-		map,
-		page_count,
-		test_map_info[0].mblockidx,
-		pagenumv,
-		addrv
-	);
-
+	err = mpool_mcache_getpages(map, page_count, test_map_info[0].mblockidx, pagenumv, addrv);
 	if (err) {
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
-		eprint("mpool_mcache_getpages: %d "
-		       "objid=0x%lx len=%zu: %s\n",
-		       test_map_info[0].mblockidx,
-		       test_map_info[0].mblockid,
-		       test_map_info[0].mblocklen,
-		       errbuf
-		);
+		eprint("mpool_mcache_getpages: %d objid=0x%lx len=%zu: %s\n",
+		       test_map_info[0].mblockidx, test_map_info[0].mblockid,
+		       test_map_info[0].mblocklen, errbuf);
 		rc = 1;
 		goto mcache_boundary_map_cleanup;
 	}
@@ -551,10 +483,8 @@ mcache_boundary_test(
 		memcpy(buf + i * PAGE_SIZE, addrv[i], PAGE_SIZE);
 
 	if (memcmp(buf, rndbuf, mbsize)) {
-		eprint("Data read mismatch from 4MB mblock "
-		       "objid=0x%lx\n",
-		       test_map_info[0].mblockid
-		);
+		eprint("Data read mismatch from 4MB mblock objid=0x%lx\n",
+		       test_map_info[0].mblockid);
 		rc = 1;
 		goto mcache_boundary_map_cleanup;
 	}
@@ -570,10 +500,7 @@ mcache_boundary_test(
 	 * Should get a SIGBUS.
 	 */
 
-	void *mblock1_start = mpool_mcache_getbase(
-		map,
-		test_map_info[0].mblockidx
-	);
+	void *mblock1_start = mpool_mcache_getbase(map, test_map_info[0].mblockidx);
 
 	jmp_buf    mblock1_read_past_end_jmpbuf;
 
@@ -592,10 +519,7 @@ mcache_boundary_test(
 			goto mcache_boundary_map_cleanup;
 		}
 
-		memcpy(buf1,
-		       mblock1_start + test_map_info[0].mblocklen,
-		       PAGE_SIZE
-		);
+		memcpy(buf1, mblock1_start + test_map_info[0].mblocklen, PAGE_SIZE);
 
 		free(buf1);
 	}
@@ -603,8 +527,7 @@ mcache_boundary_test(
 	printf("Returned from signal handler\n");
 
 	if (sigbus != 1) {
-		eprint("Did not get sigbus reading past end of first mblock "
-		       "objid=0x%lx\n",
+		eprint("Did not get sigbus reading past end of first mblock objid=0x%lx\n",
 		       test_map_info[0].mblockid);
 		rc = 1;
 		goto mcache_boundary_map_cleanup;
@@ -618,10 +541,7 @@ mcache_boundary_test(
 	 */
 	printf("Reading 4K before beginning of second mblock.\n");
 
-	void *mblock2_start = mpool_mcache_getbase(
-		map,
-		test_map_info[1].mblockidx
-	);
+	void *mblock2_start = mpool_mcache_getbase(map, test_map_info[1].mblockidx);
 
 	jmp_buf    mblock2_read_before_start_jmpbuf;
 
@@ -646,8 +566,7 @@ mcache_boundary_test(
 	printf("Returned from signal handler\n");
 
 	if (sigbus != 2) {
-		eprint("Didn't get sigbus reading before start of second mblock"
-		       " objid=0x%lx\n",
+		eprint("Didn't get sigbus reading before start of second mblock objid=0x%lx\n",
 		       test_map_info[1].mblockid);
 		rc = 1;
 		goto mcache_boundary_map_cleanup;
@@ -676,10 +595,7 @@ mcache_boundary_test(
 			goto mcache_boundary_map_cleanup;
 		}
 
-		memcpy(buf3,
-		       mblock2_start + test_map_info[1].mblocklen,
-		       PAGE_SIZE
-		);
+		memcpy(buf3, mblock2_start + test_map_info[1].mblocklen, PAGE_SIZE);
 
 		free(buf3);
 	}
@@ -692,8 +608,7 @@ mcache_boundary_test(
 	 */
 
 	if (sigbus != 3) {
-		eprint("Did not get sigbus reading past end of second mblock "
-		       "objid=0x%lx\n",
+		eprint("Did not get sigbus reading past end of second mblock objid=0x%lx\n",
 		       test_map_info[1].mblockid);
 		rc = 1;
 	}
@@ -714,10 +629,7 @@ mcache_boundary_mblock_cleanup_2:
 
 	if (err) {
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
-		eprint(
-		       "failed to delete second mblock, objid: 0x%lx, %s\n",
-		       objid2,
-		       errbuf);
+		eprint("failed to delete second mblock, objid: 0x%lx, %s\n", objid2, errbuf);
 		rc = 1;
 	}
 
@@ -726,10 +638,7 @@ mcache_boundary_mblock_cleanup_1:
 
 	if (err) {
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
-		eprint(
-		       "failed to delete first mblock, objid: 0x%lx, %s\n",
-		       objid1,
-		       errbuf);
+		eprint("failed to delete first mblock, objid: 0x%lx, %s\n", objid1, errbuf);
 		rc = 1;
 	}
 
@@ -743,8 +652,7 @@ mcache_boundary_cleanup:
 }
 
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	sigbus = 0;
 
@@ -822,12 +730,7 @@ main(int argc, char **argv)
 
 	if (all_tests || boundary_test) {
 		printf("Running mcache boundary test\n");
-		int rc = mcache_boundary_test(
-			mpname,
-			dsname,
-			media_class,
-			call_madvise
-		);
+		int rc = mcache_boundary_test(mpname, dsname, media_class, call_madvise);
 
 		if (rc)
 			printf("\tFAILED!\n");

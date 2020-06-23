@@ -77,9 +77,7 @@ struct oid_pair {
 
 #define MAX_PATTERN_SIZE 256
 
-static
-enum mp_media_classp
-mclassp_str2enum(char *mclassp_str)
+static enum mp_media_classp mclassp_str2enum(char *mclassp_str)
 {
 	if (!strcmp(mclassp_str, "STAGING"))
 		return MP_MED_STAGING;
@@ -89,11 +87,7 @@ mclassp_str2enum(char *mclassp_str)
 	return MP_MED_INVALID;
 }
 
-static
-u32
-calc_record_count(
-	u64 total_size,
-	u32 record_size)
+static u32 calc_record_count(u64 total_size, u32 record_size)
 {
 	u32 sector_cnt = total_size / MIN_SECTOR_SIZE;
 	u32 sector_overhead = sector_cnt * SECTOR_OVERHEAD;
@@ -106,14 +100,12 @@ calc_record_count(
 		record_overhead = 2 * RECORD_OVERHEAD;
 	else if (record_size > USABLE_SECT_SIZE)
 		/* 2 here implies 1 leading + 1 trailing record desc. */
-		record_overhead = ((record_size / USABLE_SECT_SIZE) + 2) *
-			RECORD_OVERHEAD;
+		record_overhead = ((record_size / USABLE_SECT_SIZE) + 2) * RECORD_OVERHEAD;
 	else
 		record_overhead = RECORD_OVERHEAD;
 
 	real_record_size = record_size + record_overhead;
-	record_cnt = (total_size - sector_overhead -
-		LOG_OVERHEAD) / real_record_size;
+	record_cnt = (total_size - sector_overhead - LOG_OVERHEAD) / real_record_size;
 
 	return record_cnt;
 }
@@ -131,37 +123,28 @@ static char   perf_seq_writes_pattern[MAX_PATTERN_SIZE];
 static unsigned int mlog_mclassp = MP_MED_CAPACITY;
 static char   mlog_mclassp_str[MPOOL_NAME_LEN_MAX] = "CAPACITY";
 
-static
-struct param_inst perf_seq_writes_params[] = {
-	PARAM_INST_STRING(mlog_mclassp_str,
-		sizeof(mlog_mclassp_str), "mc", "media class"),
+static struct param_inst perf_seq_writes_params[] = {
+	PARAM_INST_STRING(mlog_mclassp_str, sizeof(mlog_mclassp_str), "mc", "media class"),
 	PARAM_INST_U32_SIZE(perf_seq_writes_record_size, "rs", "record size"),
 	PARAM_INST_U32_SIZE(perf_seq_writes_total_size, "ts", "total size"),
-	PARAM_INST_U32(perf_seq_writes_thread_cnt,
-		"threads", "number of threads"),
-	PARAM_INST_STRING(perf_seq_writes_mpool,
-		sizeof(perf_seq_writes_mpool), "mp", "mpool"),
+	PARAM_INST_U32(perf_seq_writes_thread_cnt, "threads", "number of threads"),
+	PARAM_INST_STRING(perf_seq_writes_mpool, sizeof(perf_seq_writes_mpool), "mp", "mpool"),
 	PARAM_INST_STRING(perf_seq_writes_dataset,
-		sizeof(perf_seq_writes_dataset), "ds", "dataset"),
+			  sizeof(perf_seq_writes_dataset), "ds", "dataset"),
 	PARAM_INST_BOOL(perf_seq_writes_sync, "sync", "all sync writes"),
 	PARAM_INST_BOOL(perf_seq_writes_verify, "verify", "verify writes"),
 	PARAM_INST_BOOL(perf_seq_writes_skipser, "skipser",
 			"Client guarantees serialization, skip it"),
 	PARAM_INST_STRING(perf_seq_writes_pattern,
-		sizeof(perf_seq_writes_pattern), "pattern", "pattern to write"),
+			  sizeof(perf_seq_writes_pattern), "pattern", "pattern to write"),
 	PARAM_INST_END
 };
 
-static
-void
-perf_seq_writes_help(void)
+static void perf_seq_writes_help(void)
 {
-	fprintf(co.co_fp,
-		"\nusage: mpft mlog.perf.seq_writes [options]\n");
-	fprintf(co.co_fp,
-		"e.g.: mpft mlog.perf.seq_writes rs=16\n");
-	fprintf(co.co_fp,
-		"\nmlog.perf.seq_writes will measure the performance "
+	fprintf(co.co_fp, "\nusage: mpft mlog.perf.seq_writes [options]\n");
+	fprintf(co.co_fp, "e.g.: mpft mlog.perf.seq_writes rs=16\n");
+	fprintf(co.co_fp, "\nmlog.perf.seq_writes will measure the performance "
 		"in MB/s of writes of a given size (rs) to an mlog\n");
 
 	show_default_params(perf_seq_writes_params, 0);
@@ -180,9 +163,7 @@ struct ml_writer_resp {
 	u64    bytes_written;
 };
 
-static
-void *
-ml_writer(void *arg)
+static void *ml_writer(void *arg)
 {
 	mpool_err_t err;
 	int    i;
@@ -193,9 +174,9 @@ ml_writer(void *arg)
 	u8     flags = 0;
 
 	struct mpft_thread_args *targs = (struct mpft_thread_args *)arg;
-	struct ml_writer_args *args = (struct ml_writer_args *)targs->arg;
-	struct ml_writer_resp *resp;
-	struct mpool_mdc          *mdc;
+	struct ml_writer_args  *args = (struct ml_writer_args *)targs->arg;
+	struct ml_writer_resp  *resp;
+	struct mpool_mdc       *mdc;
 	struct timeval          start_tv, stop_tv;
 	int                     id = targs->instance;
 	size_t                  used;
@@ -207,8 +188,7 @@ ml_writer(void *arg)
 	resp = calloc(1, sizeof(*resp));
 	if (!resp) {
 		err = merr(ENOMEM);
-		fprintf(stderr,
-			"[%d]%s: Unable to allocate response struct:%s\n", id,
+		fprintf(stderr, "[%d]%s: Unable to allocate response struct:%s\n", id,
 			__func__, mpool_strinfo(err, err_str, sizeof(err_str)));
 		return resp;
 	}
@@ -227,10 +207,8 @@ ml_writer(void *arg)
 	if (co.co_verbose) {
 		err = mpool_mdc_usage(mdc, &used);
 		if (err) {
-			fprintf(stderr,
-				"[%d]%s: Unable to get mdc usage: %s\n", id,
-				__func__,
-				mpool_strinfo(err, err_str, sizeof(err_str)));
+			fprintf(stderr, "[%d]%s: Unable to get mdc usage: %s\n", id,
+				__func__, mpool_strinfo(err, err_str, sizeof(err_str)));
 			resp->err = err;
 			goto close_mdc;
 		}
@@ -252,13 +230,10 @@ ml_writer(void *arg)
 	gettimeofday(&start_tv, NULL);
 
 	for (i = 0; i < write_cnt - 1; i++) {
-		err = mpool_mdc_append(mdc, buf, write_sz,
-				       perf_seq_writes_sync);
+		err = mpool_mdc_append(mdc, buf, write_sz, perf_seq_writes_sync);
 		if (err) {
-			fprintf(stderr,
-				"[%d]%s: error on async append #%d bytes "
-				"written %ld: %s\n", id, __func__, i,
-				written,
+			fprintf(stderr, "[%d]%s: error on async append #%d bytes "
+				"written %ld: %s\n", id, __func__, i, written,
 				mpool_strinfo(err, err_str, sizeof(err_str)));
 			resp->err = err;
 			goto free_buf;
@@ -276,9 +251,7 @@ ml_writer(void *arg)
 
 	err = mpool_mdc_usage(mdc, &used);
 	if (err) {
-		fprintf(stderr,
-			"[%d]%s: Unable to get mdc usage: %s\n", id,
-			__func__,
+		fprintf(stderr, "[%d]%s: Unable to get mdc usage: %s\n", id, __func__,
 			mpool_strinfo(err, err_str, sizeof(err_str)));
 		resp->err = err;
 		goto free_buf;
@@ -293,8 +266,7 @@ ml_writer(void *arg)
 		stop_tv.tv_sec--;
 		stop_tv.tv_usec += 1000000;
 	}
-	usec = (stop_tv.tv_sec - start_tv.tv_sec) * 1000000 +
-		(stop_tv.tv_usec - start_tv.tv_usec);
+	usec = (stop_tv.tv_sec - start_tv.tv_sec) * 1000000 + (stop_tv.tv_usec - start_tv.tv_usec);
 
 	resp->usec = usec;
 	resp->bytes_written = used;
@@ -319,9 +291,7 @@ struct ml_reader_resp {
 	u64    read;
 };
 
-static
-void *
-ml_reader(void *arg)
+static void *ml_reader(void *arg)
 {
 	mpool_err_t err;
 	int    i;
@@ -332,9 +302,9 @@ ml_reader(void *arg)
 	u8     flags = 0;
 
 	struct mpft_thread_args *targs = (struct mpft_thread_args *)arg;
-	struct ml_reader_args *args = (struct ml_reader_args *)targs->arg;
-	struct ml_reader_resp *resp;
-	struct mpool_mdc          *mdc;
+	struct ml_reader_args  *args = (struct ml_reader_args *)targs->arg;
+	struct ml_reader_resp  *resp;
+	struct mpool_mdc       *mdc;
 	struct timeval          start_tv, stop_tv;
 	int                     id = targs->instance;
 	size_t                  used;
@@ -345,8 +315,7 @@ ml_reader(void *arg)
 	resp = calloc(1, sizeof(*resp));
 	if (!resp) {
 		err = merr(ENOMEM);
-		fprintf(stderr,
-			"[%d]%s: Unable to allocate response struct:%s\n", id,
+		fprintf(stderr, "[%d]%s: Unable to allocate response struct:%s\n", id,
 			__func__, mpool_strinfo(err, err_str, sizeof(err_str)));
 		return resp;
 	}
@@ -371,10 +340,8 @@ ml_reader(void *arg)
 
 	err = mpool_mdc_usage(mdc, &used);
 	if (err) {
-		fprintf(stderr,
-			"[%d]%s: Unable to get mdc usage: %s\n", id,
-			__func__,
-			mpool_strinfo(err, err_str, sizeof(err_str)));
+		fprintf(stderr, "[%d]%s: Unable to get mdc usage: %s\n", id,
+			__func__, mpool_strinfo(err, err_str, sizeof(err_str)));
 		resp->err = err;
 		return resp;
 	}
@@ -397,8 +364,7 @@ ml_reader(void *arg)
 	for (i = 0; i < read_cnt; i++) {
 		err = mpool_mdc_read(mdc, buf, args->rs, &bytes_read);
 		if (err) {
-			fprintf(stderr,
-				"[%d]%s: error on read:%s\n", i, __func__,
+			fprintf(stderr, "[%d]%s: error on read:%s\n", i, __func__,
 				mpool_strinfo(err, err_str, sizeof(err_str)));
 			resp->err = err;
 			return resp;
@@ -412,8 +378,7 @@ ml_reader(void *arg)
 		stop_tv.tv_sec--;
 		stop_tv.tv_usec += 1000000;
 	}
-	usec = (stop_tv.tv_sec - start_tv.tv_sec) * 1000000 +
-		(stop_tv.tv_usec - start_tv.tv_usec);
+	usec = (stop_tv.tv_sec - start_tv.tv_sec) * 1000000 + (stop_tv.tv_usec - start_tv.tv_usec);
 
 	resp->usec = usec;
 	resp->read = used;
@@ -437,9 +402,7 @@ struct ml_verify_resp {
 	u64    verified;
 };
 
-static
-void *
-ml_verify(void *arg)
+static void *ml_verify(void *arg)
 {
 	mpool_err_t err;
 	int    i;
@@ -452,8 +415,8 @@ ml_verify(void *arg)
 
 	struct mpft_thread_args *targs = (struct mpft_thread_args *)arg;
 	struct ml_verify_args *args = (struct ml_verify_args *)targs->arg;
-	struct ml_verify_resp *resp;
-	struct mpool_mdc          *mdc;
+	struct ml_verify_resp  *resp;
+	struct mpool_mdc       *mdc;
 	struct timeval          start_tv, stop_tv;
 	int                     id = targs->instance;
 	size_t                  used;
@@ -464,8 +427,7 @@ ml_verify(void *arg)
 	resp = calloc(1, sizeof(*resp));
 	if (!resp) {
 		err = merr(ENOMEM);
-		fprintf(stderr,
-			"[%d]%s: Unable to allocate response struct:%s\n", id,
+		fprintf(stderr, "[%d]%s: Unable to allocate response struct:%s\n", id,
 			__func__, mpool_strinfo(err, err_str, sizeof(err_str)));
 		return resp;
 	}
@@ -490,9 +452,7 @@ ml_verify(void *arg)
 
 	err = mpool_mdc_usage(mdc, &used);
 	if (err) {
-		fprintf(stderr,
-			"[%d]%s: Unable to get mdc usage: %s\n", id,
-			__func__,
+		fprintf(stderr, "[%d]%s: Unable to get mdc usage: %s\n", id, __func__,
 			mpool_strinfo(err, err_str, sizeof(err_str)));
 		resp->err = err;
 		return resp;
@@ -516,16 +476,14 @@ ml_verify(void *arg)
 	for (i = 0; i < read_cnt; i++) {
 		err = mpool_mdc_read(mdc, buf, args->rs, &bytes_read);
 		if (err) {
-			fprintf(stderr,
-				"[%d]%s: error on read:%s\n", i, __func__,
+			fprintf(stderr, "[%d]%s: error on read:%s\n", i, __func__,
 				mpool_strinfo(err, err_str, sizeof(err_str)));
 			resp->err = err;
 			return resp;
 		}
 		ret = pattern_compare(buf, args->rs);
 		if (ret) {
-			fprintf(stderr, "[%d]%s: miscompare!\n",
-				i, __func__);
+			fprintf(stderr, "[%d]%s: miscompare!\n", i, __func__);
 			resp->err = merr(EIO);
 			return resp;
 		}
@@ -538,8 +496,7 @@ ml_verify(void *arg)
 		stop_tv.tv_sec--;
 		stop_tv.tv_usec += 1000000;
 	}
-	usec = (stop_tv.tv_sec - start_tv.tv_sec) * 1000000 +
-		(stop_tv.tv_usec - start_tv.tv_usec);
+	usec = (stop_tv.tv_sec - start_tv.tv_sec) * 1000000 + (stop_tv.tv_usec - start_tv.tv_usec);
 
 	resp->usec = usec;
 	resp->verified = used;
@@ -550,11 +507,7 @@ ml_verify(void *arg)
 	return resp;
 }
 
-static
-mpool_err_t
-perf_seq_writes(
-	int     argc,
-	char  **argv)
+static mpool_err_t perf_seq_writes(int argc, char **argv)
 {
 	mpool_err_t err = 0;
 	int    next_arg = 0;
@@ -601,8 +554,8 @@ perf_seq_writes(
 
 	if ((mp[0] == 0) || (ds[0] == 0)) {
 		fprintf(stderr,
-			"%s: mpool (mp=<mpool>) and dataset (ds=<dataset>) "
-			"must be specified\n", test_name);
+			"%s: mpool (mp=<mpool>) and dataset (ds=<dataset>) must be specified\n",
+			test_name);
 		return merr(EINVAL);
 	}
 	tc = perf_seq_writes_thread_cnt;
@@ -613,26 +566,21 @@ perf_seq_writes(
 
 	err = mpool_open(mp, O_RDWR, &mp_ds, NULL);
 	if (err) {
-		fprintf(stderr, "%s: cannot open dataset %s\n",
-			test_name, mp);
+		fprintf(stderr, "%s: cannot open dataset %s\n", test_name, mp);
 		return err;
 	}
 
 	wr_arg = calloc(tc, sizeof(*wr_arg));
 	targ = calloc(tc, sizeof(*targ));
 	if (!wr_arg || !targ) {
-		fprintf(stderr,
-			"%s: Unable to allocate memory for arguments\n",
-			test_name);
+		fprintf(stderr, "%s: Unable to allocate memory for arguments\n", test_name);
 		err = merr(ENOMEM);
 		goto free_wr_arg;
 	}
 
 	tresp = calloc(tc, sizeof(*tresp));
 	if (!tresp) {
-		fprintf(stderr,
-			"%s: Unable to allocate memory for response pointers\n",
-			test_name);
+		fprintf(stderr, "%s: Unable to allocate memory for response pointers\n", test_name);
 		err = merr(ENOMEM);
 		goto free_targ;
 	}
@@ -642,34 +590,29 @@ perf_seq_writes(
 
 		err = mpool_usage_get(mp_ds, &usage);
 		if (err) {
-			fprintf(stderr, "%s: Error getting usage. %s\n",
-				test_name,
+			fprintf(stderr, "%s: Error getting usage. %s\n", test_name,
 				mpool_strinfo(err, err_str, sizeof(err_str)));
 			goto free_tresp;
 		}
 		perf_seq_writes_total_size = usage.mpu_fusable / 2;
 		perf_seq_writes_total_size /= 4; /* has to fit in a zone? */
 
-		fprintf(stdout,
-			"total_size (ts) not specified, using %ld bytes\n",
+		fprintf(stdout, "total_size (ts) not specified, using %ld bytes\n",
 			(long)perf_seq_writes_total_size);
 	}
 	per_thread_size = perf_seq_writes_total_size / tc;
 	capreq.mdt_captgt = per_thread_size;
 
-	write_cnt = calc_record_count(per_thread_size,
-		perf_seq_writes_record_size);
+	write_cnt = calc_record_count(per_thread_size, perf_seq_writes_record_size);
 	if (write_cnt == 0) {
-		fprintf(stderr, "%s: No room to write even one record\n",
-			test_name);
+		fprintf(stderr, "%s: No room to write even one record\n", test_name);
 		err = merr(EINVAL);
 		goto free_tresp;
 	}
 
 	oid = calloc(tc, sizeof(*oid));
 	if (!oid) {
-		fprintf(stderr, "%s:Unable to alloc space for oid array\n",
-			test_name);
+		fprintf(stderr, "%s:Unable to alloc space for oid array\n", test_name);
 		err = merr(ENOMEM);
 		goto free_tresp;
 	}
@@ -678,18 +621,16 @@ perf_seq_writes(
 
 		/* Create an mdc */
 		err = mpool_mdc_alloc(mp_ds, &oid[i].oid[0], &oid[i].oid[1],
-			mlog_mclassp, &capreq, NULL);
+				      mlog_mclassp, &capreq, NULL);
 		if (err) {
-			fprintf(stderr, "[%d]%s: Unable to alloc mdc: %s\n",
-				i, test_name,
+			fprintf(stderr, "[%d]%s: Unable to alloc mdc: %s\n", i, test_name,
 				mpool_strinfo(err, err_str, sizeof(err_str)));
 			goto free_oid;
 		}
 
 		err = mpool_mdc_commit(mp_ds, oid[i].oid[0], oid[i].oid[1]);
 		if (err) {
-			fprintf(stderr, "[%d]%s: Unable to commit mdc: %s\n",
-				i, test_name,
+			fprintf(stderr, "[%d]%s: Unable to commit mdc: %s\n", i, test_name,
 				mpool_strinfo(err, err_str, sizeof(err_str)));
 			goto free_oid;
 		}
@@ -725,8 +666,7 @@ perf_seq_writes(
 	}
 
 	if (err_cnt) {
-		fprintf(stderr, "%s: thread reported error, exiting\n",
-			 test_name);
+		fprintf(stderr, "%s: thread reported error, exiting\n", test_name);
 		_exit(-1);
 	}
 	perf = bytes_written / usec;
@@ -741,9 +681,8 @@ perf_seq_writes(
 
 		rd_arg = calloc(tc, sizeof(*rd_arg));
 		if (!rd_arg) {
-			fprintf(stderr,
-				"%s: Unable to allocate memory for "
-				"read arguments\n", __func__);
+			fprintf(stderr, "%s: Unable to allocate memory for read arguments\n",
+				__func__);
 			return merr(ENOMEM);
 		}
 
@@ -785,9 +724,8 @@ perf_seq_writes(
 			_exit(-1);
 		}
 		perf = bytes_read / usec;
-		printf("%s: %d threads read %ld bytes in %d usecs or "
-			"%4.2f MB/s\n", __func__, tc,
-			(long)bytes_read, usec, perf);
+		printf("%s: %d threads read %ld bytes in %d usecs or %4.2f MB/s\n", __func__, tc,
+		       (long)bytes_read, usec, perf);
 	}
 
 	/* Verify */
@@ -798,9 +736,8 @@ perf_seq_writes(
 
 		v_arg = calloc(tc, sizeof(*v_arg));
 		if (!v_arg) {
-			fprintf(stderr,
-				"%s: Unable to allocate memory for "
-				"read arguments\n", __func__);
+			fprintf(stderr, "%s: Unable to allocate memory for read arguments\n",
+				__func__);
 			return merr(ENOMEM);
 		}
 
@@ -837,25 +774,21 @@ perf_seq_writes(
 		}
 
 		if (err_cnt) {
-			fprintf(stderr, "%s: thread reported error, exiting\n",
-				__func__);
+			fprintf(stderr, "%s: thread reported error, exiting\n", __func__);
 			_exit(-1);
 		}
 		perf = bytes_verified / usec;
-		printf("%s: %d threads verified %ld bytes in %d usecs or "
-			"%4.2f MB/s\n", __func__, tc,
-			(long)bytes_verified, usec, perf);
+		printf("%s: %d threads verified %ld bytes in %d usecs or %4.2f MB/s\n",
+		       __func__, tc, (long)bytes_verified, usec, perf);
 	}
 
 free_oid:
 	for (i = 0; i < tc; i++) {
 		if (oid[i].oid[0] || oid[i].oid[1]) {
-			err = mpool_mdc_delete(mp_ds, oid[i].oid[0],
-					       oid[i].oid[1]);
+			err = mpool_mdc_delete(mp_ds, oid[i].oid[0], oid[i].oid[1]);
 			if (err) {
 				mpool_strinfo(err, err_str, sizeof(err_str));
-				fprintf(stderr,
-					"[%d]%s: unable to destroy mdc: %s\n",
+				fprintf(stderr, "[%d]%s: unable to destroy mdc: %s\n",
 					i, test_name, err_str);
 			}
 		}
@@ -874,25 +807,17 @@ free_wr_arg:
 	return err;
 }
 
-static
-void
-perf_seq_reads_help(void)
+static void perf_seq_reads_help(void)
 {
-	fprintf(co.co_fp,
-		"\nusage: mpft mlog.perf.seq_reads [options]\n");
-	fprintf(co.co_fp,
-		"e.g.: mpft mlog.perf.seq_reads rs=16\n");
-	fprintf(co.co_fp,
-		"\nmlog.perf.seq_reads will measure the performance "
+	fprintf(co.co_fp, "\nusage: mpft mlog.perf.seq_reads [options]\n");
+	fprintf(co.co_fp, "e.g.: mpft mlog.perf.seq_reads rs=16\n");
+	fprintf(co.co_fp, "\nmlog.perf.seq_reads will measure the performance "
 		"in MB/s of reads of a given size (rs) to an mlog\n");
 
 	show_default_params(perf_seq_writes_params, 0);
 }
 
-mpool_err_t
-perf_seq_reads(
-	int     argc,
-	char  **argv)
+mpool_err_t perf_seq_reads(int argc, char **argv)
 {
 	perf_seq_writes_read = true;
 
@@ -903,11 +828,7 @@ perf_seq_reads(
  * Helper Functions.
  */
 
-static
-void
-show_args(
-	int    argc,
-	char **argv)
+static void show_args(int argc, char **argv)
 {
 	int i;
 
@@ -948,29 +869,21 @@ u8 oflags = 0; /* flags to be used for mpool_mlog_open() */
 
 char mlog_correctness_simple_mpool[MPOOL_NAME_LEN_MAX];
 
-static
-struct param_inst mlog_correctness_simple_params[] = {
-	PARAM_INST_STRING(mlog_mclassp_str,
-		sizeof(mlog_mclassp_str), "mc", "media class"),
+static struct param_inst mlog_correctness_simple_params[] = {
+	PARAM_INST_STRING(mlog_mclassp_str, sizeof(mlog_mclassp_str), "mc", "media class"),
 	PARAM_INST_STRING(mlog_correctness_simple_mpool,
-		sizeof(mlog_correctness_simple_mpool), "mp", "mpool"),
+			  sizeof(mlog_correctness_simple_mpool), "mp", "mpool"),
 	PARAM_INST_END
 };
 
-static
-void
-mlog_correctness_simple_help(void)
+static void mlog_correctness_simple_help(void)
 {
-	fprintf(co.co_fp,
-		"\nusage: mpft mlog.correctness.simple [options]\n");
+	fprintf(co.co_fp, "\nusage: mpft mlog.correctness.simple [options]\n");
 
 	show_default_params(mlog_correctness_simple_params, 0);
 }
 
-mpool_err_t
-mlog_correctness_simple(
-	int     argc,
-	char  **argv)
+mpool_err_t mlog_correctness_simple(int argc, char **argv)
 {
 	mpool_err_t err = 0, original_err = 0;
 	char  *mpool;
@@ -985,8 +898,7 @@ mlog_correctness_simple(
 	struct mlog_props       props;
 
 	show_args(argc, argv);
-	err = process_params(argc, argv,
-		mlog_correctness_simple_params, &next_arg, 0);
+	err = process_params(argc, argv, mlog_correctness_simple_params, &next_arg, 0);
 	if (err != 0) {
 		printf("%s process_params returned an error\n", __func__);
 		return err;
@@ -999,8 +911,7 @@ mlog_correctness_simple(
 	mlog_mclassp = mclassp_str2enum(mlog_mclassp_str);
 
 	if (mpool[0] == 0) {
-		fprintf(stderr,
-			"%s.%d: mpool (mp=<mpool>) must be specified\n",
+		fprintf(stderr, "%s.%d: mpool (mp=<mpool>) must be specified\n",
 			__func__, __LINE__);
 		return merr(EINVAL);
 	}
@@ -1023,8 +934,7 @@ mlog_correctness_simple(
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to create mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to create mlog: %s\n", __func__, __LINE__, errbuf);
 		goto close_ds;
 	}
 
@@ -1032,8 +942,7 @@ mlog_correctness_simple(
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to abort mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to abort mlog: %s\n", __func__, __LINE__, errbuf);
 		goto close_ds;
 	}
 
@@ -1042,8 +951,7 @@ mlog_correctness_simple(
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to create mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to create mlog: %s\n", __func__, __LINE__, errbuf);
 		goto close_ds;
 	}
 
@@ -1051,8 +959,7 @@ mlog_correctness_simple(
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to commit mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to commit mlog: %s\n", __func__, __LINE__, errbuf);
 		(void) mpool_mlog_abort(ds, mlogid);
 		goto close_ds;
 	}
@@ -1062,8 +969,7 @@ mlog_correctness_simple(
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to open mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to open mlog: %s\n", __func__, __LINE__, errbuf);
 		goto destroy_mlog;
 	}
 
@@ -1072,8 +978,7 @@ mlog_correctness_simple(
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to open mlog2: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to open mlog2: %s\n", __func__, __LINE__, errbuf);
 		goto close_mlog;
 	}
 
@@ -1093,16 +998,14 @@ close_mlog:
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to put mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to put mlog: %s\n", __func__, __LINE__, errbuf);
 	}
 
 	err = mpool_mlog_close(mlog1);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to close mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to close mlog: %s\n", __func__, __LINE__, errbuf);
 	}
 
 destroy_mlog:
@@ -1111,8 +1014,7 @@ destroy_mlog:
 		if (!original_err)
 			original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to delete mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to delete mlog: %s\n", __func__, __LINE__, errbuf);
 	}
 
 close_ds:
@@ -1121,19 +1023,13 @@ close_ds:
 		if (!original_err)
 			original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to close dataset: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to close dataset: %s\n", __func__, __LINE__, errbuf);
 	}
 
 	return original_err;
 }
 
-static
-int
-verify_buf(
-	char   *buf_in,
-	size_t  buf_len,
-	char    val)
+static int verify_buf(char *buf_in, size_t buf_len, char val)
 {
 	char    buf[buf_len];
 	pid_t   pid = getpid();
@@ -1144,8 +1040,7 @@ verify_buf(
 	if (memcmp(buf, buf_in, buf_len)) {
 		p = (u8 *)buf;
 		p1 = (u8 *)buf_in;
-		fprintf(stdout, "[%d] expect %d got %d\n",
-			pid, (int)*p, (int)*p1);
+		fprintf(stdout, "[%d] expect %d got %d\n", pid, (int)*p, (int)*p1);
 		return 1;
 	}
 
@@ -1179,29 +1074,21 @@ verify_buf(
 
 char mlog_correctness_basicio_mpool[MPOOL_NAME_LEN_MAX];
 
-static
-struct param_inst mlog_correctness_basicio_params[] = {
-	PARAM_INST_STRING(mlog_mclassp_str,
-		sizeof(mlog_mclassp_str), "mc", "media class"),
+static struct param_inst mlog_correctness_basicio_params[] = {
+	PARAM_INST_STRING(mlog_mclassp_str, sizeof(mlog_mclassp_str), "mc", "media class"),
 	PARAM_INST_STRING(mlog_correctness_basicio_mpool,
-		sizeof(mlog_correctness_basicio_mpool), "mp", "mpool"),
+			  sizeof(mlog_correctness_basicio_mpool), "mp", "mpool"),
 	PARAM_INST_END
 };
 
-static
-void
-mlog_correctness_basicio_help(void)
+static void mlog_correctness_basicio_help(void)
 {
-	fprintf(co.co_fp,
-		"\nusage: mpft mlog.correctness.basicio [options]\n");
+	fprintf(co.co_fp, "\nusage: mpft mlog.correctness.basicio [options]\n");
 
 	show_default_params(mlog_correctness_basicio_params, 0);
 }
 
-mpool_err_t
-mlog_correctness_basicio(
-	int     argc,
-	char  **argv)
+mpool_err_t mlog_correctness_basicio(int argc, char **argv)
 {
 	mpool_err_t err = 0, original_err = 0;
 	char  *mpool;
@@ -1232,8 +1119,7 @@ mlog_correctness_basicio(
 	mlog_mclassp = mclassp_str2enum(mlog_mclassp_str);
 
 	if (mpool[0] == 0) {
-		fprintf(stderr,
-			"%s.%d: mpool (mp=<mpool>) must be specified\n",
+		fprintf(stderr, "%s.%d: mpool (mp=<mpool>) must be specified\n",
 			__func__, __LINE__);
 		return merr(EINVAL);
 	}
@@ -1256,8 +1142,7 @@ mlog_correctness_basicio(
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to create mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to create mlog: %s\n", __func__, __LINE__, errbuf);
 		goto close_ds;
 	}
 
@@ -1265,8 +1150,7 @@ mlog_correctness_basicio(
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to commit mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to commit mlog: %s\n", __func__, __LINE__, errbuf);
 		(void) mpool_mlog_abort(ds, mlogid);
 		goto close_ds;
 	}
@@ -1276,8 +1160,7 @@ mlog_correctness_basicio(
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to open mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to open mlog: %s\n", __func__, __LINE__, errbuf);
 		goto destroy_mlog;
 	}
 
@@ -1321,8 +1204,7 @@ mlog_correctness_basicio(
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: mlog len failed: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: mlog len failed: %s\n", __func__, __LINE__, errbuf);
 		goto close_mlog;
 	}
 
@@ -1331,8 +1213,7 @@ mlog_correctness_basicio(
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to flush mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to flush mlog: %s\n", __func__, __LINE__, errbuf);
 		goto close_mlog;
 	}
 
@@ -1341,8 +1222,7 @@ mlog_correctness_basicio(
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to close mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to close mlog: %s\n", __func__, __LINE__, errbuf);
 		goto destroy_mlog;
 	}
 
@@ -1350,8 +1230,7 @@ mlog_correctness_basicio(
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to open mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to open mlog: %s\n", __func__, __LINE__, errbuf);
 		goto destroy_mlog;
 	}
 
@@ -1359,8 +1238,7 @@ mlog_correctness_basicio(
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: mlog len failed: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: mlog len failed: %s\n", __func__, __LINE__, errbuf);
 		goto close_mlog;
 	}
 
@@ -1376,8 +1254,7 @@ mlog_correctness_basicio(
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Mlog read init failed: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Mlog read init failed: %s\n", __func__, __LINE__, errbuf);
 		goto close_mlog;
 	}
 
@@ -1394,17 +1271,14 @@ mlog_correctness_basicio(
 		}
 
 		if (BUF_SIZE != read_len) {
-			fprintf(stderr,
-				"%s.%d: Requested size not read exp %d, "
-				"got %d\n", __func__, __LINE__, (int)BUF_SIZE,
-				(int)read_len);
+			fprintf(stderr, "%s.%d: Requested size not read exp %d, got %d\n",
+				__func__, __LINE__, (int)BUF_SIZE, (int)read_len);
 			goto close_mlog;
 		}
 
 		rc = verify_buf(buf_in, read_len, i);
 		if (rc != 0) {
-			fprintf(stderr, "%s.%d: Verify mismatch buf[%d]\n",
-				__func__, __LINE__, i);
+			fprintf(stderr, "%s.%d: Verify mismatch buf[%d]\n", __func__, __LINE__, i);
 			err = merr(EINVAL);
 			goto close_mlog;
 		}
@@ -1414,8 +1288,7 @@ mlog_correctness_basicio(
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Mlog erase failed: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Mlog erase failed: %s\n", __func__, __LINE__, errbuf);
 		goto close_mlog;
 	}
 
@@ -1424,8 +1297,7 @@ mlog_correctness_basicio(
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to close mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to close mlog: %s\n", __func__, __LINE__, errbuf);
 		goto destroy_mlog;
 	}
 
@@ -1433,8 +1305,7 @@ mlog_correctness_basicio(
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to open mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to open mlog: %s\n", __func__, __LINE__, errbuf);
 		goto destroy_mlog;
 	}
 
@@ -1452,8 +1323,7 @@ mlog_correctness_basicio(
 		else
 			original_err = err = merr(EBUG);
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: mlog get props failure: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: mlog get props failure: %s\n", __func__, __LINE__, errbuf);
 		goto close_mlog;
 	}
 
@@ -1463,8 +1333,7 @@ close_mlog:
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to close mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to close mlog: %s\n", __func__, __LINE__, errbuf);
 	}
 
 destroy_mlog:
@@ -1473,8 +1342,7 @@ destroy_mlog:
 		if (!original_err)
 			original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to delete mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to delete mlog: %s\n", __func__, __LINE__, errbuf);
 	}
 
 close_ds:
@@ -1483,8 +1351,7 @@ close_ds:
 		if (!original_err)
 			original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to close dataset: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to close dataset: %s\n", __func__, __LINE__, errbuf);
 	}
 
 	return original_err;
@@ -1517,28 +1384,21 @@ close_ds:
 
 char mlog_correctness_recovery_mpool[MPOOL_NAME_LEN_MAX];
 
-static
-struct param_inst mlog_correctness_recovery_params[] = {
-	PARAM_INST_STRING(mlog_mclassp_str,
-		sizeof(mlog_mclassp_str), "mc", "media class"),
+static struct param_inst mlog_correctness_recovery_params[] = {
+	PARAM_INST_STRING(mlog_mclassp_str, sizeof(mlog_mclassp_str), "mc", "media class"),
 	PARAM_INST_STRING(mlog_correctness_recovery_mpool,
-		sizeof(mlog_correctness_recovery_mpool), "mp", "mpool"),
+			  sizeof(mlog_correctness_recovery_mpool), "mp", "mpool"),
 	PARAM_INST_END
 };
 
-void
-mlog_correctness_recovery_help(void)
+void mlog_correctness_recovery_help(void)
 {
-	fprintf(co.co_fp,
-		"\nusage: mpft mlog.correctness.recovery [options]\n");
+	fprintf(co.co_fp, "\nusage: mpft mlog.correctness.recovery [options]\n");
 
 	show_default_params(mlog_correctness_recovery_params, 0);
 }
 
-mpool_err_t
-mlog_correctness_recovery(
-	int     argc,
-	char  **argv)
+mpool_err_t mlog_correctness_recovery(int argc, char **argv)
 {
 	mpool_err_t err = 0, original_err = 0;
 	char  *mpool;
@@ -1557,8 +1417,7 @@ mlog_correctness_recovery(
 
 
 	show_args(argc, argv);
-	err = process_params(argc, argv,
-		mlog_correctness_recovery_params, &next_arg, 0);
+	err = process_params(argc, argv, mlog_correctness_recovery_params, &next_arg, 0);
 	if (err != 0) {
 		printf("%s process_params returned an error\n", __func__);
 		return err;
@@ -1571,8 +1430,7 @@ mlog_correctness_recovery(
 	mlog_mclassp = mclassp_str2enum(mlog_mclassp_str);
 
 	if (mpool[0] == 0) {
-		fprintf(stderr,
-			"%s.%d: mpool (mp=<mpool>) must be specified\n",
+		fprintf(stderr, "%s.%d: mpool (mp=<mpool>) must be specified\n",
 			__func__, __LINE__);
 		return merr(EINVAL);
 	}
@@ -1595,8 +1453,7 @@ mlog_correctness_recovery(
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to create mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to create mlog: %s\n", __func__, __LINE__, errbuf);
 		goto close_ds;
 	}
 
@@ -1604,8 +1461,7 @@ mlog_correctness_recovery(
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to commit mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to commit mlog: %s\n", __func__, __LINE__, errbuf);
 		(void) mpool_mlog_abort(ds, mlogid);
 		goto close_ds;
 	}
@@ -1615,8 +1471,7 @@ mlog_correctness_recovery(
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to open mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to open mlog: %s\n", __func__, __LINE__, errbuf);
 		goto destroy_mlog;
 	}
 
@@ -1662,17 +1517,14 @@ mlog_correctness_recovery(
 		}
 
 		if (BUF_SIZE != read_len) {
-			fprintf(stderr,
-				"%s.%d: Requested size not read exp %d, "
-				"got %d\n", __func__, __LINE__, (int)BUF_SIZE,
-				(int)read_len);
+			fprintf(stderr, "%s.%d: Requested size not read exp %d, got %d\n",
+				__func__, __LINE__, (int)BUF_SIZE, (int)read_len);
 			goto close_mlog;
 		}
 
 		rc = verify_buf(buf_in, read_len, i);
 		if (rc != 0) {
-			fprintf(stderr, "%s.%d: Verify mismatch buf[%d]\n",
-				__func__, __LINE__, i);
+			fprintf(stderr, "%s.%d: Verify mismatch buf[%d]\n", __func__, __LINE__, i);
 			err = merr(EINVAL);
 			goto close_mlog;
 		}
@@ -1684,8 +1536,7 @@ close_mlog:
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to close mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to close mlog: %s\n", __func__, __LINE__, errbuf);
 	}
 
 destroy_mlog:
@@ -1694,8 +1545,7 @@ destroy_mlog:
 		if (!original_err)
 			original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to delete mlog: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to delete mlog: %s\n", __func__, __LINE__, errbuf);
 	}
 
 close_ds:
@@ -1703,18 +1553,15 @@ close_ds:
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to close dataset: %s\n",
-			__func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to close dataset: %s\n", __func__, __LINE__, errbuf);
 	}
 
 	return original_err;
 }
 
 struct test_s mlog_tests[] = {
-	{ "seq_writes",  MPFT_TEST_TYPE_PERF, perf_seq_writes,
-		perf_seq_writes_help },
-	{ "seq_reads",  MPFT_TEST_TYPE_PERF, perf_seq_reads,
-		perf_seq_reads_help },
+	{ "seq_writes",  MPFT_TEST_TYPE_PERF, perf_seq_writes, perf_seq_writes_help },
+	{ "seq_reads",  MPFT_TEST_TYPE_PERF, perf_seq_reads, perf_seq_reads_help },
 	{ "simple",  MPFT_TEST_TYPE_CORRECTNESS, mlog_correctness_simple,
 		mlog_correctness_simple_help },
 	{ "basicio",  MPFT_TEST_TYPE_CORRECTNESS, mlog_correctness_basicio,
@@ -1724,11 +1571,9 @@ struct test_s mlog_tests[] = {
 	{ NULL,  MPFT_TEST_TYPE_INVALID, NULL, NULL },
 };
 
-void
-mlog_help(void)
+void mlog_help(void)
 {
-	fprintf(co.co_fp,
-		"\nmlog tests validate the behavior of mlogs\n");
+	fprintf(co.co_fp, "\nmlog tests validate the behavior of mlogs\n");
 }
 
 struct group_s mpft_mlog = {

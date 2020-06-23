@@ -76,29 +76,21 @@ static
 struct param_inst perf_seq_writes_params[] = {
 	PARAM_INST_U64_SIZE(perf_seq_writes_total_size, "ts", "total size"),
 	PARAM_INST_U32_SIZE(perf_seq_writes_write_size, "rs", "record size"),
-	PARAM_INST_U32(perf_seq_writes_thread_cnt,
-		"threads", "number of threads"),
-	PARAM_INST_STRING(perf_seq_writes_mpool,
-		sizeof(perf_seq_writes_mpool), "mp", "mpool"),
-	PARAM_INST_STRING(perf_seq_writes_dataset,
-		sizeof(perf_seq_writes_dataset), "ds", "dataset"),
-	PARAM_INST_BOOL(perf_seq_writes_pre_alloc, "pre-alloc",
-		"alloc all mblocks before writing"),
+	PARAM_INST_U32(perf_seq_writes_thread_cnt, "threads", "number of threads"),
+	PARAM_INST_STRING(perf_seq_writes_mpool, sizeof(perf_seq_writes_mpool), "mp", "mpool"),
+	PARAM_INST_STRING(perf_seq_writes_dataset, sizeof(perf_seq_writes_dataset),
+			  "ds", "dataset"),
+	PARAM_INST_BOOL(perf_seq_writes_pre_alloc, "pre-alloc", "alloc all mblocks before writing"),
 	PARAM_INST_BOOL(perf_seq_writes_post_commit, "post-commit",
-		"commit only after all writes are done"),
+			"commit only after all writes are done"),
 	PARAM_INST_END
 };
 
-static
-void
-perf_seq_writes_help(void)
+static void perf_seq_writes_help(void)
 {
-	fprintf(co.co_fp,
-		"\nusage: mpft mblock.perf.seq_writes [options]\n");
-	fprintf(co.co_fp,
-		"e.g.: mpft mblock.perf.seq_writes ws=8192\n");
-	fprintf(co.co_fp,
-		"\nmblock.perf.seq_writes will measure the performance "
+	fprintf(co.co_fp, "\nusage: mpft mblock.perf.seq_writes [options]\n");
+	fprintf(co.co_fp, "e.g.: mpft mblock.perf.seq_writes ws=8192\n");
+	fprintf(co.co_fp, "\nmblock.perf.seq_writes will measure the performance "
 		"in MB/s of writes of a given size (ws) to mblocks\n");
 
 	show_default_params(perf_seq_writes_params, 0);
@@ -159,9 +151,7 @@ struct mbo *mbo;
 atomic_t mbo_cnt = ATOMIC_INIT(0);
 atomic_t mbo_dist = ATOMIC_INIT(0);
 
-static
-void *
-mb_committor(void *arg)
+static void *mb_committor(void *arg)
 {
 	mpool_err_t err = 0;
 	int    i;
@@ -169,7 +159,7 @@ mb_committor(void *arg)
 	u32    idx;
 	u32    usec;
 
-	struct timeval             start_tv, stop_tv;
+	struct timeval start_tv, stop_tv;
 
 	struct mpft_thread_args *targs = (struct mpft_thread_args *)arg;
 	int                      id = targs->instance;
@@ -219,9 +209,7 @@ mb_committor(void *arg)
 	return resp;
 }
 
-static
-void *
-mb_allocator(void *arg)
+static void *mb_allocator(void *arg)
 {
 	mpool_err_t err = 0;
 	int    i;
@@ -252,7 +240,7 @@ mb_allocator(void *arg)
 	for (i = 0; i < args->mblock_cnt; i++) {
 		idx = atomic_inc_return(&mbo_cnt) - 1;
 		err = mpool_mblock_alloc(args->ds, MP_MED_CAPACITY, false,
-				      &mbo[idx].mblock_id, &mbo[idx].props);
+					 &mbo[idx].mblock_id, &mbo[idx].props);
 		if (err) {
 			resp->err = err;
 			break;
@@ -267,17 +255,14 @@ mb_allocator(void *arg)
 		stop_tv.tv_sec--;
 		stop_tv.tv_usec += 1000000;
 	}
-	usec = (stop_tv.tv_sec - start_tv.tv_sec) * 1000000 +
-		(stop_tv.tv_usec - start_tv.tv_usec);
+	usec = (stop_tv.tv_sec - start_tv.tv_sec) * 1000000 + (stop_tv.tv_usec - start_tv.tv_usec);
 
 	resp->usec = usec;
 
 	return resp;
 }
 
-u32
-get_mblock(
-	struct mb_allocator_args *args)
+u32 get_mblock(struct mb_allocator_args *args)
 {
 	u32    idx;
 	mpool_err_t err;
@@ -288,10 +273,9 @@ get_mblock(
 	} else {
 		idx = atomic_inc_return(&mbo_cnt) - 1;
 		err = mpool_mblock_alloc(args->ds, MP_MED_CAPACITY, false,
-				      &mbo[idx].mblock_id, &mbo[idx].props);
+					 &mbo[idx].mblock_id, &mbo[idx].props);
 		if (err) {
-			fprintf(stderr, "%s: Error in mpool_mblock_write %s\n",
-				__func__,
+			fprintf(stderr, "%s: Error in mpool_mblock_write %s\n", __func__,
 				mpool_strinfo(err, err_str, sizeof(err_str)));
 			idx = ~0;
 		}
@@ -299,16 +283,14 @@ get_mblock(
 	return idx;
 }
 
-static
-void *
-mb_writer(void *arg)
+static void *mb_writer(void *arg)
 {
-	struct mpft_thread_args   *targs = (struct mpft_thread_args *)arg;
+	struct mpft_thread_args  *targs = (struct mpft_thread_args *)arg;
 	struct mb_writer_args    *args = (struct mb_writer_args *)targs->arg;
 	struct mb_writer_resp    *resp;
-	struct timeval             start_tv, stop_tv;
+	struct timeval            start_tv, stop_tv;
 
-	mpool_err_t         err = 0;
+	mpool_err_t    err = 0;
 	char          *buf;
 	char           err_str[256];
 	struct iovec   iov;
@@ -348,13 +330,9 @@ mb_writer(void *arg)
 		idx = get_mblock(&args->ma_args);
 		if (idx == ~0) {	/* out of space */
 			resp->err = merr(ENOMEM);
-			fprintf(stderr,
-				"[%d]%s: Unable to allocate mblock\n",
-				id, __func__);
-			fprintf(stderr, "\t%d writes remaining\n",
-				writes_remaining);
-			fprintf(stderr, "cnt %d dist %d\n",
-				atomic_read(&mbo_cnt),
+			fprintf(stderr, "[%d]%s: Unable to allocate mblock\n", id, __func__);
+			fprintf(stderr, "\t%d writes remaining\n", writes_remaining);
+			fprintf(stderr, "cnt %d dist %d\n", atomic_read(&mbo_cnt),
 				atomic_read(&mbo_dist));
 			return resp;
 
@@ -363,8 +341,7 @@ mb_writer(void *arg)
 		/* write */
 		err = mpool_mblock_write(args->ds, mbo[idx].mblock_id, &iov, 1);
 		if (err) {
-			fprintf(stderr, "%s: Error in mpool_mblock_write %s\n",
-				__func__,
+			fprintf(stderr, "%s: Error in mpool_mblock_write %s\n", __func__,
 				mpool_strinfo(err, err_str, sizeof(err_str)));
 			resp->err = err;
 			break;
@@ -376,8 +353,7 @@ mb_writer(void *arg)
 			err = mpool_mblock_commit(args->ds, mbo[idx].mblock_id);
 			if (err) {
 				mpool_strinfo(err, err_str, sizeof(err_str));
-				fprintf(stderr,
-					"%s: Error in mpool_mblock_write %s\n",
+				fprintf(stderr, "%s: Error in mpool_mblock_write %s\n",
 					__func__, err_str);
 				resp->err = err;
 				break;
@@ -394,8 +370,7 @@ mb_writer(void *arg)
 		stop_tv.tv_sec--;
 		stop_tv.tv_usec += 1000000;
 	}
-	usec = (stop_tv.tv_sec - start_tv.tv_sec) * 1000000 +
-		(stop_tv.tv_usec - start_tv.tv_usec);
+	usec = (stop_tv.tv_sec - start_tv.tv_sec) * 1000000 + (stop_tv.tv_usec - start_tv.tv_usec);
 
 	resp->usec = usec;
 	resp->wrote = args->ws * args->wc;
@@ -403,16 +378,14 @@ mb_writer(void *arg)
 	return resp;
 }
 
-static
-void *
-mb_reader(void *arg)
+static void *mb_reader(void *arg)
 {
-	struct mpft_thread_args   *targs = (struct mpft_thread_args *)arg;
+	struct mpft_thread_args  *targs = (struct mpft_thread_args *)arg;
 	struct mb_reader_args    *args = (struct mb_reader_args *)targs->arg;
 	struct mb_reader_resp    *resp;
-	struct timeval             start_tv, stop_tv;
+	struct timeval            start_tv, stop_tv;
 
-	mpool_err_t         err = 0;
+	mpool_err_t    err = 0;
 	char          *buf;
 	char           err_str[256];
 	struct iovec   iov;
@@ -452,11 +425,9 @@ mb_reader(void *arg)
 		idx = atomic_inc_return(&mbo_dist) - 1;
 
 		/* read */
-		err = mpool_mblock_read(args->ds, mbo[idx].mblock_id,
-					&iov, 1, 0);
+		err = mpool_mblock_read(args->ds, mbo[idx].mblock_id, &iov, 1, 0);
 		if (err) {
-			fprintf(stderr, "%s: Error in mpool_mblock_read %s\n",
-				__func__,
+			fprintf(stderr, "%s: Error in mpool_mblock_read %s\n", __func__,
 				mpool_strinfo(err, err_str, sizeof(err_str)));
 			resp->err = err;
 			break;
@@ -473,8 +444,7 @@ mb_reader(void *arg)
 		stop_tv.tv_sec--;
 		stop_tv.tv_usec += 1000000;
 	}
-	usec = (stop_tv.tv_sec - start_tv.tv_sec) * 1000000 +
-		(stop_tv.tv_usec - start_tv.tv_usec);
+	usec = (stop_tv.tv_sec - start_tv.tv_sec) * 1000000 + (stop_tv.tv_usec - start_tv.tv_usec);
 
 	resp->usec = usec;
 	resp->read = args->rs * args->rc;
@@ -483,8 +453,7 @@ mb_reader(void *arg)
 }
 
 
-void
-perf_seq_write_show_default_params(void)
+void perf_seq_write_show_default_params(void)
 {
 	char   string[80];
 
@@ -507,11 +476,7 @@ perf_seq_write_show_default_params(void)
 }
 
 
-static
-mpool_err_t
-perf_seq_writes(
-	int     argc,
-	char  **argv)
+static mpool_err_t perf_seq_writes(int argc, char **argv)
 {
 	mpool_err_t err = 0;
 	int    next_arg = 0;
@@ -566,8 +531,8 @@ perf_seq_writes(
 
 	if ((mp[0] == 0) || (ds[0] == 0)) {
 		fprintf(stderr,
-			"%s: mpool (mp=<mpool>) and dataset (ds=<dataset>) "
-			"must be specified\n", test_name);
+			"%s: mpool (mp=<mpool>) and dataset (ds=<dataset>) must be specified\n",
+			test_name);
 		return merr(EINVAL);
 	}
 
@@ -576,8 +541,7 @@ perf_seq_writes(
 	/* Determine available space */
 	err = mpool_open(mp, 0, &mp_ds, NULL);
 	if (err) {
-		fprintf(stderr, "%s: Unable to open mpool %s\n",
-			test_name, mp);
+		fprintf(stderr, "%s: Unable to open mpool %s\n", test_name, mp);
 		goto free_tresp;
 	}
 
@@ -600,8 +564,7 @@ perf_seq_writes(
 	mblocksz = params.mp_mblocksz[MP_MED_CAPACITY] << 20;
 	if (perf_seq_writes_write_size > mblocksz) {
 		fprintf(stderr,
-			"%s: write size cannot be greater than mblock size\n",
-			test_name);
+			"%s: write size cannot be greater than mblock size\n", test_name);
 		fprintf(stderr, "write size %lu, mblock size %lu\n",
 			perf_seq_writes_write_size, mblocksz);
 		return merr(EINVAL);
@@ -614,13 +577,11 @@ perf_seq_writes(
 		perf_seq_writes_total_size = perf_seq_writes_write_size *
 			(mblocks_available - (mblocks_available % tc));
 
-		fprintf(stdout,
-			"total_size (ts) not specified, using %ld bytes\n",
+		fprintf(stdout, "total_size (ts) not specified, using %ld bytes\n",
 			(long)perf_seq_writes_total_size);
 	}
 
-	mblocks_needed = perf_seq_writes_total_size /
-		perf_seq_writes_write_size;
+	mblocks_needed = perf_seq_writes_total_size / perf_seq_writes_write_size;
 
 	if (mblocks_needed % tc)
 		mblocks_needed += (tc - (mblocks_needed % tc));
@@ -628,25 +589,17 @@ perf_seq_writes(
 	per_thread_write_cnt = mblocks_needed / tc;
 
 	if (co.co_verbose) {
-		fprintf(stderr, "%s: mblock size %ld\n",
-			__func__, (long)mblocksz);
-		fprintf(stderr, "%s: write size %ld\n",
-			__func__, (long)perf_seq_writes_write_size);
-		fprintf(stderr, "%s: thread count %d\n",
-			 __func__, tc);
-		fprintf(stderr, "%s: mblocks needed %d\n",
-			__func__, mblocks_needed);
-		fprintf(stderr, "%s: mblocks available %d\n",
-			__func__, mblocks_available);
-		fprintf(stderr, "%s: per thread write cnt %d\n",
-			__func__, per_thread_write_cnt);
+		fprintf(stderr, "%s: mblock size %ld\n", __func__, (long)mblocksz);
+		fprintf(stderr, "%s: write size %ld\n", __func__, (long)perf_seq_writes_write_size);
+		fprintf(stderr, "%s: thread count %d\n", __func__, tc);
+		fprintf(stderr, "%s: mblocks needed %d\n", __func__, mblocks_needed);
+		fprintf(stderr, "%s: mblocks available %d\n", __func__, mblocks_available);
+		fprintf(stderr, "%s: per thread write cnt %d\n", __func__, per_thread_write_cnt);
 	}
 
 	if (mblocks_available < mblocks_needed) {
-		fprintf(stderr, "%s: Insufficient space for test parameters\n",
-			__func__);
-		fprintf(stderr, "\tAvailable: %d, Needed %d\n",
-			mblocks_available, mblocks_needed);
+		fprintf(stderr, "%s: Insufficient space for test parameters\n", __func__);
+		fprintf(stderr, "\tAvailable: %d, Needed %d\n", mblocks_available, mblocks_needed);
 		mpool_close(mp_ds);
 		return merr(EINVAL);
 	}
@@ -654,18 +607,14 @@ perf_seq_writes(
 	wr_arg = calloc(tc, sizeof(*wr_arg));
 	targ = calloc(tc, sizeof(*targ));
 	if (!wr_arg || !targ) {
-		fprintf(stderr,
-			"%s: Unable to allocate memory for arguments\n",
-			test_name);
+		fprintf(stderr, "%s: Unable to allocate memory for arguments\n", test_name);
 		err = merr(ENOMEM);
 		goto free_arg;
 	}
 
 	tresp = calloc(tc, sizeof(*tresp));
 	if (!tresp) {
-		fprintf(stderr,
-			"%s: Unable to allocate memory for response pointers\n",
-			test_name);
+		fprintf(stderr, "%s: Unable to allocate memory for response pointers\n", test_name);
 		err = merr(ENOMEM);
 		goto free_arg;
 	}
@@ -682,8 +631,7 @@ perf_seq_writes(
 
 		ma_arg = calloc(tc, sizeof(*ma_arg));
 		if (ma_arg == NULL) {
-			fprintf(stderr, "%s: Unable to alloc mem for ma_arg\n",
-				test_name);
+			fprintf(stderr, "%s: Unable to alloc mem for ma_arg\n", test_name);
 			goto free_tresp;
 		}
 		for (i = 0; i < tc; i++) {
@@ -693,8 +641,7 @@ perf_seq_writes(
 		}
 		err = mpft_thread(tc, mb_allocator, targ, tresp);
 		if (err != 0) {
-			fprintf(stderr, "%s: Error from mpft_thread",
-				test_name);
+			fprintf(stderr, "%s: Error from mpft_thread", test_name);
 			free(ma_arg);
 			goto free_tresp;
 		}
@@ -712,8 +659,8 @@ perf_seq_writes(
 		}
 		free(ma_arg);
 		if (err_cnt != 0) {
-			fprintf(stderr, "%s: aborting due to error "
-				"allocating mblocks\n", test_name);
+			fprintf(stderr, "%s: aborting due to error allocating mblocks\n",
+				test_name);
 			err = merr(EIO);
 			goto free_tresp;
 		}
@@ -754,14 +701,13 @@ perf_seq_writes(
 	}
 
 	if (err_cnt) {
-		fprintf(stderr, "%s: thread reported error, exiting\n",
-			 test_name);
+		fprintf(stderr, "%s: thread reported error, exiting\n", test_name);
 		err = merr(EIO);
 		goto destroy_mblocks;
 	}
 	perf = bytes_wrote / wr_usec;
 	printf("%s: %d threads wrote %ld bytes in %d usecs or %4.2f MB/s\n",
-		test_name, tc, (long)bytes_wrote, wr_usec, perf);
+	       test_name, tc, (long)bytes_wrote, wr_usec, perf);
 
 	if (perf_seq_writes_post_commit == true) {
 
@@ -775,8 +721,7 @@ perf_seq_writes(
 		}
 		err = mpft_thread(tc, mb_committor, targ, tresp);
 		if (err != 0) {
-			fprintf(stderr, "%s: Error from mpft_thread",
-				test_name);
+			fprintf(stderr, "%s: Error from mpft_thread", test_name);
 			goto destroy_mblocks;
 		}
 
@@ -794,8 +739,8 @@ perf_seq_writes(
 		}
 		free(mc_arg);
 		if (err_cnt != 0) {
-			fprintf(stderr, "%s: aborting due to error "
-				"committing mblocks\n", test_name);
+			fprintf(stderr, "%s: aborting due to error committing mblocks\n",
+				test_name);
 			err = merr(EIO);
 			goto destroy_mblocks;
 		}
@@ -807,9 +752,8 @@ perf_seq_writes(
 		agg_usec = ma_usec + wr_usec + mc_usec;
 
 		perf = bytes_wrote / agg_usec;
-		printf("%s: aggregate: %d threads wrote %ld bytes in %d usecs "
-			"or %4.2f MB/s\n", test_name, tc,
-			(long)bytes_wrote, agg_usec, perf);
+		printf("%s: aggregate: %d threads wrote %ld bytes in %d usecs or %4.2f MB/s\n",
+		       test_name, tc, (long)bytes_wrote, agg_usec, perf);
 	}
 
 	if (perf_seq_writes_reads == true) {
@@ -818,8 +762,7 @@ perf_seq_writes(
 
 		rd_arg = calloc(tc, sizeof(*rd_arg));
 		if (rd_arg == NULL) {
-			fprintf(stderr, "%s: Unable to alloc mem for rd_arg\n",
-				test_name);
+			fprintf(stderr, "%s: Unable to alloc mem for rd_arg\n", test_name);
 			goto destroy_mblocks;
 		}
 		for (i = 0; i < tc; i++) {
@@ -830,8 +773,7 @@ perf_seq_writes(
 		}
 		err = mpft_thread(tc, mb_reader, targ, tresp);
 		if (err != 0) {
-			fprintf(stderr, "%s: Error from mpft_thread",
-				test_name);
+			fprintf(stderr, "%s: Error from mpft_thread", test_name);
 			free(rd_arg);
 			goto free_tresp;
 		}
@@ -849,15 +791,13 @@ perf_seq_writes(
 		}
 		free(rd_arg);
 		if (err_cnt != 0) {
-			fprintf(stderr, "%s: aborting due to error "
-				"reading mblocks\n", test_name);
+			fprintf(stderr, "%s: aborting due to error reading mblocks\n", test_name);
 			err = merr(EIO);
 			goto free_tresp;
 		}
 		perf = bytes_read / rd_usec;
-		printf("%s: %d threads read %ld bytes in %d usecs "
-			"or %4.2f MB/s\n", test_name, tc,
-			(long)bytes_read, rd_usec, perf);
+		printf("%s: %d threads read %ld bytes in %d usecs or %4.2f MB/s\n", test_name, tc,
+		       (long)bytes_read, rd_usec, perf);
 	}
 
 destroy_mblocks:
@@ -865,8 +805,7 @@ destroy_mblocks:
 		err = mpool_mblock_delete(mp_ds, mbo[i].mblock_id);
 		if (err) {
 			mpool_strinfo(err, err_str, sizeof(err_str));
-			fprintf(stderr, "%s: Error deleting mblocks: %s\n",
-				test_name, err_str);
+			fprintf(stderr, "%s: Error deleting mblocks: %s\n", test_name, err_str);
 			break;
 		}
 	}
@@ -883,26 +822,17 @@ free_arg:
 	return err;
 }
 
-static
-void
-perf_seq_reads_help(void)
+static void perf_seq_reads_help(void)
 {
-	fprintf(co.co_fp,
-		"\nusage: mpft mblock.perf.seq_reads [options]\n");
-	fprintf(co.co_fp,
-		"e.g.: mpft mblock.perf.seq_reads ws=8192\n");
-	fprintf(co.co_fp,
-		"\nmblock.perf.seq_writes will measure the performance "
+	fprintf(co.co_fp, "\nusage: mpft mblock.perf.seq_reads [options]\n");
+	fprintf(co.co_fp, "e.g.: mpft mblock.perf.seq_reads ws=8192\n");
+	fprintf(co.co_fp, "\nmblock.perf.seq_writes will measure the performance "
 		"in MB/s of reads of a given size (ws) to mblocks\n");
 
 	show_default_params(perf_seq_writes_params, 0);
 }
 
-static
-mpool_err_t
-perf_seq_reads(
-	int     argc,
-	char  **argv)
+static mpool_err_t perf_seq_reads(int argc, char **argv)
 {
 	perf_seq_writes_reads = true;
 
@@ -911,18 +841,14 @@ perf_seq_reads(
 }
 
 struct test_s mblock_tests[] = {
-	{ "seq_writes",  MPFT_TEST_TYPE_PERF, perf_seq_writes,
-		perf_seq_writes_help },
-	{ "seq_reads",  MPFT_TEST_TYPE_PERF, perf_seq_reads,
-		perf_seq_reads_help },
+	{ "seq_writes",  MPFT_TEST_TYPE_PERF, perf_seq_writes, perf_seq_writes_help },
+	{ "seq_reads",  MPFT_TEST_TYPE_PERF, perf_seq_reads, perf_seq_reads_help },
 	{ NULL,  MPFT_TEST_TYPE_INVALID, NULL, NULL },
 };
 
-void
-mblock_help(void)
+void mblock_help(void)
 {
-	fprintf(co.co_fp,
-		"\nmblock tests validate the behavior of mblocks\n");
+	fprintf(co.co_fp, "\nmblock tests validate the behavior of mblocks\n");
 }
 
 struct group_s mpft_mblock = {

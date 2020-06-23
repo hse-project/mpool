@@ -36,21 +36,12 @@ struct group_s {
 extern uint8_t *pattern;
 extern uint32_t pattern_len;
 
-int
-pattern_base(
-	char *base);
+int pattern_base(char *base);
 
-void
-pattern_fill(
-	char       *buf,
-	uint32_t    buf_sz);
+void pattern_fill(char *buf, uint32_t buf_sz);
 
-int
-pattern_compare(
-	char       *buf,
-	uint32_t    buf_sz);
+int pattern_compare(char *buf, uint32_t buf_sz);
 
-mpool_err_t
-mpft_launch_actor(char *actor, ...);
+mpool_err_t mpft_launch_actor(char *actor, ...);
 
 #endif /* MPOOL_MPFT_H */
