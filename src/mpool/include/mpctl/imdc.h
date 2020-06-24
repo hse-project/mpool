@@ -32,7 +32,7 @@ struct mpool_mlog;
  * Ordering:
  *     mdc handle lock (mdc_lock)
  *     mlog handle lock (ml_lock)
- *     dataset handle lock (ds_lock)
+ *     mpool handle lock
  *     mpool core locks
  */
 struct mpool_mdc {

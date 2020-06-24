@@ -47,7 +47,7 @@ struct mpool_mcache_map {
 	size_t  mh_bktsz;       /* mcache map file bucket size */
 	void   *mh_addr;        /* mcache map file base mmap addr if mmapped */
 	int     mh_mbidc;       /* number of mblock IDs in mcache map file */
-	int     mh_dsfd;
+	int     mh_fd;
 	off_t   mh_offset;
 	size_t  mh_len;
 };
@@ -189,7 +189,7 @@ static uint64_t mpool_ioctl(int fd, int cmd, void *arg)
  */
 static mpool_err_t mpool_ugm_check(const char *name, int fd, const struct mpool_params *params)
 {
-	struct mpool   *ds = NULL;
+	struct mpool   *mp = NULL;
 	struct stat     sb;
 
 	mode_t  mode = params->mp_mode;
@@ -205,11 +205,11 @@ static mpool_err_t mpool_ugm_check(const char *name, int fd, const struct mpool_
 		mode &= 0777;
 
 	if (name) {
-		err = mpool_open(name, O_RDWR, &ds, NULL);
+		err = mpool_open(name, O_RDWR, &mp, NULL);
 		if (err)
 			return err;
 
-		fd = ds->mp_fd;
+		fd = mp->mp_fd;
 	}
 
 	for (rc = i = 0; i < 15; ++i) {
@@ -240,7 +240,7 @@ static mpool_err_t mpool_ugm_check(const char *name, int fd, const struct mpool_
 			err = merr(errno);
 
 errout:
-	mpool_close(ds);
+	mpool_close(mp);
 
 	return err;
 }
@@ -419,7 +419,7 @@ discover(
 static void mpool_rundir_create(const char *mpname)
 {
 	struct mpool_params params;
-	struct mpool       *ds;
+	struct mpool       *mp;
 
 	char    path[PATH_MAX];
 	char    errbuf[128];
@@ -429,16 +429,16 @@ static void mpool_rundir_create(const char *mpname)
 	if (!mpname)
 		return;
 
-	err = mpool_open(mpname, 0, &ds, NULL);
+	err = mpool_open(mpname, 0, &mp, NULL);
 	if (err) {
 		fprintf(stderr, "%s: mp_open(%s): %s\n", __func__, mpname,
 			mpool_strerror(err, errbuf, sizeof(errbuf)));
 		return;
 	}
 
-	err = mpool_params_get(ds, &params, NULL);
+	err = mpool_params_get(mp, &params, NULL);
 
-	mpool_close(ds);
+	mpool_close(mp);
 
 	if (err) {
 		fprintf(stderr, "%s: mpool_params_get(%s): %s", __func__, mpname,
@@ -499,7 +499,7 @@ mpool_mclass_add(
 {
 	struct pd_prop      pd_prop;
 	struct mpioc_drive  drv;
-	struct mpool       *ds;
+	struct mpool       *mp;
 
 	char    rpath[PATH_MAX];
 	bool    is_activated;
@@ -550,18 +550,18 @@ mpool_mclass_add(
 	drv.drv_dpaths = rpath;
 	drv.drv_dpathssz = strlen(rpath) + 1; /* trailing NUL */
 
-	err = mpool_open(mpname, O_RDWR | O_EXCL, &ds, ei);
+	err = mpool_open(mpname, O_RDWR | O_EXCL, &mp, ei);
 	if (err)
 		return err;
 
-	err = mpool_ioctl(ds->mp_fd, MPIOC_DRV_ADD, &drv);
+	err = mpool_ioctl(mp->mp_fd, MPIOC_DRV_ADD, &drv);
 	if (err) {
 		ei->mdr_rcode = drv.drv_cmn.mc_rcode;
 		mpool_devrpt_merge(ei, &drv.drv_devrpt, devname);
 	}
 
 out:
-	mpool_close(ds);
+	mpool_close(mp);
 
 	return err;
 }
@@ -945,19 +945,19 @@ static void mp_rundir_chown(const char *mpname, struct mpool_params *params)
 	closedir(dir);
 }
 
-uint64_t mpool_params_get(struct mpool *ds, struct mpool_params *params, struct mpool_devrpt *ei)
+uint64_t mpool_params_get(struct mpool *mp, struct mpool_params *params, struct mpool_devrpt *ei)
 {
 	struct mpioc_params get = { };
 	merr_t              err;
 
 	mpool_devrpt_init(ei);
 
-	if (!ds || !params)
+	if (!mp || !params)
 		return merr(EINVAL);
 
-	err = mpool_ioctl(ds->mp_fd, MPIOC_PARAMS_GET, &get);
+	err = mpool_ioctl(mp->mp_fd, MPIOC_PARAMS_GET, &get);
 	if (err) {
-		mpool_devrpt(ei, MPOOL_RC_PARM, -1, ds->mp_name);
+		mpool_devrpt(ei, MPOOL_RC_PARM, -1, mp->mp_name);
 		return err;
 	}
 
@@ -966,14 +966,14 @@ uint64_t mpool_params_get(struct mpool *ds, struct mpool_params *params, struct 
 	return 0;
 }
 
-uint64_t mpool_params_set(struct mpool *ds, struct mpool_params *params, struct mpool_devrpt *ei)
+uint64_t mpool_params_set(struct mpool *mp, struct mpool_params *params, struct mpool_devrpt *ei)
 {
 	struct mpioc_params set = { };
 	merr_t              err;
 
 	mpool_devrpt_init(ei);
 
-	if (!ds || !params)
+	if (!mp || !params)
 		return merr(EINVAL);
 
 	err = mpool_strchk(params->mp_label, 0, MPOOL_LABELSZ_MAX - 1, ei);
@@ -982,23 +982,23 @@ uint64_t mpool_params_set(struct mpool *ds, struct mpool_params *params, struct 
 
 	set.mps_params = *params;
 
-	err = mpool_ioctl(ds->mp_fd, MPIOC_PARAMS_SET, &set);
+	err = mpool_ioctl(mp->mp_fd, MPIOC_PARAMS_SET, &set);
 	if (err) {
-		mpool_devrpt(ei, MPOOL_RC_PARM, -1, ds->mp_name);
+		mpool_devrpt(ei, MPOOL_RC_PARM, -1, mp->mp_name);
 		return err;
 	}
 
-	mp_rundir_chown(ds->mp_name, &set.mps_params);
+	mp_rundir_chown(mp->mp_name, &set.mps_params);
 
 	if (params->mp_uid != -1 || params->mp_gid != -1 || params->mp_mode != -1)
-		err = mpool_ugm_check(NULL, ds->mp_fd, &set.mps_params);
+		err = mpool_ugm_check(NULL, mp->mp_fd, &set.mps_params);
 
 	*params = set.mps_params;
 
 	return err;
 }
 
-uint64_t mpool_usage_get(struct mpool *ds, struct mp_usage *usage)
+uint64_t mpool_usage_get(struct mpool *mp, struct mp_usage *usage)
 {
 	struct mpioc_prop   prop = { };
 	struct mpioc_list   ls = {
@@ -1009,10 +1009,10 @@ uint64_t mpool_usage_get(struct mpool *ds, struct mp_usage *usage)
 
 	merr_t  err;
 
-	if (!ds || !usage)
+	if (!mp || !usage)
 		return merr(EINVAL);
 
-	err = mpool_ioctl(ds->mp_fd, MPIOC_PROP_GET, &ls);
+	err = mpool_ioctl(mp->mp_fd, MPIOC_PROP_GET, &ls);
 	if (err)
 		return err;
 
@@ -1021,7 +1021,7 @@ uint64_t mpool_usage_get(struct mpool *ds, struct mp_usage *usage)
 	return 0;
 }
 
-uint64_t mpool_dev_props_get(struct mpool *mp_ds, const char *devname, struct mp_devprops *props)
+uint64_t mpool_dev_props_get(struct mpool *mp, const char *devname, struct mp_devprops *props)
 {
 	struct mpioc_devprops  dprops;
 
@@ -1029,10 +1029,10 @@ uint64_t mpool_dev_props_get(struct mpool *mp_ds, const char *devname, struct mp
 	merr_t  err;
 	size_t  n;
 
-	if (!mp_ds || !devname || !props)
+	if (!mp || !devname || !props)
 		return merr(EINVAL);
 
-	if (mp_ds->mp_fd < 0)
+	if (mp->mp_fd < 0)
 		return merr(EBADF);
 
 	memset(&dprops, 0, sizeof(dprops));
@@ -1047,7 +1047,7 @@ uint64_t mpool_dev_props_get(struct mpool *mp_ds, const char *devname, struct mp
 	if (n >= sizeof(dprops.dpr_pdname))
 		return merr(ENAMETOOLONG);
 
-	err = mpool_ioctl(mp_ds->mp_fd, MPIOC_DEVPROPS_GET, &dprops);
+	err = mpool_ioctl(mp->mp_fd, MPIOC_DEVPROPS_GET, &dprops);
 	if (!err)
 		*props = dprops.dpr_devprops;
 
@@ -1337,15 +1337,15 @@ merr_t mpool_name_get(struct mpool *mp, char *mpname, size_t mplen)
 }
 
 uint64_t
-mpool_open(const char *mp_name, uint32_t flags, struct mpool **dsp, struct mpool_devrpt *ei)
+mpool_open(const char *mp_name, uint32_t flags, struct mpool **mpp, struct mpool_devrpt *ei)
 {
-	struct mpool   *ds;
+	struct mpool   *mp;
 
 	char    path[PATH_MAX];
 	merr_t  err;
 	int     rc;
 
-	if (!mp_name || !dsp)
+	if (!mp_name || !mpp)
 		return merr(EINVAL);
 
 	rc = snprintf(path, sizeof(path), "/dev/%s/%s", MPC_DEV_SUBDIR, mp_name);
@@ -1353,8 +1353,8 @@ mpool_open(const char *mp_name, uint32_t flags, struct mpool **dsp, struct mpool
 	if (rc < 0 || rc >= sizeof(path))
 		return merr(ENAMETOOLONG);
 
-	ds = calloc(1, sizeof(*ds));
-	if (!ds)
+	mp = calloc(1, sizeof(*mp));
+	if (!mp)
 		return merr(ENOMEM);
 
 	if (!flags)
@@ -1362,20 +1362,20 @@ mpool_open(const char *mp_name, uint32_t flags, struct mpool **dsp, struct mpool
 
 	flags &= O_EXCL | O_RDWR | O_RDONLY | O_WRONLY;
 
-	ds->mp_fd = open(path, flags | O_CLOEXEC);
-	if (-1 == ds->mp_fd) {
+	mp->mp_fd = open(path, flags | O_CLOEXEC);
+	if (-1 == mp->mp_fd) {
 		err = merr(errno);
 		mpool_devrpt(ei, MPOOL_RC_OPEN, -1, path);
-		free(ds);
+		free(mp);
 		return err;
 	}
 
-	ds->mp_magic = MPC_MPOOL_MAGIC;
-	mutex_init(&ds->mp_lock);
-	ds->mp_flags = flags;
-	strlcpy(ds->mp_name, mp_name, sizeof(ds->mp_name));
+	mp->mp_magic = MPC_MPOOL_MAGIC;
+	mutex_init(&mp->mp_lock);
+	mp->mp_flags = flags;
+	strlcpy(mp->mp_name, mp_name, sizeof(mp->mp_name));
 
-	*dsp = ds;
+	*mpp = mp;
 
 	return 0;
 }
@@ -1494,7 +1494,7 @@ static void mlog_hmap_put(struct mpool *mp, struct mpool_mlog *mlogh, bool *last
 
 /**
  * mlog_hmap_insert() - Insert <objid, mlogh> pair into mlog map
- * @mp:    dataset handle
+ * @mp:    mpool handle
  * @objid: object ID
  * @mlogh: mlog handle
  */
@@ -1647,7 +1647,7 @@ mlog_handle_alloc_impl(
 
 	mutex_init(&mlh->ml_lock);
 
-	/* Insert this mlog handle in the dataset mlog map */
+	/* Insert this mlog handle in the mpool mlog map */
 	err = mlog_hmap_insert(mp, objid, mlh);
 	if (err) {
 		mlog_handle_free(mlh);
@@ -2231,7 +2231,7 @@ merr_t mpool_mlog_erase_byoid(struct mpool *mp, u64 mlogid, uint64_t mingen)
 
 uint64_t
 mpool_mblock_alloc(
-	struct mpool           *ds,
+	struct mpool           *mp,
 	enum mp_media_classp    mclassp,
 	bool                    spare,
 	uint64_t               *mbid,
@@ -2240,12 +2240,12 @@ mpool_mblock_alloc(
 	struct mpioc_mblock mb = { .mb_mclassp = mclassp };
 	merr_t              err;
 
-	if (!ds || !mbid)
+	if (!mp || !mbid)
 		return merr(EINVAL);
 
 	mb.mb_spare = spare;
 
-	err = mpool_ioctl(ds->mp_fd, MPIOC_MB_ALLOC, &mb);
+	err = mpool_ioctl(mp->mp_fd, MPIOC_MB_ALLOC, &mb);
 	if (err)
 		return err;
 
@@ -2257,15 +2257,15 @@ mpool_mblock_alloc(
 	return 0;
 }
 
-uint64_t mpool_mblock_find(struct mpool *ds, uint64_t objid, struct mblock_props *props)
+uint64_t mpool_mblock_find(struct mpool *mp, uint64_t objid, struct mblock_props *props)
 {
 	struct mpioc_mblock mb = { .mb_objid = objid };
 	merr_t              err;
 
-	if (!ds)
+	if (!mp)
 		return merr(EINVAL);
 
-	err = mpool_ioctl(ds->mp_fd, MPIOC_MB_FIND, &mb);
+	err = mpool_ioctl(mp->mp_fd, MPIOC_MB_FIND, &mb);
 	if (err)
 		return err;
 
@@ -2275,45 +2275,45 @@ uint64_t mpool_mblock_find(struct mpool *ds, uint64_t objid, struct mblock_props
 	return 0;
 }
 
-uint64_t mpool_mblock_commit(struct mpool *ds, uint64_t mbid)
+uint64_t mpool_mblock_commit(struct mpool *mp, uint64_t mbid)
 {
 	struct mpioc_mblock_id  mi = { .mi_objid = mbid };
 
-	if (!ds)
+	if (!mp)
 		return merr(EINVAL);
 
-	return mpool_ioctl(ds->mp_fd, MPIOC_MB_COMMIT, &mi);
+	return mpool_ioctl(mp->mp_fd, MPIOC_MB_COMMIT, &mi);
 }
 
-uint64_t mpool_mblock_abort(struct mpool *ds, uint64_t mbid)
+uint64_t mpool_mblock_abort(struct mpool *mp, uint64_t mbid)
 {
 	struct mpioc_mblock_id  mi = { .mi_objid = mbid };
 
-	if (!ds)
+	if (!mp)
 		return merr(EINVAL);
 
-	return mpool_ioctl(ds->mp_fd, MPIOC_MB_ABORT, &mi);
+	return mpool_ioctl(mp->mp_fd, MPIOC_MB_ABORT, &mi);
 }
 
-uint64_t mpool_mblock_delete(struct mpool *ds, uint64_t mbid)
+uint64_t mpool_mblock_delete(struct mpool *mp, uint64_t mbid)
 {
 	struct mpioc_mblock_id  mi = { .mi_objid = mbid };
 
-	if (!ds)
+	if (!mp)
 		return merr(EINVAL);
 
-	return mpool_ioctl(ds->mp_fd, MPIOC_MB_DELETE, &mi);
+	return mpool_ioctl(mp->mp_fd, MPIOC_MB_DELETE, &mi);
 }
 
-uint64_t mpool_mblock_props_get(struct mpool *ds, uint64_t mbid, struct mblock_props *props)
+uint64_t mpool_mblock_props_get(struct mpool *mp, uint64_t mbid, struct mblock_props *props)
 {
-	if (!ds || !props)
+	if (!mp || !props)
 		return merr(EINVAL);
 
-	return mpool_mblock_find(ds, mbid, props);
+	return mpool_mblock_find(mp, mbid, props);
 }
 
-uint64_t mpool_mblock_write(struct mpool *ds, uint64_t mbid, struct iovec *iov, int iovc)
+uint64_t mpool_mblock_write(struct mpool *mp, uint64_t mbid, struct iovec *iov, int iovc)
 {
 	struct mpioc_mblock_rw mbrw = {
 		.mb_objid   = mbid,
@@ -2321,10 +2321,10 @@ uint64_t mpool_mblock_write(struct mpool *ds, uint64_t mbid, struct iovec *iov, 
 		.mb_iov     = iov,
 	};
 
-	if (!ds || !iov)
+	if (!mp || !iov)
 		return merr(EINVAL);
 
-	return mpool_ioctl(ds->mp_fd, MPIOC_MB_WRITE, &mbrw);
+	return mpool_ioctl(mp->mp_fd, MPIOC_MB_WRITE, &mbrw);
 }
 
 #ifndef NVALGRIND
@@ -2337,7 +2337,7 @@ uint64_t mpool_mblock_write(struct mpool *ds, uint64_t mbid, struct iovec *iov, 
  */
 uint64_t
 I_WRAP_SONAME_FNNAME_ZU(NONE, mpool_mblock_read)(
-	struct mpool     *ds,
+	struct mpool     *mp,
 	uint64_t          mbid,
 	struct iovec     *iov,
 	int               iovc,
@@ -2356,14 +2356,14 @@ I_WRAP_SONAME_FNNAME_ZU(NONE, mpool_mblock_read)(
 		for (i = 0; i < iovc; i++)
 			memset(iov[i].iov_base, 0xaa, iov[i].iov_len);
 	}
-	CALL_FN_W_5W(result, fn, ds, mbid, iov, iovc, offset);
+	CALL_FN_W_5W(result, fn, mp, mbid, iov, iovc, offset);
 
 	return result;
 }
 #endif
 
 uint64_t
-mpool_mblock_read(struct mpool *ds, uint64_t mbid, struct iovec *iov, int iovc, size_t offset)
+mpool_mblock_read(struct mpool *mp, uint64_t mbid, struct iovec *iov, int iovc, size_t offset)
 {
 	struct mpioc_mblock_rw mbrw = {
 		.mb_objid   = mbid,
@@ -2372,15 +2372,15 @@ mpool_mblock_read(struct mpool *ds, uint64_t mbid, struct iovec *iov, int iovc, 
 		.mb_iov     = iov,
 	};
 
-	if (!ds || !iov)
+	if (!mp || !iov)
 		return merr(EINVAL);
 
-	return mpool_ioctl(ds->mp_fd, MPIOC_MB_READ, &mbrw);
+	return mpool_ioctl(mp->mp_fd, MPIOC_MB_READ, &mbrw);
 }
 
 uint64_t
 mpool_mcache_mmap(
-	struct mpool               *ds,
+	struct mpool               *mp,
 	size_t                      mbidc,
 	uint64_t                   *mbidv,
 	enum mpc_vma_advice         advice,
@@ -2392,7 +2392,7 @@ mpool_mcache_mmap(
 	int     flags, prot, fd;
 	merr_t  err;
 
-	fd = ds->mp_fd;
+	fd = mp->mp_fd;
 	*mapp = NULL;
 
 	map = calloc(1, sizeof(*map));
@@ -2417,7 +2417,7 @@ mpool_mcache_mmap(
 	map->mh_mbidc = vma.im_mbidc;
 	map->mh_offset = vma.im_offset;
 	map->mh_len = vma.im_len;
-	map->mh_dsfd = fd;
+	map->mh_fd = fd;
 
 	map->mh_addr = mmap(NULL, map->mh_len, prot, flags, fd, map->mh_offset);
 
@@ -2480,23 +2480,23 @@ mpool_mcache_madvise(
 	return rc ? merr(errno) : 0;
 }
 
-uint64_t mpool_mcache_purge(struct mpool_mcache_map *map, const struct mpool *ds)
+uint64_t mpool_mcache_purge(struct mpool_mcache_map *map, const struct mpool *mp)
 {
 	struct mpioc_vma    vma;
 
-	if (!map || !ds)
+	if (!map || !mp)
 		return merr(EINVAL);
 
 	memset(&vma, 0, sizeof(vma));
 	vma.im_offset = map->mh_offset;
 
-	return mpool_ioctl(ds->mp_fd, MPIOC_VMA_PURGE, &vma);
+	return mpool_ioctl(mp->mp_fd, MPIOC_VMA_PURGE, &vma);
 }
 
 static merr_t
 mpool_mcache_vrss_get(
 	struct mpool_mcache_map    *map,
-	const struct mpool         *ds,
+	const struct mpool         *mp,
 	size_t                     *rssp,
 	size_t                     *vssp)
 {
@@ -2506,7 +2506,7 @@ mpool_mcache_vrss_get(
 	memset(&vma, 0, sizeof(vma));
 	vma.im_offset = map->mh_offset;
 
-	err = mpool_ioctl(ds->mp_fd, MPIOC_VMA_VRSS, &vma);
+	err = mpool_ioctl(mp->mp_fd, MPIOC_VMA_VRSS, &vma);
 	if (!err) {
 		*vssp = vma.im_vssp;
 		*rssp = vma.im_rssp;
@@ -2518,7 +2518,7 @@ mpool_mcache_vrss_get(
 uint64_t
 mpool_mcache_mincore(
 	struct mpool_mcache_map    *map,
-	const struct mpool         *ds,
+	const struct mpool         *mp,
 	size_t                     *rssp,
 	size_t                     *vssp)
 {
@@ -2532,7 +2532,7 @@ mpool_mcache_mincore(
 	if (map->mh_addr == MAP_FAILED)
 		merr(EINVAL);
 
-	if (!mpool_mcache_vrss_get(map, ds, rssp, vssp))
+	if (!mpool_mcache_vrss_get(map, mp, rssp, vssp))
 		return 0;
 
 	segsz = map->mh_bktsz * map->mh_mbidc;

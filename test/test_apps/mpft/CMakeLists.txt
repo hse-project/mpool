@@ -15,7 +15,7 @@ MPOOL_EXECUTABLE(
     mpft_mlog.c
     mpft_mblock.c
     mpft_mdc.c
-    mpft_ds.c
+    mpft_mp.c
     mpft_thread.c
     ${MPOOL_UTIL_DIR}/source/param.c
     ${MPOOL_UTIL_DIR}/source/parser.c

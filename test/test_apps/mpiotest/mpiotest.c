@@ -70,7 +70,7 @@ struct stats {
 	ulong   mbdel;          /* Number of calls to mpool_mblock_delete() */
 	ulong   mapcreate;      /* Number of calls to mpool_mcache_create() */
 	ulong   mapdestroy;     /* Number of calls to mpool_mcache_destroy() */
-	ulong   getpages;       /* Number of calls to mp_ds_getpages() */
+	ulong   getpages;       /* Number of calls to mp_getpages() */
 	ulong   pread;          /* Number of calls to mpool_mcache_pread() */
 	ulong   getpagescmp;    /* Number of mcache pages verified */
 	ulong   getpagescmperr; /* Number of mcache page verification errors */
@@ -86,7 +86,7 @@ struct test {
 	size_t          t_wobblemax;    /* Max wcc variability */
 	const char     *t_mpname;
 	struct stats    t_stats;
-	struct mpool   *t_ds;
+	struct mpool   *t_mp;
 };
 
 const char *infile = "/dev/urandom";
@@ -228,7 +228,7 @@ void stats_print(struct stats *stats, const char *header, int idx)
 
 /* Initialize runtime parameters for the given test.
  */
-void test_init(struct test *testv, int idx, ulong iter, const char *mpname, struct mpool *ds)
+void test_init(struct test *testv, int idx, ulong iter, const char *mpname, struct mpool *mp)
 {
 	struct test *t = testv + idx;
 
@@ -236,7 +236,7 @@ void test_init(struct test *testv, int idx, ulong iter, const char *mpname, stru
 	t->t_idx = idx;
 	t->t_iter = iter;
 	t->t_mpname = mpname;
-	t->t_ds     = ds;
+	t->t_mp     = mp;
 
 	t->t_wbufsz = wbufsz;
 	t->t_wcc = wbufsz;
@@ -295,7 +295,7 @@ verify_page_vec(
 
 int
 verify_with_mcache(
-	struct mpool *ds,
+	struct mpool *mp,
 	uint64_t      objid,
 	struct minfo *minfo,
 	struct minfo *minfov,
@@ -356,7 +356,7 @@ verify_with_mcache(
 
 	/* If we don't already have a map, create it */
 	if (!minfo->map) {
-		err = mpool_mcache_mmap(ds, mbidc, mbidv, MPC_VMA_COLD, &minfo->map);
+		err = mpool_mcache_mmap(mp, mbidc, mbidv, MPC_VMA_COLD, &minfo->map);
 		if (err)
 			goto mcache_map_err;
 
@@ -389,7 +389,7 @@ verify_with_mcache(
 		goto err_out;
 
 	if (verbosity > 1)
-		mpool_mcache_mincore(minfo->map, ds, &rss, &vss);
+		mpool_mcache_mincore(minfo->map, mp, &rss, &vss);
 
 	return 0;
 
@@ -412,7 +412,7 @@ void *test_start(void *arg)
 	struct stats   *stats;
 	struct test    *test;
 	struct iovec   *iov;
-	struct mpool   *ds;
+	struct mpool   *mp;
 	mpool_err_t     err = 0;
 
 	size_t  wander, wobble, wcc;
@@ -430,7 +430,7 @@ void *test_start(void *arg)
 	test = arg;
 	wcc = test->t_wcc;
 	stats = &test->t_stats;
-	ds = test->t_ds;
+	mp = test->t_mp;
 
 	minfov = NULL;
 	objnumv = NULL;
@@ -491,7 +491,7 @@ void *test_start(void *arg)
 		wander = (random() % test->t_wandermax) & PAGE_MASK;
 		wobble = (random() % test->t_wobblemax) & PAGE_MASK;
 
-		err = mpool_mblock_alloc(ds, MP_MED_CAPACITY, false, &objid, &props);
+		err = mpool_mblock_alloc(mp, MP_MED_CAPACITY, false, &objid, &props);
 		if (err) {
 			if (mpool_errno(err) == ENOSPC)
 				break;
@@ -521,7 +521,7 @@ void *test_start(void *arg)
 			niov = 2;
 		}
 
-		err = mpool_mblock_write(ds, objid, iov, niov);
+		err = mpool_mblock_write(mp, objid, iov, niov);
 		if (err) {
 			mpool_strinfo(err, errbuf, sizeof(errbuf));
 			eprint("mpool_mblock_write: %d objid=0x%lx len=%zu: %s\n",
@@ -531,7 +531,7 @@ void *test_start(void *arg)
 
 		++stats->mbwrite;
 
-		err = mpool_mblock_commit(ds, objid);
+		err = mpool_mblock_commit(mp, objid);
 		if (err) {
 			mpool_strinfo(err, errbuf, sizeof(errbuf));
 			eprint("mb_mblock_commit failed: objid=0x%lx: %s\n",
@@ -547,7 +547,7 @@ void *test_start(void *arg)
 			iov[0].iov_base = rbuf;
 			iov[0].iov_len = wcc + wobble;
 
-			err = mpool_mblock_read(ds, objid, iov, 1, 0);
+			err = mpool_mblock_read(mp, objid, iov, 1, 0);
 			if (err) {
 				mpool_strinfo(err, errbuf, sizeof(errbuf));
 				eprint("mpool_mblock_read: %d objid=0x%lx len=%zu: %s\n",
@@ -571,7 +571,7 @@ void *test_start(void *arg)
 		 * the randomness of the test.
 		 */
 		if ((random() % 100) < mcverify)
-			if (verify_with_mcache(ds, objid, minfo, minfov,
+			if (verify_with_mcache(mp, objid, minfo, minfov,
 					       wcc, wobble, stats, test, rss, vss))
 				break;
 
@@ -624,7 +624,7 @@ void *test_start(void *arg)
 
 		rss = vss = 0;
 		if (minfo->map && verbosity > 1)
-			mpool_mcache_mincore(minfo->map, ds, &rss, &vss);
+			mpool_mcache_mincore(minfo->map, mp, &rss, &vss);
 
 		if (verbosity > 0) {
 			if ((__sync_fetch_and_add(&row, 1) % rows) == 0) {
@@ -648,7 +648,7 @@ void *test_start(void *arg)
 			iov[0].iov_base = rbuf;
 			iov[0].iov_len = wcc + wobble;
 
-			err = mpool_mblock_read(ds, minfo->objid, iov, 1, 0);
+			err = mpool_mblock_read(mp, minfo->objid, iov, 1, 0);
 			if (err) {
 				mpool_strinfo(err, errbuf, sizeof(errbuf));
 				eprint("mpool_mblock_read: objid=0x%lx: %s\n",
@@ -680,7 +680,7 @@ void *test_start(void *arg)
 			++stats->mapdestroy;
 		}
 
-		err = mpool_mblock_delete(ds, minfo->objid);
+		err = mpool_mblock_delete(mp, minfo->objid);
 		if (err) {
 			mpool_strinfo(err, errbuf, sizeof(errbuf));
 			eprint("%3d, %8d %8d %8zu %8zu %16lx"
@@ -848,7 +848,7 @@ void usage(void)
 {
 	printf("usage: %s [options] <mpool> \n", progname);
 
-	printf("-b           open dataset non-blocking\n");
+	printf("-b           open mpool non-blocking\n");
 	printf("-d           increase debug verbosity\n");
 	printf("-h           print this list\n");
 	printf("-i iter_max  number of iterations (default: %lu)\n", iter_max);
@@ -911,13 +911,12 @@ int main(int argc, char **argv)
 {
 	struct stats        stats;
 	struct test        *testv;
-	struct mpool       *ds, *ds2;
+	struct mpool       *mp, *mp2;
 	struct mpool_devrpt   ei;
 	struct mpool_params params;
 	sigset_t        sigmask_block;
 	sigset_t        sigmask_old;
 	char           *mpname;
-	char           *dsname;
 
 	mpool_err_t  err;
 	char    errbuf[64];
@@ -1068,15 +1067,9 @@ int main(int argc, char **argv)
 		rows -= 1;
 	}
 
-	dsname = strdup(argv[0]);
+	mpname = strdup(argv[0]);
 
-	mpname = strsep(&dsname, "/");
-	if (!mpname) {
-		syntax("invalid mpool name '%s'", argv[0]);
-		exit(EX_USAGE);
-	}
-
-	err = mpool_open(mpname, oflags, &ds, &ei);
+	err = mpool_open(mpname, oflags, &mp, &ei);
 	if (err) {
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
 		eprint("mpool_open(%s): %s\n", mpname, errbuf);
@@ -1086,7 +1079,7 @@ int main(int argc, char **argv)
 	/* If the mpool was originally opened exclusively a second
 	 * open should fail, otherwise it should succeed.
 	 */
-	err = mpool_open(mpname, 0, &ds2, &ei);
+	err = mpool_open(mpname, 0, &mp2, &ei);
 	if ((oflags & O_EXCL) && !err) {
 		eprint("mpool_open(%s): re-open exclusive didn't fail\n", mpname);
 		exit(1);
@@ -1095,19 +1088,19 @@ int main(int argc, char **argv)
 		eprint("mpool_open(%s): re-open failed: %s\n", mpname, errbuf);
 		exit(1);
 	} else {
-		err = mpool_close(ds2);
+		err = mpool_close(mp2);
 		if (err) {
 			mpool_strinfo(err, errbuf, sizeof(errbuf));
-			eprint("mpool_close(%s): ds2 close failed: %s\n", mpname, errbuf);
+			eprint("mpool_close(%s): mp2 close failed: %s\n", mpname, errbuf);
 			exit(1);
 		}
 	}
 
-	err = mpool_params_get(ds, &params, &ei);
+	err = mpool_params_get(mp, &params, &ei);
 	if (err) {
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
 		eprint("mpool_params_get(%s): %s\n", mpname, errbuf);
-		mpool_close(ds);
+		mpool_close(mp);
 		exit(1);
 	}
 	wbufsz = params.mp_mblocksz[MP_MED_CAPACITY] << 20;
@@ -1117,13 +1110,13 @@ int main(int argc, char **argv)
 	fd = open(infile, O_RDONLY);
 	if (-1 == fd) {
 		eprint("open(%s): %s\n", infile, strerror(errno));
-		mpool_close(ds);
+		mpool_close(mp);
 		exit(1);
 	}
 
 	rc = posix_memalign((void **)&wbuf, PAGE_SIZE, limit);
 	if (rc || !wbuf) {
-		mpool_close(ds);
+		mpool_close(mp);
 		exit(1);
 	}
 
@@ -1132,7 +1125,7 @@ int main(int argc, char **argv)
 		if (cc < 1) {
 			eprint("read(%s): cc=%ld limit=%zu: %s\n",
 			       infile, cc, limit, strerror(errno));
-			mpool_close(ds);
+			mpool_close(mp);
 			exit(1);
 		}
 	}
@@ -1142,7 +1135,7 @@ int main(int argc, char **argv)
 	testv = calloc(td_max, sizeof(*testv));
 	if (!testv) {
 		eprint("calloc(testv): out of memory\n");
-		mpool_close(ds);
+		mpool_close(mp);
 		exit(EX_OSERR);
 	}
 
@@ -1170,7 +1163,7 @@ int main(int argc, char **argv)
 		td_run = td_max;
 
 		for (i = 0; i < td_max; ++i) {
-			test_init(testv, i, iter, mpname, ds);
+			test_init(testv, i, iter, mpname, mp);
 
 			rc = pthread_create(&testv[i].t_td, NULL, test_start, &testv[i]);
 			if (rc) {
@@ -1207,7 +1200,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	mpool_close(ds);
+	mpool_close(mp);
 
 	return 0;
 }

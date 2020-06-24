@@ -1347,7 +1347,7 @@ static int mb_command(int argc, char **argv)
 		{ NULL }
 	};
 
-	struct mpool   *ds;
+	struct mpool   *mp;
 
 	char    errbuf[128];
 	char   *mpname;
@@ -1403,7 +1403,7 @@ static int mb_command(int argc, char **argv)
 	--argc;
 	++argv;
 
-	err = mpool_open(mpname, O_RDWR, &ds, NULL);
+	err = mpool_open(mpname, O_RDWR, &mp, NULL);
 	if (err) {
 		eprint("mpool_open(%s) failed: %s",
 		       mpname, mpool_strinfo(err, errbuf, sizeof(errbuf)));
@@ -1424,7 +1424,7 @@ static int mb_command(int argc, char **argv)
 			struct mblock_props     props;
 			uint64_t                mbh;
 
-			err = mpool_mblock_alloc(ds, MP_MED_CAPACITY, false, &mbh, &props);
+			err = mpool_mblock_alloc(mp, MP_MED_CAPACITY, false, &mbh, &props);
 			if (err) {
 				eprint("%s failed: %s", subcmd,
 				       mpool_strinfo(err, errbuf, sizeof(errbuf)));
@@ -1464,7 +1464,7 @@ static int mb_command(int argc, char **argv)
 
 			mbh = strtoul(argv[i], NULL, 0);
 
-			err = mpool_mblock_props_get(ds, mbh, &props);
+			err = mpool_mblock_props_get(mp, mbh, &props);
 			if (err) {
 				eprint("%s 0x%lx failed: %s", subcmd, mbh,
 				       mpool_strinfo(err, errbuf, sizeof(errbuf)));
@@ -1499,11 +1499,11 @@ static int mb_command(int argc, char **argv)
 			mbh = strtoul(argv[i], NULL, 0);
 
 			if (subcmd[2] == 'd')
-				err = mpool_mblock_delete(ds, mbh);
+				err = mpool_mblock_delete(mp, mbh);
 			else if (subcmd[2] == 'a')
-				err = mpool_mblock_abort(ds, mbh);
+				err = mpool_mblock_abort(mp, mbh);
 			else
-				err = mpool_mblock_commit(ds, mbh);
+				err = mpool_mblock_commit(mp, mbh);
 
 			if (err) {
 				eprint("%s 0x%lx failed: %s", subcmd, mbh,
@@ -1515,7 +1515,7 @@ static int mb_command(int argc, char **argv)
 		exit(EX_USAGE);
 	}
 
-	mpool_close(ds);
+	mpool_close(mp);
 
 	return 0;
 }
@@ -1548,7 +1548,7 @@ static int mbrw_command(int argc, char **argv)
 		{ NULL }
 	};
 
-	struct mpool   *ds;
+	struct mpool   *mp;
 
 	char    errbuf[128];
 	char   *iofile_path;
@@ -1625,7 +1625,7 @@ static int mbrw_command(int argc, char **argv)
 	--argc;
 	++argv;
 
-	err = mpool_open(mpname, O_RDWR, &ds, NULL);
+	err = mpool_open(mpname, O_RDWR, &mp, NULL);
 	if (err) {
 		eprint("mpool_open(%s) failed: %s",
 		       mpname, mpool_strinfo(err, errbuf, sizeof(errbuf)));
@@ -1674,7 +1674,7 @@ static int mbrw_command(int argc, char **argv)
 
 			mbh = strtoul(argv[i], NULL, 0);
 
-			err = mpool_mblock_props_get(ds, mbh, &props);
+			err = mpool_mblock_props_get(mp, mbh, &props);
 			if (err) {
 				eprint("%s mp_mb_lookup(0x%lx) failed: %s", subcmd, mbh,
 				       mpool_strinfo(err, errbuf, sizeof(errbuf)));
@@ -1697,7 +1697,7 @@ static int mbrw_command(int argc, char **argv)
 				iov[0].iov_base = buf;
 				iov[0].iov_len = wmax;
 
-				err = mpool_mblock_read(ds, mbh, iov, 1, off);
+				err = mpool_mblock_read(mp, mbh, iov, 1, off);
 
 				if (mpool_errno(err) == EINVAL) {
 					if (wmax > PAGE_SIZE) {
@@ -1760,7 +1760,7 @@ err_ok:
 
 			mbh = strtoul(argv[i], NULL, 0);
 
-			err = mpool_mblock_props_get(ds, mbh, &props);
+			err = mpool_mblock_props_get(mp, mbh, &props);
 			if (err) {
 				eprint("%s mp_mb_lookup(0x%lx) failed: %s", subcmd, mbh,
 				       mpool_strinfo(err, errbuf, sizeof(errbuf)));
@@ -1792,7 +1792,7 @@ err_ok:
 				iov[0].iov_base = buf;
 				iov[0].iov_len = cc;
 
-				err = mpool_mblock_write(ds, mbh, iov, 1);
+				err = mpool_mblock_write(mp, mbh, iov, 1);
 				if (err) {
 					eprint("%s mpool_mblock_write(0x%lx) failed: %s",
 					       subcmd, mbh,
@@ -1811,7 +1811,7 @@ err_ok:
 		exit(EX_USAGE);
 	}
 
-	mpool_close(ds);
+	mpool_close(mp);
 	free(buf);
 
 	return 0;
@@ -1845,7 +1845,7 @@ static int mmrd_command(int argc, char **argv)
 		{ NULL }
 	};
 
-	struct mpool   *ds;
+	struct mpool   *mp;
 
 	char    errbuf[128];
 	char   *iofile_path;
@@ -1922,7 +1922,7 @@ static int mmrd_command(int argc, char **argv)
 	--argc;
 	++argv;
 
-	err = mpool_open(mpname, O_RDWR, &ds, NULL);
+	err = mpool_open(mpname, O_RDWR, &mp, NULL);
 	if (err) {
 		eprint("mpool_open(%s) failed: %s",
 		       mpname, mpool_strinfo(err, errbuf, sizeof(errbuf)));
@@ -1980,7 +1980,7 @@ static int mmrd_command(int argc, char **argv)
 
 			mbidv[i] = strtoul(argv[i], NULL, 0);
 
-			err = mpool_mblock_find(ds, mbidv[i], &props);
+			err = mpool_mblock_find(mp, mbidv[i], &props);
 			if (err) {
 				eprint("mpool_mblock_find(%lx): %s", mbidv[i],
 				       mpool_strinfo(err, errbuf, sizeof(errbuf)));
@@ -1990,7 +1990,7 @@ static int mmrd_command(int argc, char **argv)
 			mblenv[i] = props.mpr_write_len;
 		}
 
-		err = mpool_mcache_mmap(ds, argc, mbidv, MPC_VMA_WARM, &map);
+		err = mpool_mcache_mmap(mp, argc, mbidv, MPC_VMA_WARM, &map);
 		if (err) {
 			eprint("mpool_mcache_mmap failed: %s",
 			       mpool_strinfo(err, errbuf, sizeof(errbuf)));
@@ -2032,7 +2032,7 @@ static int mmrd_command(int argc, char **argv)
 		exit(EX_USAGE);
 	}
 
-	mpool_close(ds);
+	mpool_close(mp);
 	free(buf);
 
 	return 0;
@@ -2060,7 +2060,7 @@ static int test_command(int argc, char **argv)
 		{ NULL }
 	};
 
-	struct mpool   *ds;
+	struct mpool   *mp;
 	mpool_err_t     err;
 
 	char   *mpname, *subcmd, *optstring;
@@ -2112,7 +2112,7 @@ static int test_command(int argc, char **argv)
 	--argc;
 	++argv;
 
-	err = mpool_open(mpname, O_RDWR, &ds, NULL);
+	err = mpool_open(mpname, O_RDWR, &mp, NULL);
 	if (err) {
 		eprint("mpool_open(%s) failed: %s",
 		       mpname, mpool_strinfo(err, errbuf, sizeof(errbuf)));
@@ -2138,7 +2138,7 @@ static int test_command(int argc, char **argv)
 			test.mpt_sval[0] = atoi(argv[i]);
 			test.mpt_cmn.mc_merr_base = mpool_merr_base;
 
-			rc = ioctl(ds->mp_fd, MPIOC_TEST, &test);
+			rc = ioctl(mp->mp_fd, MPIOC_TEST, &test);
 
 			err = rc ? errno : test.mpt_cmn.mc_err;
 
@@ -2151,7 +2151,7 @@ static int test_command(int argc, char **argv)
 		exit(EX_USAGE);
 	}
 
-	mpool_close(ds);
+	mpool_close(mp);
 
 	return 0;
 }

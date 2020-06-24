@@ -13,10 +13,10 @@
  *    $ cd ~/mpool/builds/debug/stage/bin
  *
  * Examples:
- *    Given an mpool named "mp1" and a dataset named "ds1":
+ *    Given an mpool named "mp1":
  *
- *    $ sudo mcache_boundary mp1/ds1 MC_MAP_TYPE_READ
- *    $ sudo mcache_boundary -v mp1/ds1 MC_MAP_TYPE_MMAP
+ *    $ sudo mcache_boundary mp1 MC_MAP_TYPE_READ
+ *    $ sudo mcache_boundary -v mp1 MC_MAP_TYPE_MMAP
  */
 
 #include <errno.h>
@@ -130,14 +130,13 @@ static void eprint(const char *fmt, ...)
 
 static void usage(void)
 {
-	printf("usage: %s [options] <media-class> <mpool>/<dataset>\n\n", progname);
+	printf("usage: %s [options] <media-class> <mpool>\n\n", progname);
 	printf("-a,--all             run all tests\n");
 	printf("-b,--boundary        run mcache mmap boundary test\n");
 	printf("-m,--madvise         call madvise() on the mapped mblocks\n");
 	printf("-v,--verbose         be wordy\n\n");
 	printf("media-class          {JOURNAL|STAGING|CAPACITY}\n");
 	printf("mpool                name of mpool to use\n");
-	printf("dataset              name of dataset to use\n\n");
 }
 
 
@@ -221,7 +220,7 @@ static enum mp_media_classp mclsname_to_mcls(const char *mclassname)
  */
 static mpool_err_t
 make_mblock(
-	struct mpool         *ds,
+	struct mpool         *mp,
 	uint64_t              mbsize,
 	struct mblock_props  *props,
 	uint64_t             *objid,
@@ -241,7 +240,7 @@ make_mblock(
 		goto make_mblock_exit;
 	}
 
-	err = mpool_mblock_alloc(ds, media_class, false, objid, props);
+	err = mpool_mblock_alloc(mp, media_class, false, objid, props);
 	if (err) {
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
 		eprint("mpool_mblock_alloc failed: %s\n", errbuf);
@@ -267,7 +266,7 @@ make_mblock(
 	iov->iov_len   = mbsize;
 	rndbuf_cursor += mbsize;
 
-	err = mpool_mblock_write(ds, *objid, iov, 1);
+	err = mpool_mblock_write(mp, *objid, iov, 1);
 
 	if (err) {
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
@@ -275,7 +274,7 @@ make_mblock(
 		goto make_mblock_cleanup;
 	}
 
-	err = mpool_mblock_commit(ds, *objid);
+	err = mpool_mblock_commit(mp, *objid);
 
 	if (err) {
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
@@ -286,13 +285,13 @@ make_mblock(
 	goto make_mblock_exit;
 
 make_mblock_cleanup:
-	err2 = mpool_mblock_abort(ds, *objid);
+	err2 = mpool_mblock_abort(mp, *objid);
 
 	if (err2) {
 		mpool_strinfo(err2, errbuf, sizeof(errbuf));
 		eprint("mpool_mblock_abort failed: objid=0x%lx: %s\n", *objid, errbuf);
 	} else {
-		err2 = mpool_mblock_delete(ds, *objid);
+		err2 = mpool_mblock_delete(mp, *objid);
 
 		if (err2) {
 			mpool_strinfo(err2, errbuf, sizeof(errbuf));
@@ -309,7 +308,6 @@ make_mblock_exit:
 int
 mcache_boundary_test(
 	const char           *mpname,
-	const char           *dsname,
 	enum mp_media_classp  media_class,
 	bool                  call_madvise)
 {
@@ -323,10 +321,7 @@ mcache_boundary_test(
 
 	signal_reliable(SIGBUS, sigbus_handler);
 
-	/*
-	 * Fill random buffer we'll use for writing mblocks, and open the
-	 * dataset.
-	 */
+	/* Fill random buffer we'll use for writing mblocks, and open the mpool. */
 
 	volatile int rc = fill_rndbuf();
 
@@ -334,10 +329,10 @@ mcache_boundary_test(
 		goto mcache_boundary_cleanup;
 
 	mpool_err_t         err;
-	struct mpool       *ds;
+	struct mpool       *mp;
 	struct mpool_devrpt ei;
 
-	err = mpool_open(mpname, O_RDWR, &ds, &ei);
+	err = mpool_open(mpname, O_RDWR, &mp, &ei);
 	if (err) {
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
 		eprint("mpool_open(%s): %s\n", mpname, errbuf);
@@ -353,25 +348,25 @@ mcache_boundary_test(
 	uint64_t               objid1;
 	uint64_t               mbsize;
 
-	err = mpool_params_get(ds, &params, &ei);
+	err = mpool_params_get(mp, &params, &ei);
 	if (err) {
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
 		eprint("mpool_params_get(%s): %s\n", mpname, errbuf);
 		rc = 1;
-		goto mcache_boundary_ds_close;
+		goto mcache_boundary_mp_close;
 	}
 	mbsize = params.mp_mblocksz[media_class] << 20;
 
-	err = make_mblock(ds, mbsize, &props1, &objid1, media_class);
+	err = make_mblock(mp, mbsize, &props1, &objid1, media_class);
 	if (err) {
 		rc = 1;
-		goto mcache_boundary_ds_close;
+		goto mcache_boundary_mp_close;
 	}
 
 	struct mblock_props props2;
 	uint64_t            objid2;
 
-	err = make_mblock(ds, mbsize, &props2, &objid2, media_class);
+	err = make_mblock(mp, mbsize, &props2, &objid2, media_class);
 	if (err) {
 		rc = 1;
 		goto mcache_boundary_mblock_cleanup_1;
@@ -414,7 +409,7 @@ mcache_boundary_test(
 
 	struct mpool_mcache_map *map;
 
-	err = mpool_mcache_mmap(ds, num_mblocks, mbidv, MPC_VMA_HOT, &map);
+	err = mpool_mcache_mmap(mp, num_mblocks, mbidv, MPC_VMA_HOT, &map);
 
 	if (err) {
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
@@ -625,7 +620,7 @@ mcache_boundary_map_cleanup:
 	}
 
 mcache_boundary_mblock_cleanup_2:
-	err = mpool_mblock_delete(ds, objid2);
+	err = mpool_mblock_delete(mp, objid2);
 
 	if (err) {
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
@@ -634,7 +629,7 @@ mcache_boundary_mblock_cleanup_2:
 	}
 
 mcache_boundary_mblock_cleanup_1:
-	err = mpool_mblock_delete(ds, objid1);
+	err = mpool_mblock_delete(mp, objid1);
 
 	if (err) {
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
@@ -642,8 +637,8 @@ mcache_boundary_mblock_cleanup_1:
 		rc = 1;
 	}
 
-mcache_boundary_ds_close:
-	mpool_close(ds);
+mcache_boundary_mp_close:
+	mpool_close(mp);
 
 mcache_boundary_cleanup:
 	free(rndbuf);
@@ -708,8 +703,7 @@ int main(int argc, char **argv)
 	}
 
 	char  *media_class_name = strdup(argv[0]);
-	char  *dsname           = strdup(argv[1]);
-	char  *mpname           = strsep(&dsname, "/");
+	char  *mpname           = strdup(argv[1]);
 
 	enum mp_media_classp media_class = mclsname_to_mcls(media_class_name);
 
@@ -721,7 +715,7 @@ int main(int argc, char **argv)
 	}
 
 	if (!mpname) {
-		fprintf(stderr, "Invalid mpool/dataset name '%s'\n", argv[0]);
+		fprintf(stderr, "Invalid mpool name '%s'\n", argv[0]);
 		usage();
 		exit(EX_USAGE);
 	}
@@ -730,7 +724,7 @@ int main(int argc, char **argv)
 
 	if (all_tests || boundary_test) {
 		printf("Running mcache boundary test\n");
-		int rc = mcache_boundary_test(mpname, dsname, media_class, call_madvise);
+		int rc = mcache_boundary_test(mpname, media_class, call_madvise);
 
 		if (rc)
 			printf("\tFAILED!\n");

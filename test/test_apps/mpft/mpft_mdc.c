@@ -52,8 +52,8 @@ static void show_args(int argc, char **argv)
  * opening, closing, and destroying MDCs.
  *
  * Steps:
- * 1. Create a DS
- * 2. Open the DS
+ * 1. Create an mpool
+ * 2. Open the mpool
  * 3. Create an MDC
  * 4. Open the MDC
  * 5. Close the MDC
@@ -83,7 +83,7 @@ mpool_err_t mdc_correctness_simple(int argc, char **argv)
 	char   errbuf[ERROR_BUFFER_SIZE];
 	u64    oid[2];
 
-	struct mpool       *ds;
+	struct mpool       *mp;
 	struct mpool_mdc   *mdc;
 
 	struct mdc_capacity  capreq;
@@ -107,12 +107,12 @@ mpool_err_t mdc_correctness_simple(int argc, char **argv)
 		return merr(EINVAL);
 	}
 
-	/* 2. Open the DS */
-	err = mpool_open(mpool, O_RDWR, &ds, NULL);
+	/* 2. Open the mpool */
+	err = mpool_open(mpool, O_RDWR, &mp, NULL);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to open the dataset: %s\n",
+		fprintf(stderr, "%s.%d: Unable to open the mpool: %s\n",
 			__func__, __LINE__, errbuf);
 		return err;
 	}
@@ -122,40 +122,40 @@ mpool_err_t mdc_correctness_simple(int argc, char **argv)
 	capreq.mdt_captgt = 1024 * 1024;   /* 1M, arbitrary choice */
 
 	/* 3. Create an MDC */
-	err = mpool_mdc_alloc(ds, &oid[0], &oid[1], mclassp, &capreq, NULL);
+	err = mpool_mdc_alloc(mp, &oid[0], &oid[1], mclassp, &capreq, NULL);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to alloc mdc: %s\n", __func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
-	err = mpool_mdc_abort(ds, oid[0], oid[1]);
+	err = mpool_mdc_abort(mp, oid[0], oid[1]);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to abort MDC : %s\n", __func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
-	err = mpool_mdc_alloc(ds, &oid[0], &oid[1], mclassp, &capreq, NULL);
+	err = mpool_mdc_alloc(mp, &oid[0], &oid[1], mclassp, &capreq, NULL);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to alloc mdc: %s\n", __func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
-	err = mpool_mdc_commit(ds, oid[0], oid[1]);
+	err = mpool_mdc_commit(mp, oid[0], oid[1]);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to commit mdc: %s\n", __func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
 	/* 4. Open the MDC */
-	err = mpool_mdc_open(ds, oid[0], oid[1], opflags, &mdc);
+	err = mpool_mdc_open(mp, oid[0], oid[1], opflags, &mdc);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -173,68 +173,68 @@ mpool_err_t mdc_correctness_simple(int argc, char **argv)
 	}
 
 	/* Test MDC destroy with two committed mlogs */
-	err = mpool_mdc_delete(ds, oid[0], oid[1]);
+	err = mpool_mdc_delete(mp, oid[0], oid[1]);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to destroy MDC: %s\n", __func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
 	/* Test MDC destroy with two non-existent mlogs */
-	err = mpool_mdc_delete(ds, oid[0], oid[1]);
+	err = mpool_mdc_delete(mp, oid[0], oid[1]);
 	if (!err && mpool_errno(err) != ENOENT) {
 		original_err = (err ? : merr(EBUG));
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: MDC destroy must fail with ENOENT: %s\n",
 			__func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
-	err = mpool_mdc_alloc(ds, &oid[0], &oid[1], mclassp, &capreq, NULL);
+	err = mpool_mdc_alloc(mp, &oid[0], &oid[1], mclassp, &capreq, NULL);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to alloc mdc: %s\n", __func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
-	err = mpool_mlog_abort(ds, oid[0]);
+	err = mpool_mlog_abort(mp, oid[0]);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to abort mlog : %s\n", __func__, __LINE__, errbuf);
-		mpool_mlog_abort(ds, oid[1]);
+		mpool_mlog_abort(mp, oid[1]);
 		goto destroy_mdc;
 	}
 
 	/* Test MDC destroy with one non-existent and one un-committed mlog */
-	err = mpool_mdc_delete(ds, oid[0], oid[1]);
+	err = mpool_mdc_delete(mp, oid[0], oid[1]);
 	if (!err || mpool_errno(err) != ENOENT) {
 		original_err = (err ? : merr(EBUG));
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: MDC destroy must fail with ENOENT: %s\n",
 			__func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
-	err = mpool_mdc_alloc(ds, &oid[0], &oid[1], mclassp, &capreq, NULL);
+	err = mpool_mdc_alloc(mp, &oid[0], &oid[1], mclassp, &capreq, NULL);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to alloc mdc: %s\n", __func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
-	err = mpool_mdc_commit(ds, oid[0], oid[1]);
+	err = mpool_mdc_commit(mp, oid[0], oid[1]);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to commit mdc: %s\n", __func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
-	err = mpool_mlog_delete(ds, oid[0]);
+	err = mpool_mlog_delete(mp, oid[0]);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -243,20 +243,20 @@ mpool_err_t mdc_correctness_simple(int argc, char **argv)
 	}
 
 	/* Test MDC destroy with one non-existent and one committed mlog */
-	err = mpool_mdc_delete(ds, oid[0], oid[1]);
+	err = mpool_mdc_delete(mp, oid[0], oid[1]);
 	if (!err || mpool_errno(err) != ENOENT) {
 		original_err = (err ? : merr(EBUG));
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: MDC destroy must fail with ENOENT: %s\n",
 			__func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
-	goto close_ds;
+	goto close_mp;
 
 	/* 6. Cleanup */
 destroy_mdc:
-	err = mpool_mdc_delete(ds, oid[0], oid[1]);
+	err = mpool_mdc_delete(mp, oid[0], oid[1]);
 	if (err) {
 		if (!original_err)
 			original_err = err;
@@ -264,13 +264,13 @@ destroy_mdc:
 		fprintf(stderr, "%s.%d: Unable to destroy MDC: %s\n", __func__, __LINE__, errbuf);
 	}
 
-close_ds:
-	err = mpool_close(ds);
+close_mp:
+	err = mpool_close(mp);
 	if (err) {
 		if (!original_err)
 			original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to close dataset: %s\n", __func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to close mpool: %s\n", __func__, __LINE__, errbuf);
 	}
 
 	return original_err;
@@ -278,39 +278,39 @@ close_ds:
 
 /**
  *
- * Dataset Release
+ * Mpool Release
  *
  */
 
 /**
- * 1. Create a DS
- * 2. Open the DS
+ * 1. Create an mpool
+ * 2. Open the mpool
  * 3. Create an MDC
  * 4. Open the MDC
  * 5. Close the MDC
- * 6. Close the DS
- * 7. Open the DS
+ * 6. Close the mpool
+ * 7. Open the mpool
  * 8. Open the MDC
  * 9. Close the MDC
  * 10. Cleanup
  */
 
-char mdc_correctness_ds_release_mpool[MPOOL_NAME_LEN_MAX];
+char mdc_correctness_mp_release_mpool[MPOOL_NAME_LEN_MAX];
 
-static struct param_inst mdc_correctness_ds_release_params[] = {
-	PARAM_INST_STRING(mdc_correctness_ds_release_mpool,
-			  sizeof(mdc_correctness_ds_release_mpool), "mp", "mpool"),
+static struct param_inst mdc_correctness_mp_release_params[] = {
+	PARAM_INST_STRING(mdc_correctness_mp_release_mpool,
+			  sizeof(mdc_correctness_mp_release_mpool), "mp", "mpool"),
 	PARAM_INST_END
 };
 
-static void mdc_correctness_ds_release_help(void)
+static void mdc_correctness_mp_release_help(void)
 {
-	fprintf(co.co_fp, "\nusage: mpft mdc.correctness.ds_release [options]\n");
+	fprintf(co.co_fp, "\nusage: mpft mdc.correctness.mp_release [options]\n");
 
-	show_default_params(mdc_correctness_ds_release_params, 0);
+	show_default_params(mdc_correctness_mp_release_params, 0);
 }
 
-mpool_err_t mdc_correctness_ds_release(int argc, char **argv)
+mpool_err_t mdc_correctness_mp_release(int argc, char **argv)
 {
 	mpool_err_t err = 0, original_err = 0;
 	char  *mpool;
@@ -318,14 +318,14 @@ mpool_err_t mdc_correctness_ds_release(int argc, char **argv)
 	char   errbuf[ERROR_BUFFER_SIZE];
 	u64    oid[2];
 
-	struct mpool       *ds;
+	struct mpool       *mp;
 	struct mpool_mdc   *mdc[3];
 
 	struct mdc_capacity  capreq;
 	enum mp_media_classp mclassp;
 
 	show_args(argc, argv);
-	err = process_params(argc, argv, mdc_correctness_ds_release_params, &next_arg, 0);
+	err = process_params(argc, argv, mdc_correctness_mp_release_params, &next_arg, 0);
 	if (err != 0) {
 		printf("%s process_params returned an error\n", __func__);
 		return err;
@@ -334,7 +334,7 @@ mpool_err_t mdc_correctness_ds_release(int argc, char **argv)
 	/* advance the arg pointer once for the "verb" */
 	next_arg++;
 
-	mpool = mdc_correctness_ds_release_mpool;
+	mpool = mdc_correctness_mp_release_mpool;
 
 	if (mpool[0] == 0) {
 		fprintf(stderr, "%s.%d: mpool (mp=<mpool>) must be specified\n",
@@ -342,12 +342,12 @@ mpool_err_t mdc_correctness_ds_release(int argc, char **argv)
 		return merr(EINVAL);
 	}
 
-	/* 2. Open the DS */
-	err = mpool_open(mpool, O_RDWR, &ds, NULL);
+	/* 2. Open the mpool */
+	err = mpool_open(mpool, O_RDWR, &mp, NULL);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to open the dataset: %s\n",
+		fprintf(stderr, "%s.%d: Unable to open the mpool: %s\n",
 			__func__, __LINE__, errbuf);
 		return err;
 	}
@@ -357,24 +357,24 @@ mpool_err_t mdc_correctness_ds_release(int argc, char **argv)
 	capreq.mdt_captgt = 1024 * 1024;   /* 1M, arbitrary choice */
 
 	/* 3. Create an MDC */
-	err = mpool_mdc_alloc(ds, &oid[0], &oid[1], mclassp, &capreq, NULL);
+	err = mpool_mdc_alloc(mp, &oid[0], &oid[1], mclassp, &capreq, NULL);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to alloc mdc: %s\n", __func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
-	err = mpool_mdc_commit(ds, oid[0], oid[1]);
+	err = mpool_mdc_commit(mp, oid[0], oid[1]);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to commit mdc: %s\n", __func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
 	/* 4. Open the MDC */
-	err = mpool_mdc_open(ds, oid[0], oid[1], opflags, &mdc[0]);
+	err = mpool_mdc_open(mp, oid[0], oid[1], opflags, &mdc[0]);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -392,27 +392,27 @@ mpool_err_t mdc_correctness_ds_release(int argc, char **argv)
 		goto destroy_mdc;
 	}
 
-	/* 6. Close the DS */
-	err = mpool_close(ds);
+	/* 6. Close the mpool */
+	err = mpool_close(mp);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to close dataset: %s\n", __func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to close mpool: %s\n", __func__, __LINE__, errbuf);
 		goto destroy_mdc;
 	}
 
-	/* 7. Open the DS */
-	err = mpool_open(mpool, O_RDWR, &ds, NULL);
+	/* 7. Open the mpool */
+	err = mpool_open(mpool, O_RDWR, &mp, NULL);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to open the dataset: %s\n",
+		fprintf(stderr, "%s.%d: Unable to open the mpool: %s\n",
 			__func__, __LINE__, errbuf);
 		goto destroy_mdc;
 	}
 
 	/* 8. Open the MDC */
-	err = mpool_mdc_open(ds, oid[0], oid[1], opflags, &mdc[0]);
+	err = mpool_mdc_open(mp, oid[0], oid[1], opflags, &mdc[0]);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -434,7 +434,7 @@ mpool_err_t mdc_correctness_ds_release(int argc, char **argv)
 	/* 10. Cleanup */
 	/* Destroy the MDC */
 destroy_mdc:
-	err = mpool_mdc_delete(ds, oid[0], oid[1]);
+	err = mpool_mdc_delete(mp, oid[0], oid[1]);
 	if (err) {
 		if (!original_err)
 			original_err = err;
@@ -442,13 +442,13 @@ destroy_mdc:
 		fprintf(stderr, "%s.%d: Unable to destroy MDC: %s\n", __func__, __LINE__, errbuf);
 	}
 
-close_ds:
-	err = mpool_close(ds);
+close_mp:
+	err = mpool_close(mp);
 	if (err) {
 		if (!original_err)
 			original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to close dataset: %s\n", __func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to close mpool: %s\n", __func__, __LINE__, errbuf);
 	}
 
 	return original_err;
@@ -461,8 +461,8 @@ close_ds:
  */
 
 /**
- * 1. Create a DS
- * 2. Open the DS RDWR
+ * 1. Create a mpool
+ * 2. Open the mpool RDWR
  * 3. Create an MDC
  * 4. Open MDC
  * 5. Write pattern to MDC
@@ -520,8 +520,8 @@ mpool_err_t mdc_correctness_multi_reader_single_app(int argc, char **argv)
 	char   buf[BUF_SIZE], buf_in[BUF_SIZE];
 	size_t read_len;
 
-	struct mpool       *ds;
-	struct mpool_mdc      *mdc[2];
+	struct mpool       *mp;
+	struct mpool_mdc   *mdc[2];
 
 	struct mdc_capacity  capreq;
 	enum mp_media_classp mclassp;
@@ -545,12 +545,12 @@ mpool_err_t mdc_correctness_multi_reader_single_app(int argc, char **argv)
 		return merr(EINVAL);
 	}
 
-	/* 2. Open the DS RDWR */
-	err = mpool_open(mpool, O_RDWR, &ds, NULL);
+	/* 2. Open the mpool RDWR */
+	err = mpool_open(mpool, O_RDWR, &mp, NULL);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to open the dataset: %s\n",
+		fprintf(stderr, "%s.%d: Unable to open the mpool: %s\n",
 			__func__, __LINE__, errbuf);
 		return err;
 	}
@@ -560,24 +560,24 @@ mpool_err_t mdc_correctness_multi_reader_single_app(int argc, char **argv)
 	capreq.mdt_captgt = 1024 * 1024;   /* 1M, arbitrary choice */
 
 	/* 3. Create an MDC */
-	err = mpool_mdc_alloc(ds, &oid[0], &oid[1], mclassp, &capreq, NULL);
+	err = mpool_mdc_alloc(mp, &oid[0], &oid[1], mclassp, &capreq, NULL);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to alloc mdc: %s\n", __func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
-	err = mpool_mdc_commit(ds, oid[0], oid[1]);
+	err = mpool_mdc_commit(mp, oid[0], oid[1]);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to commit mdc: %s\n", __func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
 	/* 4. Open MDC */
-	err = mpool_mdc_open(ds, oid[0], oid[1], opflags, &mdc[0]);
+	err = mpool_mdc_open(mp, oid[0], oid[1], opflags, &mdc[0]);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -609,7 +609,7 @@ mpool_err_t mdc_correctness_multi_reader_single_app(int argc, char **argv)
 	}
 
 	/* 7. Open MDC (handle: mdc[0]) */
-	err = mpool_mdc_open(ds, oid[0], oid[1], opflags, &mdc[0]);
+	err = mpool_mdc_open(mp, oid[0], oid[1], opflags, &mdc[0]);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -663,7 +663,7 @@ mpool_err_t mdc_correctness_multi_reader_single_app(int argc, char **argv)
 	}
 
 	/* 11. Open the same MDC (handle: mdc[1], like a reopen */
-	err = mpool_mdc_open(ds, oid[0], oid[1], opflags, &mdc[1]);
+	err = mpool_mdc_open(mp, oid[0], oid[1], opflags, &mdc[1]);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -717,7 +717,7 @@ close_mdc0:
 
 	/* Destroy the MDC */
 destroy_mdc:
-	err = mpool_mdc_delete(ds, oid[0], oid[1]);
+	err = mpool_mdc_delete(mp, oid[0], oid[1]);
 	if (err) {
 		if (!original_err)
 			original_err = err;
@@ -725,13 +725,13 @@ destroy_mdc:
 		fprintf(stderr, "%s.%d: Unable to destroy MDC: %s\n", __func__, __LINE__, errbuf);
 	}
 
-close_ds:
-	err = mpool_close(ds);
+close_mp:
+	err = mpool_close(mp);
 	if (err) {
 		if (!original_err)
 			original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to close dataset: %s\n", __func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to close mpool: %s\n", __func__, __LINE__, errbuf);
 	}
 
 	return original_err;
@@ -744,8 +744,8 @@ close_ds:
  */
 
 /**
- * 1. Create a DS
- * 2. Open the DS RDWR
+ * 1. Create a mpool
+ * 2. Open the mpool RDWR
  * 3. Create an MDC
  * 4. Open MDC
  * 5. Write pattern to MDC
@@ -782,7 +782,7 @@ mpool_err_t mdc_correctness_reader_then_writer(int argc, char **argv)
 	char   buf[BUF_SIZE], buf_in[BUF_SIZE];
 	size_t read_len;
 
-	struct mpool       *ds;
+	struct mpool       *mp;
 	struct mpool_mdc   *mdc;
 
 	struct mdc_capacity  capreq;
@@ -806,12 +806,12 @@ mpool_err_t mdc_correctness_reader_then_writer(int argc, char **argv)
 		return merr(EINVAL);
 	}
 
-	/* 2. Open the DS RDWR */
-	err = mpool_open(mpool, O_RDWR, &ds, NULL);
+	/* 2. Open the mpool RDWR */
+	err = mpool_open(mpool, O_RDWR, &mp, NULL);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to open the dataset: %s\n",
+		fprintf(stderr, "%s.%d: Unable to open the mpool: %s\n",
 			__func__, __LINE__, errbuf);
 		return err;
 	}
@@ -821,25 +821,25 @@ mpool_err_t mdc_correctness_reader_then_writer(int argc, char **argv)
 	capreq.mdt_captgt = 1024 * 1024;   /* 1M, arbitrary choice */
 
 	/* 3. Create an MDC */
-	err = mpool_mdc_alloc(ds, &oid[0], &oid[1], mclassp, &capreq, NULL);
+	err = mpool_mdc_alloc(mp, &oid[0], &oid[1], mclassp, &capreq, NULL);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to alloc mdc: %s\n", __func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
-	err = mpool_mdc_commit(ds, oid[0], oid[1]);
+	err = mpool_mdc_commit(mp, oid[0], oid[1]);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to commit mdc: %s\n", __func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
 
 	/* 4. Open MDC */
-	err = mpool_mdc_open(ds, oid[0], oid[1], opflags, &mdc);
+	err = mpool_mdc_open(mp, oid[0], oid[1], opflags, &mdc);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -870,7 +870,7 @@ mpool_err_t mdc_correctness_reader_then_writer(int argc, char **argv)
 	}
 
 	/* 7. Open MDC (handle: mdc) */
-	err = mpool_mdc_open(ds, oid[0], oid[1], opflags, &mdc);
+	err = mpool_mdc_open(mp, oid[0], oid[1], opflags, &mdc);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -927,7 +927,7 @@ close_mdc:
 
 	/* Destroy the MDC */
 destroy_mdc:
-	err = mpool_mdc_delete(ds, oid[0], oid[1]);
+	err = mpool_mdc_delete(mp, oid[0], oid[1]);
 	if (err) {
 		if (!original_err)
 			original_err = err;
@@ -935,13 +935,13 @@ destroy_mdc:
 		fprintf(stderr, "%s.%d: Unable to destroy MDC: %s\n", __func__, __LINE__, errbuf);
 	}
 
-close_ds:
-	err = mpool_close(ds);
+close_mp:
+	err = mpool_close(mp);
 	if (err) {
 		if (!original_err)
 			original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to close dataset: %s\n", __func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to close mpool: %s\n", __func__, __LINE__, errbuf);
 	}
 
 	return original_err;
@@ -954,8 +954,8 @@ close_ds:
  */
 
 /**
- * 1. Create a DS
- * 2. Open the DS RDWR
+ * 1. Create a mpool
+ * 2. Open the mpool RDWR
  * 3. Create an MDC
  * 4. Open MDC
  * 5. Write pattern to MDC (handle: mdc[0])
@@ -991,7 +991,7 @@ mpool_err_t mdc_correctness_writer_then_reader(int argc, char **argv)
 	char   buf[BUF_SIZE], buf_in[BUF_SIZE];
 	size_t read_len;
 
-	struct mpool       *ds;
+	struct mpool       *mp;
 	struct mpool_mdc   *mdc[2];
 
 	struct mdc_capacity  capreq;
@@ -1015,12 +1015,12 @@ mpool_err_t mdc_correctness_writer_then_reader(int argc, char **argv)
 		return merr(EINVAL);
 	}
 
-	/* 2. Open the DS RDWR */
-	err = mpool_open(mpool, O_RDWR, &ds, NULL);
+	/* 2. Open the mpool RDWR */
+	err = mpool_open(mpool, O_RDWR, &mp, NULL);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to open the dataset: %s\n",
+		fprintf(stderr, "%s.%d: Unable to open the mpool: %s\n",
 			__func__, __LINE__, errbuf);
 		return err;
 	}
@@ -1030,24 +1030,24 @@ mpool_err_t mdc_correctness_writer_then_reader(int argc, char **argv)
 	capreq.mdt_captgt = 1024 * 1024;   /* 1M, arbitrary choice */
 
 	/* 3. Create an MDC */
-	err = mpool_mdc_alloc(ds, &oid[0], &oid[1], mclassp, &capreq, NULL);
+	err = mpool_mdc_alloc(mp, &oid[0], &oid[1], mclassp, &capreq, NULL);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to alloc mdc: %s\n", __func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
-	err = mpool_mdc_commit(ds, oid[0], oid[1]);
+	err = mpool_mdc_commit(mp, oid[0], oid[1]);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to commit mdc: %s\n", __func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
 	/* 4. Open MDC */
-	err = mpool_mdc_open(ds, oid[0], oid[1], opflags, &mdc[0]);
+	err = mpool_mdc_open(mp, oid[0], oid[1], opflags, &mdc[0]);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1080,7 +1080,7 @@ mpool_err_t mdc_correctness_writer_then_reader(int argc, char **argv)
 	mdc[0] = NULL;
 
 	/* 7. Open MDC (handle: mdc[1]), should succeed */
-	err = mpool_mdc_open(ds, oid[0], oid[1], opflags, &mdc[1]);
+	err = mpool_mdc_open(mp, oid[0], oid[1], opflags, &mdc[1]);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1128,7 +1128,7 @@ close_mdc1:
 
 	/* Destroy the MDC */
 destroy_mdc:
-	err = mpool_mdc_delete(ds, oid[0], oid[1]);
+	err = mpool_mdc_delete(mp, oid[0], oid[1]);
 	if (err) {
 		if (!original_err)
 			original_err = err;
@@ -1136,13 +1136,13 @@ destroy_mdc:
 		fprintf(stderr, "%s.%d: Unable to destroy MDC: %s\n", __func__, __LINE__, errbuf);
 	}
 
-close_ds:
-	err = mpool_close(ds);
+close_mp:
+	err = mpool_close(mp);
 	if (err) {
 		if (!original_err)
 			original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to close dataset: %s\n", __func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to close mpool: %s\n", __func__, __LINE__, errbuf);
 	}
 
 	return original_err;
@@ -1155,8 +1155,8 @@ close_ds:
  */
 
 /**
- * 1. Create a DS
- * 2. Open the DS RDWR
+ * 1. Create a mpool
+ * 2. Open the mpool RDWR
  * 3. Create 4 MDCs
  * 4. Open all 4 MDCs in client serialization mode
  * 5. Write different patterns to each MDC
@@ -1198,7 +1198,7 @@ mpool_err_t mdc_correctness_multi_mdc(int argc, char **argv)
 	size_t read_len;
 
 	struct oid_s       *oid;
-	struct mpool       *ds;
+	struct mpool       *mp;
 	struct mpool_mdc      *mdc[4];
 
 	struct mdc_capacity  capreq;
@@ -1234,14 +1234,14 @@ mpool_err_t mdc_correctness_multi_mdc(int argc, char **argv)
 		return merr(ENOMEM);
 	}
 
-	/* 2. Open the DS RDWR */
-	err = mpool_open(mpool, O_RDWR, &ds, NULL);
+	/* 2. Open the mpool RDWR */
+	err = mpool_open(mpool, O_RDWR, &mp, NULL);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to open the dataset: %s\n",
+		fprintf(stderr, "%s.%d: Unable to open the mpool: %s\n",
 			__func__, __LINE__, errbuf);
-		goto close_mp;
+		goto close_mp1;
 	}
 
 	mclassp = MP_MED_CAPACITY;
@@ -1250,28 +1250,28 @@ mpool_err_t mdc_correctness_multi_mdc(int argc, char **argv)
 
 	/* 3. Create <mdc_cnt> MDCs */
 	for (i = 0; i < mdc_cnt; i++) {
-		err = mpool_mdc_alloc(ds, &oid[i].oid[0], &oid[i].oid[1], mclassp, &capreq, NULL);
+		err = mpool_mdc_alloc(mp, &oid[i].oid[0], &oid[i].oid[1], mclassp, &capreq, NULL);
 		if (err) {
 			original_err = err;
 			mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 			fprintf(stderr, "%s.%d: Unable to alloc mdc: %s\n",
 				__func__, __LINE__, errbuf);
-			goto close_ds;
+			goto close_mp;
 		}
 
-		err = mpool_mdc_commit(ds, oid[i].oid[0], oid[i].oid[1]);
+		err = mpool_mdc_commit(mp, oid[i].oid[0], oid[i].oid[1]);
 		if (err) {
 			original_err = err;
 			mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 			fprintf(stderr, "%s.%d: Unable to commit mdc: %s\n",
 				__func__, __LINE__, errbuf);
-			goto close_ds;
+			goto close_mp;
 		}
 	}
 
 	/* 4. Open all <mdc_cnt> MDCs */
 	for (i = 0; i < mdc_cnt; i++) {
-		err = mpool_mdc_open(ds, oid[i].oid[0], oid[i].oid[1], MDC_OF_SKIP_SER, &mdc[i]);
+		err = mpool_mdc_open(mp, oid[i].oid[0], oid[i].oid[1], MDC_OF_SKIP_SER, &mdc[i]);
 		if (err) {
 			original_err = err;
 			mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1317,8 +1317,7 @@ mpool_err_t mdc_correctness_multi_mdc(int argc, char **argv)
 
 	/* 7. Open all MDCs (handles: mdc[0..<mdc_cnt>]) */
 	for (i = 0; i < mdc_cnt; i++) {
-		err = mpool_mdc_open(ds, oid[i].oid[0], oid[i].oid[1],
-				     opflags, &mdc[i]);
+		err = mpool_mdc_open(mp, oid[i].oid[0], oid[i].oid[1], opflags, &mdc[i]);
 		if (err) {
 			original_err = err;
 			mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1346,8 +1345,7 @@ mpool_err_t mdc_correctness_multi_mdc(int argc, char **argv)
 
 			memset(buf_in, ~i, BUF_SIZE);
 
-			err = mpool_mdc_read(mdc[i], buf_in,
-				BUF_SIZE, &read_len);
+			err = mpool_mdc_read(mdc[i], buf_in, BUF_SIZE, &read_len);
 			if (err) {
 				mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 				fprintf(stderr, "%s.%d: Unable to read from MDC: %s\n",
@@ -1381,7 +1379,7 @@ close_mdcs:
 	/* Destroy the MDCs */
 destroy_mdcs:
 	for (i = 0; i < mdc_cnt; i++) {
-		err = mpool_mdc_delete(ds, oid[i].oid[0], oid[i].oid[1]);
+		err = mpool_mdc_delete(mp, oid[i].oid[0], oid[i].oid[1]);
 		if (err) {
 			if (!original_err)
 				original_err = err;
@@ -1391,16 +1389,16 @@ destroy_mdcs:
 		}
 	}
 
-close_ds:
-	err = mpool_close(ds);
+close_mp:
+	err = mpool_close(mp);
 	if (err) {
 		if (!original_err)
 			original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to close dataset: %s\n", __func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to close mpool: %s\n", __func__, __LINE__, errbuf);
 	}
 
-close_mp:
+close_mp1:
 	free(oid);
 
 	return original_err;
@@ -1409,8 +1407,8 @@ close_mp:
 struct test_s mdc_tests[] = {
 	{ "simple",  MPFT_TEST_TYPE_CORRECTNESS, mdc_correctness_simple,
 		mdc_correctness_simple_help },
-	{ "ds_release",  MPFT_TEST_TYPE_CORRECTNESS, mdc_correctness_ds_release,
-		mdc_correctness_ds_release_help },
+	{ "mp_release",  MPFT_TEST_TYPE_CORRECTNESS, mdc_correctness_mp_release,
+		mdc_correctness_mp_release_help },
 	{ "multi_reader_single_app",  MPFT_TEST_TYPE_CORRECTNESS,
 		mdc_correctness_multi_reader_single_app,
 		mdc_correctness_multi_reader_single_app_help },
@@ -1427,7 +1425,7 @@ void mdc_help(void)
 {
 	int i = 0;
 
-	fprintf(co.co_fp, "\nds tests validate the behavior of datasets\n");
+	fprintf(co.co_fp, "\nmp tests validate the behavior of mpool\n");
 
 	fprintf(co.co_fp, "Available tests include:\n");
 	while (mdc_tests[i].test_name) {

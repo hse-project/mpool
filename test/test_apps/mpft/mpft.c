@@ -12,7 +12,7 @@
 #include "mpft_mlog.h"
 #include "mpft_mblock.h"
 #include "mpft_mdc.h"
-#include "mpft_ds.h"
+#include "mpft_mp.h"
 
 #include <stdarg.h>
 #include <sysexits.h>
@@ -40,7 +40,7 @@ static struct group_s *m_group[] = {
 	&mpft_mblock,
 	&mpft_mlog,
 	&mpft_mdc,
-	&mpft_ds,
+	&mpft_mp,
 	NULL
 };
 

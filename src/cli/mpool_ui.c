@@ -795,7 +795,7 @@ void mpool_set_help(struct verb_s *v, bool terse)
 merr_t mpool_set_func(struct verb_s *v, int argc, char **argv)
 {
 	struct mpool_devrpt     ei = { };
-	struct mpool           *ds;
+	struct mpool           *mp;
 	const char             *mpname;
 
 	char    errbuf[MPUI_ERRBUFSZ];
@@ -828,21 +828,21 @@ merr_t mpool_set_func(struct verb_s *v, int argc, char **argv)
 	if (co.co_dry_run)
 		return err;
 
-	err = mpool_open(mpname, 0, &ds, &ei);
+	err = mpool_open(mpname, 0, &mp, &ei);
 	if (err) {
 		emit_err(co.co_fp, err, errbuf, sizeof(errbuf),
 			 "set parameter for mpool", mpname, &ei);
 		return err;
 	}
 
-	err = mpool_params_set(ds, &sparams, &ei);
+	err = mpool_params_set(mp, &sparams, &ei);
 	if (err)
 		emit_err(co.co_fp, err, errbuf, sizeof(errbuf),
 			 "set parameter for mpool", mpname, &ei);
 	else if (co.co_verbose)
 		fprintf(co.co_fp, "parameters set for mpool %s\n", mpname);
 
-	mpool_close(ds);
+	mpool_close(mp);
 
 	return err;
 }

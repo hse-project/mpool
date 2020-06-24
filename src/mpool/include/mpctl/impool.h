@@ -21,10 +21,6 @@
 #include <mpcore/mlog.h>
 #include <mpool_version.h>
 
-/* Max memory async io can consume */
-#define MAX_MEM_DEFAULT_ASYNCIO_DS    (1 << 30)
-#define MAX_MEM_INGEST_ASYNCIO_DS     (2 << 20)
-
 struct mpool_devrpt;
 enum mp_status;
 
@@ -51,13 +47,13 @@ enum mp_status;
  * @ml_mldesc: Minimal mlog descriptor initialized for user-space mlogs
  * @ml_objid:  Object ID
  * @ml_magic:  Magic no., initialized by get and reset by put
- * @ml_dsfd:   dataset fd
- * @ml_idx:    Index where this handle is stored in dataset lookup map
+ * @ml_mpfd:   mpool fd
+ * @ml_idx:    Index where this handle is stored in mpool lookup map
  * @ml_flags:  Mlog flags
  *
  * Ordering:
  *     mlog handle lock (ml_lock)
- *     dataset handle lock (ds_lock)
+ *     mpool handle lock
  *     mpool core locks
  */
 struct mpool_mlog {
@@ -93,8 +89,8 @@ struct mp_mloghmap {
  * @mp_fd:
  * @mp_flags:
  * @mp_name: Mpool name
- * @mp_mlidx: next free index in ds_mlmap
- * @mp_mltot:  total occupied slots in ds_mlmap
+ * @mp_mlidx: next free index in mp_mlmap
+ * @mp_mltot:  total occupied slots in mp_mlmap
  * @mp_lock:
  */
 struct mpool {

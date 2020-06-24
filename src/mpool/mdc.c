@@ -15,7 +15,7 @@
 
 #include <mpctl/imdc.h>
 #include <mpctl/imlog.h>
-#include <mpctl/ids.h>
+#include <mpctl/imp.h>
 #include <mpool/mpool.h>
 #include <mpcore/mpcore.h>
 #include <mpcore/mlog.h>
@@ -78,7 +78,7 @@ static inline void mdc_invalidate(struct mpool_mdc *mdc)
 }
 
 /**
- * mdc_mpname_get() - Get mpool name from MDC context or dataset handle
+ * mdc_mpname_get() - Get mpool name from mpool handle
  *
  * @mp:     mpool handle
  * @mpname: buffer to store the mpool name (output)

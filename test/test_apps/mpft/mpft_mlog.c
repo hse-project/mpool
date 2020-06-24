@@ -11,7 +11,6 @@
  * * perf_seq_writes - test performance of mlog writes
  *   - required parameters:
  *     - mpool (mp)
- *     - dataset (ds)
  *   - options:
  *     - record size (rs), default: 32B
  *     - total size (ts), default: all available space in mpool
@@ -20,7 +19,7 @@
  *     - verify, default: false
  *     - pattern, default: 0x0123456789abcdef
  *
- *     Description: In the specified mpool and dataset, create an MDC
+ *     Description: In the specified mpool create an MDC
  *       and then write records of size <rs> until <ts> bytes have been
  *       written.
  *
@@ -36,7 +35,7 @@
  *       expected pattern. A custom pattern can be specified by the
  *       <pattern> parameter:
  *
- *       e.g: #./mpft mlog.perf.seq_writes mp=mp1 ds=ds1 ts=1M
+ *       e.g: #./mpft mlog.perf.seq_writes mp=mp1 ts=1M
  *                  rs=1K pattern=0123456789abcdef verify=true
  *
  *       This command line will result in 1024 records of 1024B being
@@ -114,7 +113,6 @@ static size_t perf_seq_writes_record_size = 32;    /* Bytes */
 static size_t perf_seq_writes_total_size;         /* Bytes, 0 = all available */
 static size_t perf_seq_writes_thread_cnt = 1;
 static char   perf_seq_writes_mpool[MPOOL_NAME_LEN_MAX];
-static char   perf_seq_writes_dataset[MPOOL_NAME_LEN_MAX];
 static bool   perf_seq_writes_sync;
 static bool   perf_seq_writes_read;
 static bool   perf_seq_writes_verify;
@@ -129,8 +127,6 @@ static struct param_inst perf_seq_writes_params[] = {
 	PARAM_INST_U32_SIZE(perf_seq_writes_total_size, "ts", "total size"),
 	PARAM_INST_U32(perf_seq_writes_thread_cnt, "threads", "number of threads"),
 	PARAM_INST_STRING(perf_seq_writes_mpool, sizeof(perf_seq_writes_mpool), "mp", "mpool"),
-	PARAM_INST_STRING(perf_seq_writes_dataset,
-			  sizeof(perf_seq_writes_dataset), "ds", "dataset"),
 	PARAM_INST_BOOL(perf_seq_writes_sync, "sync", "all sync writes"),
 	PARAM_INST_BOOL(perf_seq_writes_verify, "verify", "verify writes"),
 	PARAM_INST_BOOL(perf_seq_writes_skipser, "skipser",
@@ -151,7 +147,7 @@ static void perf_seq_writes_help(void)
 }
 
 struct ml_writer_args {
-	struct mpool      *ds;
+	struct mpool      *mp;
 	u32                rs;  /* write size in bytes */
 	u32                wc;  /* write count */
 	struct oid_pair    oid;
@@ -196,7 +192,7 @@ static void *ml_writer(void *arg)
 	if (perf_seq_writes_skipser)
 		flags |= MDC_OF_SKIP_SER;
 
-	err = mpool_mdc_open(args->ds, oid1, oid2, flags, &mdc);
+	err = mpool_mdc_open(args->mp, oid1, oid2, flags, &mdc);
 	if (err) {
 		fprintf(stderr, "[%d]%s: Unable to open mdc: %s\n", id,
 			__func__, mpool_strinfo(err, err_str, sizeof(err_str)));
@@ -279,7 +275,7 @@ close_mdc:
 }
 
 struct ml_reader_args {
-	struct mpool      *ds;
+	struct mpool      *mp;
 	u32                rs;  /* read size in bytes */
 	u32                rc;  /* read count */
 	struct oid_pair    oid;
@@ -323,7 +319,7 @@ static void *ml_reader(void *arg)
 	if (perf_seq_writes_skipser)
 		flags |= MDC_OF_SKIP_SER;
 
-	err = mpool_mdc_open(args->ds, oid1, oid2, flags, &mdc);
+	err = mpool_mdc_open(args->mp, oid1, oid2, flags, &mdc);
 	if (err) {
 		fprintf(stderr, "[%d]%s: Unable to open mdc: %s\n", id,
 			__func__, mpool_strinfo(err, err_str, sizeof(err_str)));
@@ -390,7 +386,7 @@ static void *ml_reader(void *arg)
 }
 
 struct ml_verify_args {
-	struct mpool      *ds;
+	struct mpool      *mp;
 	u32                rs;  /* read size in bytes */
 	u32                rc;  /* read count */
 	struct oid_pair    oid;
@@ -435,7 +431,7 @@ static void *ml_verify(void *arg)
 	if (perf_seq_writes_skipser)
 		flags |= MDC_OF_SKIP_SER;
 
-	err = mpool_mdc_open(args->ds, oid1, oid2, flags, &mdc);
+	err = mpool_mdc_open(args->mp, oid1, oid2, flags, &mdc);
 	if (err) {
 		fprintf(stderr, "[%d]%s: Unable to open mdc: %s\n", id,
 			__func__, mpool_strinfo(err, err_str, sizeof(err_str)));
@@ -511,8 +507,7 @@ static mpool_err_t perf_seq_writes(int argc, char **argv)
 {
 	mpool_err_t err = 0;
 	int    next_arg = 0;
-	char  *mp;
-	char  *ds;
+	char  *mpname;
 	u32    tc;
 	int    i;
 	int    err_cnt;
@@ -535,7 +530,7 @@ static mpool_err_t perf_seq_writes(int argc, char **argv)
 	struct ml_verify_args    *v_arg;
 	struct mpft_thread_args   *targ;
 	struct mpft_thread_resp   *tresp;
-	struct mpool              *mp_ds;
+	struct mpool              *mp;
 	struct oid_pair           *oid;
 	struct mdc_capacity        capreq;
 
@@ -548,14 +543,11 @@ static mpool_err_t perf_seq_writes(int argc, char **argv)
 	/* advance the arg pointer once for the "verb" */
 	next_arg++;
 
-	mp = perf_seq_writes_mpool;
-	ds = perf_seq_writes_dataset;
 	mlog_mclassp = mclassp_str2enum(mlog_mclassp_str);
 
-	if ((mp[0] == 0) || (ds[0] == 0)) {
-		fprintf(stderr,
-			"%s: mpool (mp=<mpool>) and dataset (ds=<dataset>) must be specified\n",
-			test_name);
+	mpname = perf_seq_writes_mpool;
+	if (mpname[0] == 0) {
+		fprintf(stderr, "%s: mpool (mp=<mpool>) must be specified\n", test_name);
 		return merr(EINVAL);
 	}
 	tc = perf_seq_writes_thread_cnt;
@@ -564,9 +556,9 @@ static mpool_err_t perf_seq_writes(int argc, char **argv)
 	if (ret == -1)
 		return merr(EINVAL);
 
-	err = mpool_open(mp, O_RDWR, &mp_ds, NULL);
+	err = mpool_open(mpname, O_RDWR, &mp, NULL);
 	if (err) {
-		fprintf(stderr, "%s: cannot open dataset %s\n", test_name, mp);
+		fprintf(stderr, "%s: cannot open mpool %s\n", test_name, mpname);
 		return err;
 	}
 
@@ -588,7 +580,7 @@ static mpool_err_t perf_seq_writes(int argc, char **argv)
 	if (perf_seq_writes_total_size == 0) {
 		struct mp_usage    usage;
 
-		err = mpool_usage_get(mp_ds, &usage);
+		err = mpool_usage_get(mp, &usage);
 		if (err) {
 			fprintf(stderr, "%s: Error getting usage. %s\n", test_name,
 				mpool_strinfo(err, err_str, sizeof(err_str)));
@@ -620,7 +612,7 @@ static mpool_err_t perf_seq_writes(int argc, char **argv)
 	for (i = 0; i < tc; i++) {
 
 		/* Create an mdc */
-		err = mpool_mdc_alloc(mp_ds, &oid[i].oid[0], &oid[i].oid[1],
+		err = mpool_mdc_alloc(mp, &oid[i].oid[0], &oid[i].oid[1],
 				      mlog_mclassp, &capreq, NULL);
 		if (err) {
 			fprintf(stderr, "[%d]%s: Unable to alloc mdc: %s\n", i, test_name,
@@ -628,14 +620,14 @@ static mpool_err_t perf_seq_writes(int argc, char **argv)
 			goto free_oid;
 		}
 
-		err = mpool_mdc_commit(mp_ds, oid[i].oid[0], oid[i].oid[1]);
+		err = mpool_mdc_commit(mp, oid[i].oid[0], oid[i].oid[1]);
 		if (err) {
 			fprintf(stderr, "[%d]%s: Unable to commit mdc: %s\n", i, test_name,
 				mpool_strinfo(err, err_str, sizeof(err_str)));
 			goto free_oid;
 		}
 
-		wr_arg[i].ds = mp_ds;
+		wr_arg[i].mp = mp;
 		wr_arg[i].rs = perf_seq_writes_record_size;
 		wr_arg[i].wc = write_cnt;
 		wr_arg[i].oid.oid[0] = oid[i].oid[0];
@@ -688,7 +680,7 @@ static mpool_err_t perf_seq_writes(int argc, char **argv)
 
 		for (i = 0; i < tc; i++) {
 
-			rd_arg[i].ds = mp_ds;
+			rd_arg[i].mp = mp;
 			rd_arg[i].rs = perf_seq_writes_record_size;
 			rd_arg[i].rc = write_cnt;
 			rd_arg[i].oid.oid[0] = oid[i].oid[0];
@@ -743,7 +735,7 @@ static mpool_err_t perf_seq_writes(int argc, char **argv)
 
 		for (i = 0; i < tc; i++) {
 
-			v_arg[i].ds = mp_ds;
+			v_arg[i].mp = mp;
 			v_arg[i].rs = perf_seq_writes_record_size;
 			v_arg[i].rc = write_cnt;
 			v_arg[i].oid.oid[0] = oid[i].oid[0];
@@ -785,7 +777,7 @@ static mpool_err_t perf_seq_writes(int argc, char **argv)
 free_oid:
 	for (i = 0; i < tc; i++) {
 		if (oid[i].oid[0] || oid[i].oid[1]) {
-			err = mpool_mdc_delete(mp_ds, oid[i].oid[0], oid[i].oid[1]);
+			err = mpool_mdc_delete(mp, oid[i].oid[0], oid[i].oid[1]);
 			if (err) {
 				mpool_strinfo(err, err_str, sizeof(err_str));
 				fprintf(stderr, "[%d]%s: unable to destroy mdc: %s\n",
@@ -801,7 +793,7 @@ free_tresp:
 free_targ:
 	free(targ);
 free_wr_arg:
-	(void)mpool_close(mp_ds);
+	(void)mpool_close(mp);
 	free(wr_arg);
 
 	return err;
@@ -856,8 +848,8 @@ u8 oflags = 0; /* flags to be used for mpool_mlog_open() */
  * opening, closing, and destroying mlogs.
  *
  * Steps:
- * 1. Create a DS
- * 2. Open the DS
+ * 1. Create an mpool
+ * 2. Open the mpool
  * 3. Allocate and abort an mlog
  * 4. Realloc and commit an mlog
  * 5. Open the mlog
@@ -892,7 +884,7 @@ mpool_err_t mlog_correctness_simple(int argc, char **argv)
 	u64    gen;
 	u64    mlogid;
 
-	struct mpool           *ds;
+	struct mpool           *mp;
 	struct mpool_mlog      *mlog1, *mlog2;
 	struct mlog_capacity    capreq;
 	struct mlog_props       props;
@@ -916,12 +908,12 @@ mpool_err_t mlog_correctness_simple(int argc, char **argv)
 		return merr(EINVAL);
 	}
 
-	/* 2. Open the DS */
-	err = mpool_open(mpool, O_RDWR, &ds, NULL);
+	/* 2. Open the mpool */
+	err = mpool_open(mpool, O_RDWR, &mp, NULL);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to open the dataset: %s\n",
+		fprintf(stderr, "%s.%d: Unable to open the mpool: %s\n",
 			__func__, __LINE__, errbuf);
 		return err;
 	}
@@ -930,42 +922,42 @@ mpool_err_t mlog_correctness_simple(int argc, char **argv)
 	capreq.lcp_spare  = false;
 
 	/* 3. Allocate and abort an mlog */
-	err = mpool_mlog_alloc(ds, mlog_mclassp, &capreq, &mlogid, &props);
+	err = mpool_mlog_alloc(mp, mlog_mclassp, &capreq, &mlogid, &props);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to create mlog: %s\n", __func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
-	err = mpool_mlog_abort(ds, mlogid);
+	err = mpool_mlog_abort(mp, mlogid);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to abort mlog: %s\n", __func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
 	/* 4. Alloc and commit an mlog */
-	err = mpool_mlog_alloc(ds, mlog_mclassp, &capreq, &mlogid, &props);
+	err = mpool_mlog_alloc(mp, mlog_mclassp, &capreq, &mlogid, &props);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to create mlog: %s\n", __func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
-	err = mpool_mlog_commit(ds, mlogid);
+	err = mpool_mlog_commit(mp, mlogid);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to commit mlog: %s\n", __func__, __LINE__, errbuf);
-		(void) mpool_mlog_abort(ds, mlogid);
-		goto close_ds;
+		(void) mpool_mlog_abort(mp, mlogid);
+		goto close_mp;
 	}
 
 	/* 5. Open the mlog */
-	err = mpool_mlog_open(ds, mlogid, oflags, &gen, &mlog1);
+	err = mpool_mlog_open(mp, mlogid, oflags, &gen, &mlog1);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -974,7 +966,7 @@ mpool_err_t mlog_correctness_simple(int argc, char **argv)
 	}
 
 	/* 7. Open another instance of the same mlog */
-	err = mpool_mlog_open(ds, mlogid, oflags, &gen, &mlog2);
+	err = mpool_mlog_open(mp, mlogid, oflags, &gen, &mlog2);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -983,7 +975,7 @@ mpool_err_t mlog_correctness_simple(int argc, char **argv)
 	}
 
 	/* 8. Try deleting mlog, this must fail due to the outstanding open */
-	err = mpool_mlog_delete(ds, mlogid);
+	err = mpool_mlog_delete(mp, mlogid);
 	if (!err) {
 		if (!original_err)
 			original_err = err = merr(EBUG);
@@ -1009,7 +1001,7 @@ close_mlog:
 	}
 
 destroy_mlog:
-	err = mpool_mlog_delete(ds, mlogid);
+	err = mpool_mlog_delete(mp, mlogid);
 	if (err) {
 		if (!original_err)
 			original_err = err;
@@ -1017,13 +1009,13 @@ destroy_mlog:
 		fprintf(stderr, "%s.%d: Unable to delete mlog: %s\n", __func__, __LINE__, errbuf);
 	}
 
-close_ds:
-	err = mpool_close(ds);
+close_mp:
+	err = mpool_close(mp);
 	if (err) {
 		if (!original_err)
 			original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to close dataset: %s\n", __func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to close mpool: %s\n", __func__, __LINE__, errbuf);
 	}
 
 	return original_err;
@@ -1057,8 +1049,8 @@ static int verify_buf(char *buf_in, size_t buf_len, char val)
  * The basic tests basic IO operation to an mlog.
  *
  * Steps:
- * 1. Create a DS
- * 2. Open the DS
+ * 1. Create an mpool
+ * 2. Open the mpool
  * 3. Allocate and commit an mlog
  * 4. Open the mlog
  * 5. Write patten to mlog both in sync and async mode
@@ -1099,7 +1091,7 @@ mpool_err_t mlog_correctness_basicio(int argc, char **argv)
 	u64    gen1, gen2;
 	u64    mlogid;
 
-	struct mpool           *ds;
+	struct mpool           *mp;
 	struct mpool_mlog      *mlog1;
 	struct mlog_capacity    capreq;
 	struct mlog_props       props;
@@ -1124,12 +1116,12 @@ mpool_err_t mlog_correctness_basicio(int argc, char **argv)
 		return merr(EINVAL);
 	}
 
-	/* 2. Open the DS */
-	err = mpool_open(mpool, O_RDWR, &ds, NULL);
+	/* 2. Open the mpool */
+	err = mpool_open(mpool, O_RDWR, &mp, NULL);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to open the dataset: %s\n",
+		fprintf(stderr, "%s.%d: Unable to open the mpool: %s\n",
 			__func__, __LINE__, errbuf);
 		return err;
 	}
@@ -1138,25 +1130,25 @@ mpool_err_t mlog_correctness_basicio(int argc, char **argv)
 	capreq.lcp_spare  = false;
 
 	/* 3. Allocate and commit an mlog */
-	err = mpool_mlog_alloc(ds, mlog_mclassp, &capreq, &mlogid, &props);
+	err = mpool_mlog_alloc(mp, mlog_mclassp, &capreq, &mlogid, &props);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to create mlog: %s\n", __func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
-	err = mpool_mlog_commit(ds, mlogid);
+	err = mpool_mlog_commit(mp, mlogid);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to commit mlog: %s\n", __func__, __LINE__, errbuf);
-		(void) mpool_mlog_abort(ds, mlogid);
-		goto close_ds;
+		mpool_mlog_abort(mp, mlogid);
+		goto close_mp;
 	}
 
 	/* 4. Open the mlog */
-	err = mpool_mlog_open(ds, mlogid, oflags, &gen1, &mlog1);
+	err = mpool_mlog_open(mp, mlogid, oflags, &gen1, &mlog1);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1226,7 +1218,7 @@ mpool_err_t mlog_correctness_basicio(int argc, char **argv)
 		goto destroy_mlog;
 	}
 
-	err = mpool_mlog_open(ds, mlogid, oflags, &gen1, &mlog1);
+	err = mpool_mlog_open(mp, mlogid, oflags, &gen1, &mlog1);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1301,7 +1293,7 @@ mpool_err_t mlog_correctness_basicio(int argc, char **argv)
 		goto destroy_mlog;
 	}
 
-	err = mpool_mlog_open(ds, mlogid, oflags, &gen2, &mlog1);
+	err = mpool_mlog_open(mp, mlogid, oflags, &gen2, &mlog1);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1337,7 +1329,7 @@ close_mlog:
 	}
 
 destroy_mlog:
-	err = mpool_mlog_delete(ds, mlogid);
+	err = mpool_mlog_delete(mp, mlogid);
 	if (err) {
 		if (!original_err)
 			original_err = err;
@@ -1345,13 +1337,13 @@ destroy_mlog:
 		fprintf(stderr, "%s.%d: Unable to delete mlog: %s\n", __func__, __LINE__, errbuf);
 	}
 
-close_ds:
-	err = mpool_close(ds);
+close_mp:
+	err = mpool_close(mp);
 	if (err) {
 		if (!original_err)
 			original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to close dataset: %s\n", __func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to close mpool: %s\n", __func__, __LINE__, errbuf);
 	}
 
 	return original_err;
@@ -1372,12 +1364,12 @@ close_ds:
  * reference.
  *
  * Steps:
- * 1. create a DS
- * 2. open the DS in O_RDWR mode
+ * 1. create an mpool
+ * 2. open the mpool in O_RDWR mode
  * 3. Allocate and commit an mlog
  * 4. Open the mlog in client serialization mode
  * 5. Write pattern to mlog in sync mode
- * 6. Validate that ds close fails due to outstanding alloc reference
+ * 6. Validate that mp close fails due to outstanding alloc reference
  * 7. Read/Verify pattern
  * 8. Cleanup
  */
@@ -1410,7 +1402,7 @@ mpool_err_t mlog_correctness_recovery(int argc, char **argv)
 	int    i, rc;
 	size_t read_len;
 
-	struct mpool           *ds;
+	struct mpool           *mp;
 	struct mpool_mlog      *mlog1;
 	struct mlog_capacity    capreq;
 	struct mlog_props       props;
@@ -1435,12 +1427,12 @@ mpool_err_t mlog_correctness_recovery(int argc, char **argv)
 		return merr(EINVAL);
 	}
 
-	/* 2. open the DS in O_RDWR mode */
-	err = mpool_open(mpool, O_RDWR, &ds, NULL);
+	/* 2. open the mpool in O_RDWR mode */
+	err = mpool_open(mpool, O_RDWR, &mp, NULL);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to open the dataset: %s\n",
+		fprintf(stderr, "%s.%d: Unable to open the mpool: %s\n",
 			__func__, __LINE__, errbuf);
 		return err;
 	}
@@ -1449,25 +1441,25 @@ mpool_err_t mlog_correctness_recovery(int argc, char **argv)
 	capreq.lcp_spare  = false;
 
 	/* 3. Allocate and commit an mlog */
-	err = mpool_mlog_alloc(ds, mlog_mclassp, &capreq, &mlogid, &props);
+	err = mpool_mlog_alloc(mp, mlog_mclassp, &capreq, &mlogid, &props);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to create mlog: %s\n", __func__, __LINE__, errbuf);
-		goto close_ds;
+		goto close_mp;
 	}
 
-	err = mpool_mlog_commit(ds, mlogid);
+	err = mpool_mlog_commit(mp, mlogid);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
 		fprintf(stderr, "%s.%d: Unable to commit mlog: %s\n", __func__, __LINE__, errbuf);
-		(void) mpool_mlog_abort(ds, mlogid);
-		goto close_ds;
+		(void) mpool_mlog_abort(mp, mlogid);
+		goto close_mp;
 	}
 
 	/* 4. Open the mlog with client serialization */
-	err = mpool_mlog_open(ds, mlogid, MLOG_OF_SKIP_SER, &gen, &mlog1);
+	err = mpool_mlog_open(mp, mlogid, MLOG_OF_SKIP_SER, &gen, &mlog1);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
@@ -1493,12 +1485,12 @@ mpool_err_t mlog_correctness_recovery(int argc, char **argv)
 		}
 	}
 
-	/* 6. Validate that ds close fails due to outstanding alloc reference */
-	err = mpool_close(ds);
+	/* 6. Validate that mp close fails due to outstanding alloc reference */
+	err = mpool_close(mp);
 	if (!err) {
 		original_err = err = merr(EBUG);
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: dataset close must have failed: %s\n",
+		fprintf(stderr, "%s.%d: mpool close must have failed: %s\n",
 			__func__, __LINE__, errbuf);
 		fprintf(stderr, "\tTEST FAILURE: %s\n", test);
 		return err;
@@ -1540,7 +1532,7 @@ close_mlog:
 	}
 
 destroy_mlog:
-	err = mpool_mlog_delete(ds, mlogid);
+	err = mpool_mlog_delete(mp, mlogid);
 	if (err) {
 		if (!original_err)
 			original_err = err;
@@ -1548,12 +1540,12 @@ destroy_mlog:
 		fprintf(stderr, "%s.%d: Unable to delete mlog: %s\n", __func__, __LINE__, errbuf);
 	}
 
-close_ds:
-	err = mpool_close(ds);
+close_mp:
+	err = mpool_close(mp);
 	if (err) {
 		original_err = err;
 		mpool_strinfo(err, errbuf, ERROR_BUFFER_SIZE);
-		fprintf(stderr, "%s.%d: Unable to close dataset: %s\n", __func__, __LINE__, errbuf);
+		fprintf(stderr, "%s.%d: Unable to close mpool: %s\n", __func__, __LINE__, errbuf);
 	}
 
 	return original_err;
