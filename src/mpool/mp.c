@@ -65,8 +65,7 @@ mpool_dev_init_all(
 
 			pdname = strrchr(dpaths[idx], '/');
 			pdname = pdname ? pdname + 1 : dpaths[idx];
-			strncpy(pdv[idx].pdi_name, pdname,
-				sizeof(pdv[idx].pdi_name)-1);
+			strncpy(pdv[idx].pdi_name, pdname, sizeof(pdv[idx].pdi_name)-1);
 			mpool_pd_status_set(&pdv[idx], PRX_STAT_ONLINE);
 		}
 
@@ -80,11 +79,7 @@ mpool_dev_init_all(
 	return err;
 }
 
-merr_t
-mpool_sb_magic_check(
-	char                   *dpath,
-	struct pd_prop         *pd_prop,
-	struct mpool_devrpt    *devrpt)
+merr_t mpool_sb_magic_check(char *dpath, struct pd_prop *pd_prop, struct mpool_devrpt *devrpt)
 {
 	struct mpool_dev_info *pd;
 	merr_t                 err;
@@ -95,8 +90,7 @@ mpool_sb_magic_check(
 
 	pd = calloc(1, sizeof(*pd));
 	if (!pd) {
-		mpool_devrpt(devrpt, MPOOL_RC_ERRMSG, -1,
-			     "mpool dev info alloc failed");
+		mpool_devrpt(devrpt, MPOOL_RC_ERRMSG, -1, "mpool dev info alloc failed");
 		return merr(ENOMEM);
 	}
 
@@ -110,8 +104,7 @@ mpool_sb_magic_check(
 	rval = sb_magic_check(pd);
 	if (rval < 0) {
 		mpool_devrpt(devrpt, MPOOL_RC_ERRMSG, -1,
-			     "superblock magic read from %s failed",
-			     pd->pdi_name);
+			     "superblock magic read from %s failed", pd->pdi_name);
 		err = merr(rval);
 	} else if (rval > 0) {
 		mpool_devrpt(devrpt, MPOOL_RC_MAGIC, 0, NULL);
@@ -124,19 +117,13 @@ mpool_sb_magic_check(
 	return err;
 }
 
-merr_t
-mpool_sb_erase(
-	int                   dcnt,
-	char                **dpaths,
-	struct pd_prop       *pd,
-	struct mpool_devrpt  *devrpt)
+merr_t mpool_sb_erase(int dcnt, char **dpaths, struct pd_prop *pd, struct mpool_devrpt *devrpt)
 {
 	struct mpool_dev_info *pdv;
 	merr_t                 err;
 	int                    i;
 
-	if (!dpaths || !pd || !devrpt ||
-	    dcnt < 1 || dcnt > MPOOL_DRIVES_MAX)
+	if (!dpaths || !pd || !devrpt || dcnt < 1 || dcnt > MPOOL_DRIVES_MAX)
 		return merr(EINVAL);
 
 	pdv = calloc((MPOOL_DRIVES_MAX + 1), sizeof(*pdv));
@@ -154,8 +141,7 @@ mpool_sb_erase(
 
 		if (sberr && !err) {
 			mpool_devrpt(devrpt, MPOOL_RC_ERRMSG, -1,
-				     "superblock erase of %s failed",
-				     dpaths[i]);
+				     "superblock erase of %s failed", dpaths[i]);
 			err = sberr;
 		}
 
@@ -181,13 +167,7 @@ void mpool_devrpt_init(struct mpool_devrpt *devrpt)
 	devrpt->mdr_msg[0] = '\000';
 }
 
-void
-mpool_devrpt(
-	struct mpool_devrpt    *devrpt,
-	enum mpool_rc           rcode,
-	int                     off,
-	const char             *fmt,
-	...)
+void mpool_devrpt(struct mpool_devrpt *devrpt, enum mpool_rc rcode, int off, const char *fmt, ...)
 {
 	va_list ap;
 

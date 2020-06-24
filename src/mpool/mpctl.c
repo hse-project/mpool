@@ -57,8 +57,7 @@ struct devrpt_tab {
 	const char     *msg;
 };
 
-static const struct devrpt_tab
-devrpt_tab[] = {
+static const struct devrpt_tab devrpt_tab[] = {
 	/* Mpool Core values */
 	{ MPOOL_RC_NONE,    "Success" },
 	{ MPOOL_RC_OPEN,    "Unable to open" },
@@ -69,37 +68,32 @@ devrpt_tab[] = {
 	{ MPOOL_RC_ENOMEM,  "No system memory available" },
 	{ MPOOL_RC_MDC,     "Superblock mdc info missing or invalid" },
 
-	{ MPOOL_RC_MIXED,
-	  "Device params incompatible with others in same media class" },
-	{ MPOOL_RC_ZOMBIE,
-	  "Device previously removed from pool and is no longer a member" },
-	{ MPOOL_RC_MDC_COMPACT_ACTIVATE,
-	  "Failed to compact mpool MDC after upgrade" },
+	{ MPOOL_RC_MIXED,   "Device params incompatible with others in same media class" },
+	{ MPOOL_RC_ZOMBIE,  "Device previously removed from pool and is no longer a member" },
+	{ MPOOL_RC_MDC_COMPACT_ACTIVATE, "Failed to compact mpool MDC after upgrade" },
 
 	/* MPCTL values */
-	{ MPCTL_RC_TOOMANY,     "Too many devices specified" },
-	{ MPCTL_RC_BADMNT,      "Partial activation" },
-	{ MPCTL_RC_NLIST,       "Ill-formed name list" },
-	{ MPCTL_RC_MP_NODEV,    "No such mpool" },
-	{ MPCTL_RC_INVALDEV,    "Unable to add device" },
-	{ MPCTL_RC_MPEXIST,     "mpool already exists" },
-	{ MPCTL_RC_NOT_ONE,     "Zero or several devices in a media class" },
+	{ MPCTL_RC_TOOMANY,  "Too many devices specified" },
+	{ MPCTL_RC_BADMNT,   "Partial activation" },
+	{ MPCTL_RC_NLIST,    "Ill-formed name list" },
+	{ MPCTL_RC_MP_NODEV, "No such mpool" },
+	{ MPCTL_RC_INVALDEV, "Unable to add device" },
+	{ MPCTL_RC_MPEXIST,  "mpool already exists" },
+	{ MPCTL_RC_NOT_ONE,  "Zero or several devices in a media class" },
 
-	{ MPCTL_RC_ENTNAM_INV,      "Invalid name or label" },
-	{ MPCTL_RC_DEVACTIVATED,    "The device belongs to a activated mpool" },
-	{ MPCTL_RC_NOTACTIVATED,    "mpool is not activated" },
-	{ MPCTL_RC_INVDEVORMCLASS,  "Invalid device path or media class name" },
+	{ MPCTL_RC_ENTNAM_INV,     "Invalid name or label" },
+	{ MPCTL_RC_DEVACTIVATED,   "The device belongs to a activated mpool" },
+	{ MPCTL_RC_NOTACTIVATED,   "mpool is not activated" },
+	{ MPCTL_RC_INVDEVORMCLASS, "Invalid device path or media class name" },
 	{ MPCTL_RC_NO_MDCAPACITY,
 	 "An mpool must have at least one device in the CAPACITY media class" },
 
 	{ 0, NULL }
 };
 
-const char *
-mpool_devrpt_strerror(
-	enum mpool_rc   rcode)
+const char *mpool_devrpt_strerror(enum mpool_rc rcode)
 {
-	const struct devrpt_tab    *entry = devrpt_tab;
+	const struct devrpt_tab *entry = devrpt_tab;
 
 	while (entry->msg && entry->rcode != rcode)
 		++entry;
@@ -108,10 +102,7 @@ mpool_devrpt_strerror(
 }
 
 static void
-mpool_devrpt_merge(
-	struct mpool_devrpt        *dst,
-	const struct mpool_devrpt  *src,
-	const char                 *entity)
+mpool_devrpt_merge(struct mpool_devrpt *dst, const struct mpool_devrpt *src, const char *entity)
 {
 	if (!dst || !src || !src->mdr_rcode)
 		return;
@@ -136,17 +127,11 @@ mpool_devrpt_merge(
  *
  * Returns: merr_t
  */
-static
-merr_t
-mpool_transmogrify(
-	char             ***dpaths,
-	struct imp_entry   *entry,
-	char                sep,
-	int                 dcnt)
+static merr_t mpool_transmogrify(char ***dpaths, struct imp_entry *entry, char sep, int dcnt)
 {
-	char  **dv;
-	char   *p;
-	int     i, j;
+	char   **dv;
+	char    *p;
+	int      i, j;
 
 	dv = calloc(dcnt, (sizeof(char *) + sizeof(entry->mp_path) + 8));
 	if (!dv)
@@ -167,10 +152,7 @@ mpool_transmogrify(
 	return 0;
 }
 
-static void
-mpool_params_init2(
-	struct mpool_params        *dst,
-	const struct mpool_params  *src)
+static void mpool_params_init2(struct mpool_params *dst, const struct mpool_params *src)
 {
 	mpool_params_init(dst);
 
@@ -178,11 +160,7 @@ mpool_params_init2(
 		*dst = *src;
 }
 
-static uint64_t
-mpool_ioctl(
-	int     fd,
-	int     cmd,
-	void   *arg)
+static uint64_t mpool_ioctl(int fd, int cmd, void *arg)
 {
 	struct mpioc_cmn   *cmn = arg;
 	int                 rc;
@@ -209,11 +187,7 @@ mpool_ioctl(
  * hence it also acts as a backstop for when udevd isn't
  * getting the job done.
  */
-static mpool_err_t
-mpool_ugm_check(
-	const char                 *name,
-	int                         fd,
-	const struct mpool_params  *params)
+static mpool_err_t mpool_ugm_check(const char *name, int fd, const struct mpool_params *params)
 {
 	struct mpool   *ds = NULL;
 	struct stat     sb;
@@ -242,8 +216,7 @@ mpool_ugm_check(
 		usleep(10000 * i + 1000);
 
 		rc = fstat(fd, &sb);
-		if (!rc &&
-		    (uid == -1 || sb.st_uid == params->mp_uid) &&
+		if (!rc && (uid == -1 || sb.st_uid == params->mp_uid) &&
 		    (gid == -1 || sb.st_gid == params->mp_gid) &&
 		    (mode == -1 || (sb.st_mode & 0777) == mode))
 			goto errout;
@@ -272,12 +245,7 @@ errout:
 	return err;
 }
 
-merr_t
-mp_list_mpool_by_device(
-	int      devicec,
-	char   **devicev,
-	char    *buf,
-	size_t   buf_len)
+merr_t mp_list_mpool_by_device(int devicec, char **devicev, char *buf, size_t buf_len)
 {
 	struct imp_entry   *mpool[MPOOL_COUNT_MAX];
 	struct imp_entry   *entry = NULL;
@@ -319,14 +287,12 @@ mp_list_mpool_by_device(
 		if (dup == false) {
 			mpool[mpool_cnt] = &entry[i];
 
-			if (buf_len - buf_offset <
-					strlen(mpool[mpool_cnt]->mp_name) + 1) {
+			if (buf_len - buf_offset < strlen(mpool[mpool_cnt]->mp_name) + 1) {
 				err = merr(ENOBUFS);
 				goto exit;
 			}
 
-			snprintf_append(buf, buf_len, &buf_offset,
-					"%s%s", comma,
+			snprintf_append(buf, buf_len, &buf_offset, "%s%s", comma,
 					mpool[mpool_cnt]->mp_name);
 			comma = ", ";
 			mpool_cnt++;
@@ -339,12 +305,7 @@ exit:
 }
 
 merr_t
-mp_sb_erase(
-	int                   devicec,
-	char                **devicev,
-	struct mpool_devrpt  *devrpt,
-	char                 *pools,
-	size_t                pools_len)
+mp_sb_erase(int devicec, char **devicev, struct mpool_devrpt *devrpt, char *pools, size_t pools_len)
 {
 	struct pd_prop   *pd_prop = NULL;
 	merr_t            err;
@@ -381,12 +342,7 @@ exit:
  * @name: zero terminated string
  * @maxlen: maximum length of "name" (not counting the trailing zero).
  */
-static merr_t
-mpool_strchk(
-	const char         *str,
-	size_t              minlen,
-	size_t              maxlen,
-	struct mpool_devrpt  *ei)
+static merr_t mpool_strchk(const char *str, size_t minlen, size_t maxlen, struct mpool_devrpt *ei)
 {
 	if (!str || strnlen(str, minlen) < minlen)
 		return merr(EINVAL);
@@ -418,8 +374,7 @@ mpool_strchk(
 	return 0;
 }
 
-static
-merr_t
+static merr_t
 discover(
 	const char         *name,
 	u32                *flags,
@@ -443,9 +398,7 @@ discover(
 			return err;
 	}
 
-	err = imp_entries_get(rc ? name : NULL,
-			      rc ? NULL : &uuid,
-			      NULL, flags, entry, dcnt);
+	err = imp_entries_get(rc ? name : NULL, rc ? NULL : &uuid, NULL, flags, entry, dcnt);
 
 	if (*dcnt > MPOOL_DRIVES_MAX) {
 		free(*entry);
@@ -463,8 +416,7 @@ discover(
 	return err;
 }
 
-static void
-mpool_rundir_create(const char *mpname)
+static void mpool_rundir_create(const char *mpname)
 {
 	struct mpool_params params;
 	struct mpool       *ds;
@@ -479,8 +431,7 @@ mpool_rundir_create(const char *mpname)
 
 	err = mpool_open(mpname, 0, &ds, NULL);
 	if (err) {
-		fprintf(stderr, "%s: mp_open(%s): %s\n",
-			__func__, mpname,
+		fprintf(stderr, "%s: mp_open(%s): %s\n", __func__, mpname,
 			mpool_strerror(err, errbuf, sizeof(errbuf)));
 		return;
 	}
@@ -490,8 +441,7 @@ mpool_rundir_create(const char *mpname)
 	mpool_close(ds);
 
 	if (err) {
-		fprintf(stderr, "%s: mpool_params_get(%s): %s",
-			__func__, mpname,
+		fprintf(stderr, "%s: mpool_params_get(%s): %s", __func__, mpname,
 			mpool_strerror(err, errbuf, sizeof(errbuf)));
 		return;
 	}
@@ -506,8 +456,7 @@ mpool_rundir_create(const char *mpname)
 	rc = mkdir(path, params.mp_mode);
 	if (rc && errno != EEXIST) {
 		err = merr(errno);
-		fprintf(stderr, "%s: mkdir(%s, %04o): %s\n",
-			__func__, path, params.mp_mode,
+		fprintf(stderr, "%s: mkdir(%s, %04o): %s\n", __func__, path, params.mp_mode,
 			mpool_strerror(err, errbuf, sizeof(errbuf)));
 		return;
 	}
@@ -515,31 +464,21 @@ mpool_rundir_create(const char *mpname)
 	rc = chown(path, params.mp_uid, params.mp_gid);
 	if (rc) {
 		err = merr(errno);
-		fprintf(stderr, "%s: chown(%s, %u, %u): %s\n",
-			__func__, path,
-			params.mp_uid, params.mp_gid,
-			mpool_strerror(err, errbuf, sizeof(errbuf)));
+		fprintf(stderr, "%s: chown(%s, %u, %u): %s\n", __func__, path, params.mp_uid,
+			params.mp_gid, mpool_strerror(err, errbuf, sizeof(errbuf)));
 		remove(path);
 	}
 }
 
-static
-int
-mpool_rundir_destroy_cb(
-	const char         *fpath,
-	const struct stat  *sb,
-	int                 typeflag,
-	struct FTW         *ftwbuf)
+static int
+mpool_rundir_destroy_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
 {
 	return remove(fpath);
 }
 
-static
-void
-mpool_rundir_destroy(
-	const char *mpname)
+static void mpool_rundir_destroy(const char *mpname)
 {
-	char    path[PATH_MAX];
+	char   path[PATH_MAX];
 
 	if (!mpname)
 		return;
@@ -587,8 +526,7 @@ mpool_mclass_add(
 	err = imp_dev_get_prop(devname, &pd_prop);
 	if (err) {
 		mpool_devrpt(ei, MPCTL_RC_DEVRW, -1, devname);
-		mpool_elog(MPOOL_ERR
-			   "mpool %s create, unable to get device %s properties @@e",
+		mpool_elog(MPOOL_ERR "mpool %s create, unable to get device %s properties @@e",
 			   err, mpname, devname);
 		goto out;
 	}
@@ -629,10 +567,7 @@ out:
 }
 
 uint64_t
-mpool_mclass_get(
-	struct mpool               *mp,
-	enum mp_media_classp        mclass,
-	struct mpool_mclass_props  *props)
+mpool_mclass_get(struct mpool *mp, enum mp_media_classp mclass, struct mpool_mclass_props *props)
 {
 	struct mpioc_prop   mp_prop = { };
 	struct mpioc_list   ls = {
@@ -785,11 +720,7 @@ mpool_create(
 	return err;
 }
 
-uint64_t
-mpool_destroy(
-	const char             *mpname,
-	uint32_t                flags,
-	struct mpool_devrpt    *ei)
+uint64_t mpool_destroy(const char *mpname, uint32_t flags, struct mpool_devrpt *ei)
 {
 	struct imp_entry   *entries;
 	struct mpioc_mpool  mp = { };
@@ -811,8 +742,7 @@ mpool_destroy(
 		return err;
 	}
 
-	err = discover(mpname, &flags, &entries, &dcnt,
-		       &dpathv, '\n', __func__);
+	err = discover(mpname, &flags, &entries, &dcnt, &dpathv, '\n', __func__);
 	if (err) {
 		if (merr_errno(err) == ENOENT)
 			mpool_devrpt(ei, MPCTL_RC_MP_NODEV, -1, mpname);
@@ -822,8 +752,7 @@ mpool_destroy(
 
 	mpool_rundir_destroy(entries->mp_name);
 
-	strlcpy(mp.mp_params.mp_name, entries->mp_name,
-		sizeof(mp.mp_params.mp_name));
+	strlcpy(mp.mp_params.mp_name, entries->mp_name, sizeof(mp.mp_params.mp_name));
 
 	mp.mp_pd_prop = imp_entries2pd_prop(dcnt, entries);
 	if (!mp.mp_pd_prop) {
@@ -841,8 +770,7 @@ mpool_destroy(
 	err = mpool_ioctl(fd, MPIOC_MP_DESTROY, &mp);
 	if (err && ei) {
 		ei->mdr_rcode = mp.mp_cmn.mc_rcode;
-		mpool_devrpt_merge(ei, &mp.mp_devrpt,
-				   mp.mp_devrpt.mdr_off == -1 ? "" :
+		mpool_devrpt_merge(ei, &mp.mp_devrpt, mp.mp_devrpt.mdr_off == -1 ? "" :
 				   entries[mp.mp_devrpt.mdr_off].mp_path);
 	} else {
 		/* Print on stdout any info message present in mp_devrpt. */
@@ -859,11 +787,7 @@ errout:
 	return err;
 }
 
-uint64_t
-mpool_list(
-	int                    *propscp,
-	struct mpool_params   **propsvp,
-	struct mpool_devrpt    *ei)
+uint64_t mpool_list(int *propscp, struct mpool_params **propsvp, struct mpool_devrpt *ei)
 {
 	struct mpioc_prop      *propv;
 	struct mpioc_list       ls;
@@ -921,11 +845,7 @@ mpool_list(
 	return 0;
 }
 
-uint64_t
-mpool_scan(
-	int                    *propscp,
-	struct mpool_params   **propsvp,
-	struct mpool_devrpt      *ei)
+uint64_t mpool_scan(int *propscp, struct mpool_params **propsvp, struct mpool_devrpt *ei)
 {
 	struct imp_entry       *entryv = NULL;
 	struct mpool_params    *propsv, *props;
@@ -951,7 +871,7 @@ mpool_scan(
 	}
 
 	for (i = 0; i < entryc; i++) {
-		bool    dup = false;
+		bool   dup = false;
 
 		for (j = 0; j < mpool_cnt && !dup; ++j)
 			dup = !strcmp(entryv[i].mp_name, propsv[j].mp_name);
@@ -960,8 +880,7 @@ mpool_scan(
 			continue;
 
 		props = propsv + mpool_cnt++;
-		strlcpy(props->mp_name, entryv[i].mp_name,
-			sizeof(props->mp_name));
+		strlcpy(props->mp_name, entryv[i].mp_name, sizeof(props->mp_name));
 		memcpy(&props->mp_poolid, &entryv[i].mp_uuid, MPOOL_UUID_SIZE);
 	}
 
@@ -973,11 +892,7 @@ mpool_scan(
 	return 0;
 }
 
-static
-void
-mp_rundir_chown(
-	const char             *mpname,
-	struct mpool_params    *params)
+static void mp_rundir_chown(const char *mpname, struct mpool_params *params)
 {
 	struct dirent  *d;
 
@@ -996,8 +911,7 @@ mp_rundir_chown(
 
 	dir = opendir(path);
 	if (!dir) {
-		mse_log(MPOOL_WARNING "%s: opendir(%s): %s", __func__,
-			path, strerror(errno));
+		mse_log(MPOOL_WARNING "%s: opendir(%s): %s", __func__, path, strerror(errno));
 		return;
 	}
 
@@ -1008,8 +922,7 @@ mp_rundir_chown(
 		rc = fchownat(dirfd(dir), d->d_name, uid, gid, 0);
 		if (rc)
 			mse_log(MPOOL_WARNING "%s: chown(%s/%s, %u, %u): %s",
-				__func__, path, d->d_name,
-				uid, gid, strerror(errno));
+				__func__, path, d->d_name, uid, gid, strerror(errno));
 	}
 
 	rc = fchownat(dirfd(dir), ".", uid, gid, 0);
@@ -1032,11 +945,7 @@ mp_rundir_chown(
 	closedir(dir);
 }
 
-uint64_t
-mpool_params_get(
-	struct mpool           *ds,
-	struct mpool_params    *params,
-	struct mpool_devrpt    *ei)
+uint64_t mpool_params_get(struct mpool *ds, struct mpool_params *params, struct mpool_devrpt *ei)
 {
 	struct mpioc_params get = { };
 	merr_t              err;
@@ -1057,11 +966,7 @@ mpool_params_get(
 	return 0;
 }
 
-uint64_t
-mpool_params_set(
-	struct mpool           *ds,
-	struct mpool_params    *params,
-	struct mpool_devrpt    *ei)
+uint64_t mpool_params_set(struct mpool *ds, struct mpool_params *params, struct mpool_devrpt *ei)
 {
 	struct mpioc_params set = { };
 	merr_t              err;
@@ -1085,8 +990,7 @@ mpool_params_set(
 
 	mp_rundir_chown(ds->mp_name, &set.mps_params);
 
-	if (params->mp_uid != -1 || params->mp_gid != -1 ||
-	    params->mp_mode != -1)
+	if (params->mp_uid != -1 || params->mp_gid != -1 || params->mp_mode != -1)
 		err = mpool_ugm_check(NULL, ds->mp_fd, &set.mps_params);
 
 	*params = set.mps_params;
@@ -1094,10 +998,7 @@ mpool_params_set(
 	return err;
 }
 
-uint64_t
-mpool_usage_get(
-	struct mpool           *ds,
-	struct mp_usage        *usage)
+uint64_t mpool_usage_get(struct mpool *ds, struct mp_usage *usage)
 {
 	struct mpioc_prop   prop = { };
 	struct mpioc_list   ls = {
@@ -1120,13 +1021,9 @@ mpool_usage_get(
 	return 0;
 }
 
-uint64_t
-mpool_dev_props_get(
-	struct mpool       *mp_ds,
-	const char         *devname,
-	struct mp_devprops *props)
+uint64_t mpool_dev_props_get(struct mpool *mp_ds, const char *devname, struct mp_devprops *props)
 {
-	struct mpioc_devprops   dprops;
+	struct mpioc_devprops  dprops;
 
 	char    rpath[PATH_MAX], *base;
 	merr_t  err;
@@ -1158,11 +1055,7 @@ mpool_dev_props_get(
 }
 
 uint64_t
-mpool_activate(
-	const char             *mpname,
-	struct mpool_params    *params,
-	u32                     flags,
-	struct mpool_devrpt    *ei)
+mpool_activate(const char *mpname, struct mpool_params *params, u32 flags, struct mpool_devrpt *ei)
 {
 	struct mpioc_mpool  mp = { };
 	struct imp_entry   *entry;
@@ -1190,8 +1083,7 @@ mpool_activate(
 		return err;
 	}
 
-	err = discover(mpname, &flags, &entry, &entry_cnt, &dpaths, '\n',
-		       __func__);
+	err = discover(mpname, &flags, &entry, &entry_cnt, &dpaths, '\n', __func__);
 	if (err) {
 		if (merr_errno(err) == ENOENT)
 			mpool_devrpt(ei, MPCTL_RC_MP_NODEV, -1, mpname);
@@ -1223,16 +1115,14 @@ mpool_activate(
 	mp.mp_dpathssz = strlen(dpaths[0]) + 1; /* trailing NUL */
 	mp.mp_flags = flags;
 
-	strlcpy(mp.mp_params.mp_name, entry->mp_name,
-		sizeof(mp.mp_params.mp_name));
+	strlcpy(mp.mp_params.mp_name, entry->mp_name, sizeof(mp.mp_params.mp_name));
 
 	err = mpool_ioctl(fd, MPIOC_MP_ACTIVATE, &mp);
 	if (err) {
 		if (ei) {
 			ei->mdr_rcode = mp.mp_cmn.mc_rcode;
 
-			mpool_devrpt_merge(ei, &mp.mp_devrpt,
-					   mp.mp_devrpt.mdr_off == -1 ? "" :
+			mpool_devrpt_merge(ei, &mp.mp_devrpt, mp.mp_devrpt.mdr_off == -1 ? "" :
 					   entry[mp.mp_devrpt.mdr_off].mp_path);
 		}
 		goto errout;
@@ -1260,11 +1150,7 @@ errout:
 	return err;
 }
 
-uint64_t
-mpool_deactivate(
-	const char             *mpname,
-	u32                     flags,
-	struct mpool_devrpt    *ei)
+uint64_t mpool_deactivate(const char *mpname, u32 flags, struct mpool_devrpt *ei)
 {
 	struct mpioc_mpool  mp;
 	struct imp_entry   *entry;
@@ -1278,8 +1164,7 @@ mpool_deactivate(
 	if (!mpname)
 		return merr(EINVAL);
 
-	err = discover(mpname, &flags, &entry, &entry_cnt, &dpaths, '\n',
-		       __func__);
+	err = discover(mpname, &flags, &entry, &entry_cnt, &dpaths, '\n', __func__);
 	if (err) {
 		if (merr_errno(err) == ENOENT)
 			mpool_devrpt(ei, MPCTL_RC_MP_NODEV, -1, mpname);
@@ -1297,8 +1182,7 @@ mpool_deactivate(
 
 	memset(&mp, 0, sizeof(mp));
 	mp.mp_cmn.mc_msg = ei ? ei->mdr_msg : NULL;
-	strlcpy(mp.mp_params.mp_name, entry->mp_name,
-		sizeof(mp.mp_params.mp_name));
+	strlcpy(mp.mp_params.mp_name, entry->mp_name, sizeof(mp.mp_params.mp_name));
 
 	err = mpool_ioctl(fd, MPIOC_MP_DEACTIVATE, &mp);
 	if (err && ei) {
@@ -1319,12 +1203,7 @@ errout:
 	return err;
 }
 
-uint64_t
-mpool_rename(
-	const char             *oldmp,
-	const char             *newmp,
-	uint32_t                flags,
-	struct mpool_devrpt    *ei)
+uint64_t mpool_rename(const char *oldmp, const char *newmp, uint32_t flags, struct mpool_devrpt *ei)
 {
 	struct mpioc_mpool  mp;
 	struct imp_entry   *entry = NULL;
@@ -1363,8 +1242,7 @@ mpool_rename(
 	free(entry);
 
 	/* Find all devices associated with oldmp by UUID */
-	err = discover(uuid, &flags, &entry, &entry_cnt, &dpaths, '\n',
-		       __func__);
+	err = discover(uuid, &flags, &entry, &entry_cnt, &dpaths, '\n', __func__);
 	if (err) {
 		if (merr_errno(err) == ENOENT)
 			mpool_devrpt(ei, MPCTL_RC_MP_NODEV, -1, oldmp);
@@ -1399,8 +1277,7 @@ mpool_rename(
 	if (err && ei) {
 		ei->mdr_rcode = mp.mp_cmn.mc_rcode;
 
-		mpool_devrpt_merge(ei, &mp.mp_devrpt,
-				   mp.mp_devrpt.mdr_off == -1 ? "" :
+		mpool_devrpt_merge(ei, &mp.mp_devrpt, mp.mp_devrpt.mdr_off == -1 ? "" :
 				   entry[mp.mp_devrpt.mdr_off].mp_path);
 	}
 
@@ -1460,11 +1337,7 @@ merr_t mpool_name_get(struct mpool *mp, char *mpname, size_t mplen)
 }
 
 uint64_t
-mpool_open(
-	const char         *mp_name,
-	uint32_t            flags,
-	struct mpool      **dsp,
-	struct mpool_devrpt  *ei)
+mpool_open(const char *mp_name, uint32_t flags, struct mpool **dsp, struct mpool_devrpt *ei)
 {
 	struct mpool   *ds;
 
@@ -1475,8 +1348,7 @@ mpool_open(
 	if (!mp_name || !dsp)
 		return merr(EINVAL);
 
-	rc = snprintf(path, sizeof(path), "/dev/%s/%s",
-		      MPC_DEV_SUBDIR, mp_name);
+	rc = snprintf(path, sizeof(path), "/dev/%s/%s", MPC_DEV_SUBDIR, mp_name);
 
 	if (rc < 0 || rc >= sizeof(path))
 		return merr(ENAMETOOLONG);
@@ -2359,11 +2231,11 @@ merr_t mpool_mlog_erase_byoid(struct mpool *mp, u64 mlogid, uint64_t mingen)
 
 uint64_t
 mpool_mblock_alloc(
-	struct mpool                   *ds,
-	enum mp_media_classp            mclassp,
-	bool                            spare,
-	uint64_t                       *mbid,
-	struct mblock_props            *props)
+	struct mpool           *ds,
+	enum mp_media_classp    mclassp,
+	bool                    spare,
+	uint64_t               *mbid,
+	struct mblock_props    *props)
 {
 	struct mpioc_mblock mb = { .mb_mclassp = mclassp };
 	merr_t              err;
@@ -2385,11 +2257,7 @@ mpool_mblock_alloc(
 	return 0;
 }
 
-uint64_t
-mpool_mblock_find(
-	struct mpool           *ds,
-	uint64_t                objid,
-	struct mblock_props    *props)
+uint64_t mpool_mblock_find(struct mpool *ds, uint64_t objid, struct mblock_props *props)
 {
 	struct mpioc_mblock mb = { .mb_objid = objid };
 	merr_t              err;
@@ -2407,10 +2275,7 @@ mpool_mblock_find(
 	return 0;
 }
 
-uint64_t
-mpool_mblock_commit(
-	struct mpool   *ds,
-	uint64_t        mbid)
+uint64_t mpool_mblock_commit(struct mpool *ds, uint64_t mbid)
 {
 	struct mpioc_mblock_id  mi = { .mi_objid = mbid };
 
@@ -2420,10 +2285,7 @@ mpool_mblock_commit(
 	return mpool_ioctl(ds->mp_fd, MPIOC_MB_COMMIT, &mi);
 }
 
-uint64_t
-mpool_mblock_abort(
-	struct mpool   *ds,
-	uint64_t        mbid)
+uint64_t mpool_mblock_abort(struct mpool *ds, uint64_t mbid)
 {
 	struct mpioc_mblock_id  mi = { .mi_objid = mbid };
 
@@ -2433,10 +2295,7 @@ mpool_mblock_abort(
 	return mpool_ioctl(ds->mp_fd, MPIOC_MB_ABORT, &mi);
 }
 
-uint64_t
-mpool_mblock_delete(
-	struct mpool   *ds,
-	uint64_t        mbid)
+uint64_t mpool_mblock_delete(struct mpool *ds, uint64_t mbid)
 {
 	struct mpioc_mblock_id  mi = { .mi_objid = mbid };
 
@@ -2446,11 +2305,7 @@ mpool_mblock_delete(
 	return mpool_ioctl(ds->mp_fd, MPIOC_MB_DELETE, &mi);
 }
 
-uint64_t
-mpool_mblock_props_get(
-	struct mpool           *ds,
-	uint64_t                mbid,
-	struct mblock_props    *props)
+uint64_t mpool_mblock_props_get(struct mpool *ds, uint64_t mbid, struct mblock_props *props)
 {
 	if (!ds || !props)
 		return merr(EINVAL);
@@ -2458,12 +2313,7 @@ mpool_mblock_props_get(
 	return mpool_mblock_find(ds, mbid, props);
 }
 
-uint64_t
-mpool_mblock_write(
-	struct mpool       *ds,
-	uint64_t            mbid,
-	struct iovec       *iov,
-	int                 iovc)
+uint64_t mpool_mblock_write(struct mpool *ds, uint64_t mbid, struct iovec *iov, int iovc)
 {
 	struct mpioc_mblock_rw mbrw = {
 		.mb_objid   = mbid,
@@ -2500,8 +2350,7 @@ I_WRAP_SONAME_FNNAME_ZU(NONE, mpool_mblock_read)(
 	VALGRIND_GET_ORIG_FN(fn);
 
 	if (atomic_cmpxchg(&once, 0, 1) == 0)
-		mse_log(MPOOL_NOTICE
-			"valgrind wrapper enabled: mpool_mblock_read()");
+		mse_log(MPOOL_NOTICE "valgrind wrapper enabled: mpool_mblock_read()");
 
 	if (iov) {
 		for (i = 0; i < iovc; i++)
@@ -2514,12 +2363,7 @@ I_WRAP_SONAME_FNNAME_ZU(NONE, mpool_mblock_read)(
 #endif
 
 uint64_t
-mpool_mblock_read(
-	struct mpool     *ds,
-	uint64_t          mbid,
-	struct iovec     *iov,
-	int               iovc,
-	size_t            offset)
+mpool_mblock_read(struct mpool *ds, uint64_t mbid, struct iovec *iov, int iovc, size_t offset)
 {
 	struct mpioc_mblock_rw mbrw = {
 		.mb_objid   = mbid,
@@ -2589,9 +2433,7 @@ mpool_mcache_mmap(
 	return 0;
 }
 
-uint64_t
-mpool_mcache_munmap(
-	struct mpool_mcache_map    *map)
+uint64_t mpool_mcache_munmap(struct mpool_mcache_map *map)
 {
 	int     rc;
 
@@ -2638,10 +2480,7 @@ mpool_mcache_madvise(
 	return rc ? merr(errno) : 0;
 }
 
-uint64_t
-mpool_mcache_purge(
-	struct mpool_mcache_map    *map,
-	const struct mpool         *ds)
+uint64_t mpool_mcache_purge(struct mpool_mcache_map *map, const struct mpool *ds)
 {
 	struct mpioc_vma    vma;
 
@@ -2654,8 +2493,7 @@ mpool_mcache_purge(
 	return mpool_ioctl(ds->mp_fd, MPIOC_VMA_PURGE, &vma);
 }
 
-static
-merr_t
+static merr_t
 mpool_mcache_vrss_get(
 	struct mpool_mcache_map    *map,
 	const struct mpool         *ds,
@@ -2735,10 +2573,7 @@ mpool_mcache_mincore(
 	return 0;
 }
 
-void *
-mpool_mcache_getbase(
-	struct mpool_mcache_map    *map,
-	const uint                  mbidx)
+void *mpool_mcache_getbase(struct mpool_mcache_map *map, const uint mbidx)
 {
 	if (!map || map->mh_addr == MAP_FAILED || mbidx >= map->mh_mbidc)
 		return NULL;
@@ -2774,10 +2609,7 @@ mpool_mcache_getpages(
 	return 0;
 }
 
-struct pd_prop *
-mp_get_dev_prop(
-	int dcnt,
-	char **devices)
+struct pd_prop *mp_get_dev_prop(int dcnt, char **devices)
 {
 	struct pd_prop *pdp;
 	int    i;
@@ -2798,19 +2630,14 @@ mp_get_dev_prop(
 	return pdp;
 }
 
-merr_t
-mp_trim_device(
-	int                   devicec,
-	char                **devicev,
-	struct mpool_devrpt  *devrpt)
+merr_t mp_trim_device(int devicec, char **devicev, struct mpool_devrpt *devrpt)
 {
 	merr_t  err = 0;
 	int     i;
 
 	mpool_devrpt_init(devrpt);
 
-	if (!devicev || !devrpt ||
-	    devicec < 1 || devicec > MPOOL_DRIVES_MAX)
+	if (!devicev || !devrpt || devicec < 1 || devicec > MPOOL_DRIVES_MAX)
 		return merr(EINVAL);
 
 	for (i = 0; i < devicec; i++) {
@@ -2827,10 +2654,7 @@ mp_trim_device(
 	return err;
 }
 
-merr_t
-mp_sb_magic_check(
-	char                   *device,
-	struct mpool_devrpt    *devrpt)
+merr_t mp_sb_magic_check(char *device, struct mpool_devrpt *devrpt)
 {
 	struct pd_prop    pd_prop;
 	merr_t            err;
@@ -2846,12 +2670,7 @@ mp_sb_magic_check(
 	return mpool_sb_magic_check(device, &pd_prop, devrpt);
 }
 
-uint64_t
-mp_dev_activated(
-	char  *devpath,
-	bool  *activated,
-	char  *mp_name,
-	size_t mp_name_sz)
+uint64_t mp_dev_activated(char *devpath, bool *activated, char *mp_name, size_t mp_name_sz)
 {
 	struct imp_entry *entry = NULL;
 	int    entry_cnt = 0;

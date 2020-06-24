@@ -113,8 +113,7 @@ enum device_phys_if {
 	DEVICE_PHYS_IF_LAST = DEVICE_PHYS_IF_TEST,
 };
 
-_Static_assert((DEVICE_PHYS_IF_LAST < 256),
-			"enum device_phys_if must fit in uint8_t");
+_Static_assert((DEVICE_PHYS_IF_LAST < 256), "enum device_phys_if must fit in uint8_t");
 
 /**
  * mp_list_mpool_by_device() - Write a comma separated list of mpools to buf to
@@ -124,12 +123,7 @@ _Static_assert((DEVICE_PHYS_IF_LAST < 256),
  * @buf: (output) List of mpools that contain the devices in devicev
  * @buf_len: Max size of buf
  */
-merr_t
-mp_list_mpool_by_device(
-	int       devicec,
-	char    **devicev,
-	char     *buf,
-	size_t    buf_len);
+merr_t mp_list_mpool_by_device(int devicec, char **devicev, char *buf, size_t buf_len);
 
 /**
  * imp_dev_alloc_get_prop() - allocate an array of pd the properties, update it
@@ -139,11 +133,7 @@ mp_list_mpool_by_device(
  * @devices:
  * @pd_prop: allocated by this function, must be freed by caller.
  */
-merr_t
-imp_dev_alloc_get_prop(
-	int		 dcnt,
-	char	       **devices,
-	struct pd_prop **pd_prop);
+merr_t imp_dev_alloc_get_prop(int dcnt, char **devices, struct pd_prop **pd_prop);
 
 /**
  * mp_get_dev_prop() - collect the devices properties.
@@ -151,9 +141,6 @@ imp_dev_alloc_get_prop(
  * @dcnt:
  * @devices:
  */
-struct pd_prop *
-mp_get_dev_prop(
-	int dcnt,
-	char **devices);
+struct pd_prop *mp_get_dev_prop(int dcnt, char **devices);
 
 #endif /* MPOOL_MPCTL_H */

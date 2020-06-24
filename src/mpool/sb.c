@@ -43,9 +43,8 @@ static bool sb_prop_valid(struct mpool_dev_info *pd)
 		merr_t err = merr(EINVAL);
 
 		/* guarantee that the SB area is large enough to hold an SB */
-		mp_pr_err("sb(%s): structure too big %lu %lu",
-			  err, pd->pdi_name, (ulong)SB_AREA_SZ,
-			  OMF_SB_DESC_PACKLEN);
+		mp_pr_err("sb(%s): structure too big %lu %lu", err, pd->pdi_name,
+			  (ulong)SB_AREA_SZ, OMF_SB_DESC_PACKLEN);
 		return false;
 	}
 
@@ -54,8 +53,7 @@ static bool sb_prop_valid(struct mpool_dev_info *pd)
 	    (pd_prop->pdp_devtype != PD_DEV_TYPE_FILE)) {
 		merr_t err = merr(EINVAL);
 
-		mp_pr_err("sb(%s): unknown device type %d",
-			  err, pd->pdi_name, pd_prop->pdp_devtype);
+		mp_pr_err("sb(%s): unknown dev type %d", err, pd->pdi_name, pd_prop->pdp_devtype);
 		return false;
 	}
 
@@ -97,8 +95,7 @@ int sb_magic_check(struct mpool_dev_info *pd)
 
 	if (!sb_prop_valid(pd)) {
 		err = merr(EINVAL);
-		mp_pr_err("sb(%s): invalid param, zonepg %u zonetot %u",
-			  err, pd->pdi_name,
+		mp_pr_err("sb(%s): invalid param, zonepg %u zonetot %u", err, pd->pdi_name,
 			  pd->pdi_parm.dpr_zonepg, pd->pdi_parm.dpr_zonetot);
 		return -merr_errno(err);
 	}
@@ -108,8 +105,7 @@ int sb_magic_check(struct mpool_dev_info *pd)
 	inbuf = calloc(SB_AREA_SZ, sizeof(char));
 	if (!inbuf) {
 		err = merr(ENOMEM);
-		mp_pr_err("sb(%s) magic check: buffer alloc failed",
-			  err, pd->pdi_name);
+		mp_pr_err("sb(%s) magic check: buffer alloc failed", err, pd->pdi_name);
 		return -merr_errno(err);
 	}
 
@@ -153,8 +149,7 @@ merr_t sb_erase(struct mpool_dev_info *pd)
 	if (!sb_prop_valid(pd)) {
 		err = merr(EINVAL);
 		mp_pr_err("sb(%s) invalid param, zonepg %u zonetot %u",
-			  err, pd->pdi_name, pd->pdi_parm.dpr_zonepg,
-			  pd->pdi_parm.dpr_zonetot);
+			  err, pd->pdi_name, pd->pdi_parm.dpr_zonepg, pd->pdi_parm.dpr_zonetot);
 		return err;
 	}
 
@@ -172,8 +167,7 @@ merr_t sb_erase(struct mpool_dev_info *pd)
 
 		err = pd_file_pwritev(pd, &iovbuf, 1, 0, woff, REQ_FUA);
 		if (err) {
-			mp_pr_err("sb(%s, %d): erase failed",
-				  err, pd->pdi_name, i);
+			mp_pr_err("sb(%s, %d): erase failed", err, pd->pdi_name, i);
 		}
 	}
 

@@ -59,14 +59,13 @@ void pd_file_init(struct pd_dev_parm *dparm, struct pd_prop *pd_prop)
 merr_t pd_file_open(const char *path, struct pd_dev_parm *dparm)
 {
 	struct pd_file_private *priv;
-	int  fd;
+	int                     fd;
 
 	priv = calloc(1, sizeof(*priv));
 	if (!priv)
 		return merr(ENOMEM);
 
 	fd = open(path, O_RDWR);
-
 	if (fd == -1) {
 		merr_t err = merr(errno);
 
@@ -103,12 +102,10 @@ merr_t pd_file_close(struct pd_dev_parm *dparm)
 }
 
 /*
- * Write iov data to one or more consecutive virtual erase
- * blocks on drive pd starting at byte offset boff from
- * block zoneaddr.
+ * Write iov data to one or more consecutive virtual erase blocks on drive pd starting at
+ * byte offset boff from block zoneaddr.
  *
- * Note: Only pd.status and pd.parm must be set; No other pd fields
- * accessed.
+ * Note: Only pd.status and pd.parm must be set; No other pd fields accessed.
  */
 merr_t
 pd_file_pwritev(
@@ -121,22 +118,22 @@ pd_file_pwritev(
 {
 	struct pd_file_private *priv = pd->pdi_parm.dpr_dev_private;
 	struct iovec           *iv_p = NULL;
-	merr_t                  err = 0;
 
-	u64 tiolen;
-	u64 maxlen;
-	u64 woff;
-	u64 pd_len;
-	u64 zonelen;
-	int ivc_cur;
-	int ivc_left;
+	merr_t err = 0;
+	u64    tiolen;
+	u64    maxlen;
+	u64    woff;
+	u64    pd_len;
+	u64    zonelen;
+	int    ivc_cur;
+	int    ivc_left;
 
 	if (pd->pdi_parm.dpr_cmdopt & PD_CMD_RDONLY)
 		return 0;
 
 	pd_len = PD_LEN(&(pd->pdi_prop));
 	zonelen = (u64)pd->pdi_zonepg << PAGE_SHIFT;
-	woff = zoneaddr*zonelen + boff;
+	woff = zoneaddr * zonelen + boff;
 
 	if (woff >= pd_len) {
 		err = merr(EINVAL);
@@ -146,23 +143,18 @@ pd_file_pwritev(
 			   (ulong)boff, (ulong)pd_len);
 		return err;
 	}
+
 	maxlen = pd_len - woff;
-
 	tiolen = calc_io_len(iov, iovcnt);
-
 	if (tiolen > maxlen) {
 		err = merr(EINVAL);
 		mpool_elog(MPOOL_ERR
 			   "Writing on file %s, offset 0x%lx + length 0x%lx beyond device end 0x%lx, @@e",
-			   err, pd->pdi_name, (ulong)woff, (ulong)tiolen,
-			   pd_len);
+			   err, pd->pdi_name, (ulong)woff, (ulong)tiolen, pd_len);
 		return err;
 	}
 
-	/*
-	 * The following loop is required to split the iovec into
-	 * IOV_MAX chunks.
-	 */
+	/* The following loop is required to split the iovec into IOV_MAX chunks. */
 	iv_p = iov;
 	ivc_cur = 0;
 	ivc_left = iovcnt;
@@ -174,24 +166,22 @@ pd_file_pwritev(
 		ssize_t cc, iolen;
 
 		ivc_cur = min_t(int, ivc_left, IOV_MAX);
-
 		iolen = calc_io_len(iv_p, ivc_cur);
 
 		cc = pwritev(priv->pfp_fd, iv_p, ivc_cur, woff);
 		if (cc != iolen) {
 			err = merr((-1 == cc) ? errno : EIO);
 			mpool_elog(MPOOL_ERR
-				   "Writing on file %s, pwritev failed %ld %ld %s, @@e",
-				   err, pd->pdi_name, (long)cc, (long)iolen,
-				   strerror(merr_errno(err)));
+				   "Writing on file %s, pwritev failed %ld %ld %s, @@e", err,
+				   pd->pdi_name, (long)cc, (long)iolen, strerror(merr_errno(err)));
 			goto errout;
 		}
+
 		if (op_flags & REQ_FUA)
 			fsync(priv->pfp_fd);
 
 		woff += cc;
-
-		iv_p     += ivc_cur;
+		iv_p += ivc_cur;
 		ivc_left -= ivc_cur;
 	}
 
@@ -217,15 +207,15 @@ pd_file_preadv(
 {
 	struct pd_file_private *priv = pd->pdi_parm.dpr_dev_private;
 	struct iovec           *iv_p = NULL;
-	merr_t		        err = 0;
 
-	u64 zonelen;
-	u64 tiolen;
-	u64 maxlen;
-	u64 roff;
-	int ivc_cur;
-	int ivc_left;
-	u64 pd_len;
+	merr_t err = 0;
+	u64    zonelen;
+	u64    tiolen;
+	u64    maxlen;
+	u64    roff;
+	int    ivc_cur;
+	int    ivc_left;
+	u64    pd_len;
 
 	pd_len = PD_LEN(&(pd->pdi_prop));
 	zonelen = (u64)pd->pdi_zonepg << PAGE_SHIFT;
@@ -234,23 +224,20 @@ pd_file_preadv(
 	if (roff >= pd_len) {
 		err = merr(EINVAL);
 		mpool_elog(MPOOL_ERR
-			   "Reading file %s, offset 0x%lx 0x%lx 0x%lx beyond device end 0x%lx, @@e",
+			   "File %s, read offset 0x%lx 0x%lx 0x%lx beyond device end 0x%lx, @@e",
 			   err, pd->pdi_name, (ulong)zoneaddr, (ulong)zonelen,
 			   (ulong)boff, (ulong)pd_len);
 		return err;
 	}
 
 	tiolen = calc_io_len(iov, iovcnt);
-
 	maxlen = pd_len - roff;
-
 	if (tiolen > maxlen) {
 		err = merr(EINVAL);
 		mpool_elog(MPOOL_ERR
-			   "Reading file %s, reading past device end 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx, @@e",
+			   "File %s, read past device 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx, @@e",
 			   err, pd->pdi_name, (ulong)zoneaddr, (ulong)zonelen,
-			   (ulong)boff, (ulong)roff, (ulong)pd_len,
-			   (ulong)tiolen);
+			   (ulong)boff, (ulong)roff, (ulong)pd_len, (ulong)tiolen);
 		return err;
 	}
 
@@ -266,20 +253,18 @@ pd_file_preadv(
 		ssize_t cc, iolen;
 
 		ivc_cur = min_t(int, ivc_left, IOV_MAX);
-
 		iolen = calc_io_len(iv_p, ivc_cur);
+
 		cc = preadv(priv->pfp_fd, iv_p, ivc_cur, roff);
 		if (cc != iolen) {
 			err = merr((-1 == cc) ? errno : EIO);
-			mpool_elog(MPOOL_ERR
-				   "Reading file %s, preadv failed %ld %ld %s, @@e",
-				   err, pd->pdi_name, (long)cc, (long)iolen,
-				   strerror(merr_errno(err)));
+			mpool_elog(MPOOL_ERR "File %s, preadv failed %ld %ld %s, @@e", err,
+				   pd->pdi_name, (long)cc, (long)iolen, strerror(merr_errno(err)));
 			goto errout;
 		}
-		roff += cc;
 
-		iv_p     += ivc_cur;
+		roff += cc;
+		iv_p += ivc_cur;
 		ivc_left -= ivc_cur;
 	}
 
