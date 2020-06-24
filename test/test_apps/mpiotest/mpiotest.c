@@ -1073,6 +1073,7 @@ int main(int argc, char **argv)
 	if (err) {
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
 		eprint("mpool_open(%s): %s\n", mpname, errbuf);
+		free(mpname);
 		exit(1);
 	}
 
@@ -1082,17 +1083,18 @@ int main(int argc, char **argv)
 	err = mpool_open(mpname, 0, &mp2, &ei);
 	if ((oflags & O_EXCL) && !err) {
 		eprint("mpool_open(%s): re-open exclusive didn't fail\n", mpname);
-		exit(1);
+		mpool_close(mp2);
+		goto err_exit;
 	} else if (!(oflags & O_EXCL) && err) {
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
 		eprint("mpool_open(%s): re-open failed: %s\n", mpname, errbuf);
-		exit(1);
+		goto err_exit;
 	} else {
 		err = mpool_close(mp2);
 		if (err) {
 			mpool_strinfo(err, errbuf, sizeof(errbuf));
 			eprint("mpool_close(%s): mp2 close failed: %s\n", mpname, errbuf);
-			exit(1);
+			goto err_exit;
 		}
 	}
 
@@ -1100,8 +1102,7 @@ int main(int argc, char **argv)
 	if (err) {
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
 		eprint("mpool_params_get(%s): %s\n", mpname, errbuf);
-		mpool_close(mp);
-		exit(1);
+		goto err_exit;
 	}
 	wbufsz = params.mp_mblocksz[MP_MED_CAPACITY] << 20;
 
@@ -1110,23 +1111,19 @@ int main(int argc, char **argv)
 	fd = open(infile, O_RDONLY);
 	if (-1 == fd) {
 		eprint("open(%s): %s\n", infile, strerror(errno));
-		mpool_close(mp);
-		exit(1);
+		goto err_exit;
 	}
 
 	rc = posix_memalign((void **)&wbuf, PAGE_SIZE, limit);
-	if (rc || !wbuf) {
-		mpool_close(mp);
-		exit(1);
-	}
+	if (rc || !wbuf)
+		goto err_exit;
 
 	for (lwcc = 0; lwcc < limit; lwcc += cc) {
 		cc = read(fd, wbuf + lwcc, limit - lwcc);
 		if (cc < 1) {
 			eprint("read(%s): cc=%ld limit=%zu: %s\n",
 			       infile, cc, limit, strerror(errno));
-			mpool_close(mp);
-			exit(1);
+			goto err_exit;
 		}
 	}
 
@@ -1136,6 +1133,7 @@ int main(int argc, char **argv)
 	if (!testv) {
 		eprint("calloc(testv): out of memory\n");
 		mpool_close(mp);
+		free(mpname);
 		exit(EX_OSERR);
 	}
 
@@ -1157,8 +1155,12 @@ int main(int argc, char **argv)
 	while (iter++ < iter_max && !sigint && !sigalrm) {
 		sigprocmask(SIG_BLOCK, &sigmask_block, &sigmask_old);
 
-		if (global_err != 0)
+		if (global_err != 0) {
+			mpool_close(mp);
+			free(testv);
+			free(mpname);
 			return global_err;
+		}
 
 		td_run = td_max;
 
@@ -1194,13 +1196,22 @@ int main(int argc, char **argv)
 		if (debug)
 			stats_print(&stats, "total", -1);
 
-		if (stats.mbreaderr || stats.mbreadcmperr ||
-		    stats.getpagescmperr) {
+		if (stats.mbreaderr || stats.mbreadcmperr || stats.getpagescmperr) {
+			mpool_close(mp);
+			free(testv);
+			free(mpname);
 			exit(EX_SOFTWARE);
 		}
 	}
 
 	mpool_close(mp);
+	free(testv);
+	free(mpname);
 
 	return 0;
+
+err_exit:
+	mpool_close(mp);
+	free(mpname);
+	exit(1);
 }

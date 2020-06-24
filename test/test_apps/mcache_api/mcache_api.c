@@ -135,7 +135,7 @@ static void usage(void)
 	printf("-b,--boundary        run mcache mmap boundary test\n");
 	printf("-m,--madvise         call madvise() on the mapped mblocks\n");
 	printf("-v,--verbose         be wordy\n\n");
-	printf("media-class          {JOURNAL|STAGING|CAPACITY}\n");
+	printf("media-class          {STAGING|CAPACITY}\n");
 	printf("mpool                name of mpool to use\n");
 }
 
@@ -649,6 +649,8 @@ mcache_boundary_cleanup:
 
 int main(int argc, char **argv)
 {
+	bool err_usage = false;
+
 	sigbus = 0;
 
 	progname = strrchr(argv[0], '/');
@@ -708,16 +710,15 @@ int main(int argc, char **argv)
 	enum mp_media_classp media_class = mclsname_to_mcls(media_class_name);
 
 	if (media_class == MP_MED_INVALID) {
-		fprintf(stderr, "Invalid media class: '%s'\n",
-			media_class_name);
-		usage();
-		exit(EX_USAGE);
+		err_usage = true;
+		fprintf(stderr, "Invalid media class: '%s'\n", media_class_name);
+		goto exit_usage;
 	}
 
 	if (!mpname) {
-		fprintf(stderr, "Invalid mpool name '%s'\n", argv[0]);
-		usage();
-		exit(EX_USAGE);
+		err_usage = true;
+		fprintf(stderr, "Mpool name not specified\n");
+		goto exit_usage;
 	}
 
 	int failures = 0;
@@ -732,6 +733,15 @@ int main(int argc, char **argv)
 			printf("\tPassed\n");
 
 		failures += rc;
+	}
+
+exit_usage:
+	free(mpname);
+	free(media_class_name);
+
+	if (err_usage) {
+		usage();
+		exit(EX_USAGE);
 	}
 
 	if (failures)
