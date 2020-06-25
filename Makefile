@@ -39,7 +39,6 @@ Configuration Variables:
     BUILD_NUMBER      -- Build job number (as set by Jenkins)
     BUILD_PKG_TYPE    -- Specify package type (rpm or deb)
     BUILD_PKG_VENDOR  -- Specify the vendor/maintainer tag in the package
-    CFILE             -- Name of file containing custom cmake config parameters
     DEPGRAPH          -- Set to "--graphviz=<filename_prefix>" to generate
                          graphviz dependency graph files
 
@@ -50,6 +49,7 @@ Configuration Variables:
     BUILD_NUMBER       $(BUILD_NUMBER)
     BUILD_TYPE         $(BUILD_TYPE)
     BUILD_STYPE        $(BUILD_STYPE)
+    BUILD_CFLAGS       $(BUILD_CFLAGS)
     BUILD_CDEFS        $(BUILD_CDEFS)
     BUILD_PKG_ARCH     ${BUILD_PKG_ARCH}
     BUILD_PKG_DIR      ${BUILD_PKG_DIR}
@@ -61,7 +61,7 @@ Configuration Variables:
     BUILD_PKG_VERSION  ${BUILD_PKG_VERSION}
     BUILD_PKG_VENDOR   ${BUILD_PKG_VENDOR}
     BUILD_PKG_VQUAL    ${BUILD_PKG_VQUAL}
-    CFILE              $(CFILE)
+    CMAKE_BUILD_TYPE   ${CMAKE_BUILD_TYPE}
 
 Examples:
 
@@ -72,10 +72,6 @@ Examples:
   Rebuild the bulk of mpool code, leaving the code in external repos alone:
 
     make -j clean all
-
-  Work in the 'release' build output dir, but with your own configuration file:
-
-    make CFILE=myconfig.cmake
 
   Build with asan/lsan:
 
