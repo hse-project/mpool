@@ -6,6 +6,7 @@
 
 cmake_minimum_required( VERSION 2.8 )
 cmake_policy( SET CMP0046 OLD )
+cmake_policy( SET CMP0053 NEW )
 
 project( mpool C )
 
@@ -61,14 +62,16 @@ set( MPOOL_INCLUDE_DIRS
 include_directories( ${MPOOL_EXT_INSTALL_PREFIX}/include )
 include_directories( ${MPOOL_STAGE_INSTALL_PREFIX}/include )
 
-# increasing warning levels
-set( CFLAGS_WARN_1 "${CFLAGS_WARN_0} -Wall -Werror -std=gnu99")
-set( CFLAGS_WARN_2 "${CFLAGS_WARN_1} -Wlogical-op -Wno-missing-field-initializers  -Wuninitialized -Wmaybe-uninitialized ")
-set( CFLAGS_WARN_3 "${CFLAGS_WARN_2} -Wextra -Wno-conversion -Wno-sign-conversion -Wno-sign-compare -Wno-unused-parameter")
-set( CFLAGS_WARN_4 "${CFLAGS_WARN_2} -Wextra -Wconversion    -Wsign-conversion    -Wsign-compare    -Wunused-parameter")
-set( CFLAGS_WARN_MAX "${CFLAGS_WARN_4}")
+# Translate "-DFOO -DBAR" to "-DFOO;-DBAR" for add_definitions()
+#
+separate_arguments( BUILD_CDEFS_SEPARATED UNIX_COMMAND ${BUILD_CDEFS} )
+add_definitions( ${BUILD_CDEFS_SEPARATED} )
 
-set( CMAKE_C_FLAGS "${CFLAGS_WARN_3} -g3")
+add_compile_options(
+    ${BUILD_CFLAGS} -g3 -std=gnu99 -Wall -Werror
+    -Wlogical-op -Wno-missing-field-initializers -Wuninitialized -Wmaybe-uninitialized
+    -Wextra -Wno-conversion -Wno-sign-conversion -Wno-sign-compare -Wno-unused-parameter
+    )
 
 if ( ${UBSAN} )
     message(STATUS "Enabling ubsan support")
@@ -89,8 +92,6 @@ endif()
 if ( ${CMAKE_C_COMPILER_VERSION} GREATER 7 )
     add_compile_options( -Wimplicit-fallthrough=0 )
 endif()
-
-add_definitions( "${BUILD_CDEFS}" )
 
 
 # Define valgrind wrapper functions if valgrind-devel package
@@ -129,8 +130,9 @@ include(CMakeLists.macros)
 set( PROFILING false )
 
 if( ${PROFILING} )
-  set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg " )
-  set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L /usr/local/lib -lprofiler" )
+    add_compile_options( -pg )
+    link_directories( /usr/local/lib )
+    link_libraries( profiler )
 endif( ${PROFILING} )
 
 # Needed for the JNI bridge.
@@ -235,13 +237,17 @@ include( CPack )
 configure_file( "${MPOOL_SCRIPTS_DIR}/cmake/CTestCustom.cmake.in"
     ${CMAKE_BINARY_DIR}/CTestCustom.cmake )
 
-get_directory_property( DirIncs INCLUDE_DIRECTORIES )
-get_directory_property( DirDefs COMPILE_DEFINITIONS )
-get_directory_property( DirOpts COMPILE_OPTIONS )
+get_directory_property( DirIncs   INCLUDE_DIRECTORIES )
+get_directory_property( DirCDefs  COMPILE_DEFINITIONS )
+get_directory_property( DirCOpts  COMPILE_OPTIONS )
+get_directory_property( DirLDirs  LINK_DIRECTORIES )
+get_directory_property( DirLLibs  LINK_LIBRARIES )
+get_directory_property( DirLOpts  LINK_OPTIONS )
 
 message( STATUS "Compiler flags:" )
 message( STATUS "  INCLUDE_DIRECTORIES     ${DirIncs}" )
-message( STATUS "  COMPILE_DEFINITIONS     ${DirDefs}" )
-message( STATUS "  COMPILE_OPTIONS         ${DirOpts}" )
-message( STATUS "  CMAKE_C_FLAGS          ${CMAKE_C_FLAGS}" )
-message( STATUS "  CMAKE_EXE_LINKER_FLAGS  ${CMAKE_EXE_LINKER_FLAGS}" )
+message( STATUS "  COMPILE_DEFINITIONS     ${DirCDefs}" )
+message( STATUS "  COMPILE_OPTIONS         ${DirCOpts}" )
+message( STATUS "  LINK_DIRECTORIES        ${DirLDirs}" )
+message( STATUS "  LINK_LIBRARIES          ${DirLLibs}" )
+message( STATUS "  LINK_OPTIONS            ${DirLOpts}" )

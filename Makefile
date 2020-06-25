@@ -153,34 +153,45 @@ S=$(MPOOL_SRC_DIR)/scripts
 ifeq ($(findstring release,$(MAKECMDGOALS)),release)
 	BUILD_TYPE := release
 	BUILD_STYPE := r
+	BUILD_CFLAGS := -O2
 	BUILD_CDEFS := -DMPOOL_BUILD_RELEASE
+	CMAKE_BUILD_TYPE := Release
 else ifeq ($(findstring relwithdebug,$(MAKECMDGOALS)),relwithdebug)
 	BUILD_TYPE := relwithdebug
 	BUILD_STYPE := i
+	BUILD_CFLAGS := -O2
 	BUILD_CDEFS := -DMPOOL_BUILD_RELEASE
+	CMAKE_BUILD_TYPE := RelWithDebInfo
 else ifeq ($(findstring relassert,$(MAKECMDGOALS)),relassert)
 	BUILD_TYPE := relassert
 	BUILD_STYPE := a
+	BUILD_CFLAGS := -O2
 	BUILD_CDEFS := -DMPOOL_BUILD_RELASSERT -D_FORTIFY_SOURCE=2
+	CMAKE_BUILD_TYPE := Release
 else ifeq ($(findstring optdebug,$(MAKECMDGOALS)),optdebug)
 	BUILD_TYPE := optdebug
 	BUILD_STYPE := o
+	BUILD_CFLAGS := -Og
 	BUILD_CDEFS := -DMPOOL_BUILD_DEBUG
+	CMAKE_BUILD_TYPE := Debug
 else ifeq ($(findstring debug,$(MAKECMDGOALS)),debug)
 	BUILD_TYPE := debug
 	BUILD_STYPE := d
+	BUILD_CFLAGS := -fstack-protector-all
 	BUILD_CDEFS := -DMPOOL_BUILD_DEBUG -DDEBUG_RCU
+	CMAKE_BUILD_TYPE := Debug
 else
 	BUILD_TYPE := release
 	BUILD_STYPE := r
+	BUILD_CFLAGS := -O2
 	BUILD_CDEFS := -DMPOOL_BUILD_RELEASE
+	CMAKE_BUILD_TYPE := Release
 endif
 
 
 BUILD_DIR     ?= ${MPOOL_SRC_DIR}/builds
 BUILD_NODE    ?= $(shell uname -n)
 BUILD_PKG_DIR ?= ${BUILD_DIR}/${BUILD_NODE}/${BUILD_PKG_TYPE}/${BUILD_TYPE}
-CFILE         ?= $(S)/cmake/${BUILD_TYPE}.cmake
 UBSAN         ?= 0
 ASAN          ?= 0
 BUILD_NUMBER  ?= 0
@@ -241,6 +252,7 @@ define config-gen =
 	echo 'Set( BUILD_NUMBER        "$(BUILD_NUMBER)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_TYPE          "$(BUILD_TYPE)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_STYPE         "$(BUILD_STYPE)" CACHE STRING "" )' ;\
+	echo 'Set( BUILD_CFLAGS        "$(BUILD_CFLAGS)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_CDEFS         "$(BUILD_CDEFS)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_PKG_ARCH      "$(BUILD_PKG_ARCH)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_PKG_DIST      "$(BUILD_PKG_DIST)" CACHE STRING "" )' ;\
@@ -251,15 +263,11 @@ define config-gen =
 	echo 'Set( BUILD_PKG_VERSION   "$(BUILD_PKG_VERSION)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_PKG_VENDOR    "'$(BUILD_PKG_VENDOR)'" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_PKG_VQUAL     "$(BUILD_PKG_VQUAL)" CACHE STRING "" )' ;\
+	echo 'Set( CMAKE_BUILD_TYPE    "$(CMAKE_BUILD_TYPE)" CACHE STRING "" )' ;\
 	echo 'Set( UBSAN               "$(UBSAN)" CACHE BOOL "" )' ;\
 	echo 'Set( ASAN                "$(ASAN)" CACHE BOOL "" )' ;\
 	echo 'Set( HAVE_LIBBLKID_2_32  "$(HAVE_LIBBLKID_2_32)" CACHE BOOL "" )' ;\
-	echo '' ;\
-	echo '# $(CFILE)' ;\
-	cat  "$(CFILE)" ;\
-	echo '' ;\
-	echo '# $(S)/cmake/defaults.cmake' ;\
-	cat  "$(S)/cmake/defaults.cmake")
+	)
 endef
 
 

@@ -706,6 +706,7 @@ int main(int argc, char **argv)
 
 	char  *media_class_name = strdup(argv[0]);
 	char  *mpname           = strdup(argv[1]);
+	int    failures = 0;
 
 	enum mp_media_classp media_class = mclsname_to_mcls(media_class_name);
 
@@ -720,8 +721,6 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Mpool name not specified\n");
 		goto exit_usage;
 	}
-
-	int failures = 0;
 
 	if (all_tests || boundary_test) {
 		printf("Running mcache boundary test\n");
