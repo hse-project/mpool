@@ -90,6 +90,8 @@ if ( ${CMAKE_C_COMPILER_VERSION} GREATER 7 )
     add_compile_options( -Wimplicit-fallthrough=0 )
 endif()
 
+add_definitions( "${BUILD_CDEFS}" )
+
 
 # Define valgrind wrapper functions if valgrind-devel package
 # is installed (sudo dnf install valgrind-devel).
@@ -136,29 +138,6 @@ endif( ${PROFILING} )
 set( YCSB TRUE CACHE BOOL "Build JNI bridge artifacts" )
 if( ${YCSB} )
     add_compile_options( -fPIC )
-endif()
-
-# Set-up what kind of build this is
-#
-if( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
-    add_definitions( -DMPOOL_BUILD_DEBUG )
-    add_definitions( -DDEBUG_RCU )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector-all")
-
-elseif( "${CMAKE_BUILD_TYPE}" STREQUAL "OptDebug" )
-    add_definitions( -DMPOOL_BUILD_DEBUG )
-
-elseif( "${CMAKE_BUILD_TYPE}" STREQUAL "Release" )
-    add_definitions( -DMPOOL_BUILD_RELEASE )
-
-elseif( "${CMAKE_BUILD_TYPE}" STREQUAL "RelAssert" )
-    add_definitions( -DMPOOL_BUILD_RELASSERT )
-    add_definitions( -D_FORTIFY_SOURCE )
-
-elseif( "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo" )
-    add_definitions( -DMPOOL_BUILD_RELEASE )
-else()
-    message( FATAL_ERROR "Invalid build type [${CMAKE_BUILD_TYPE}]" )
 endif()
 
 

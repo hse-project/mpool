@@ -50,6 +50,7 @@ Configuration Variables:
     BUILD_NUMBER       $(BUILD_NUMBER)
     BUILD_TYPE         $(BUILD_TYPE)
     BUILD_STYPE        $(BUILD_STYPE)
+    BUILD_CDEFS        $(BUILD_CDEFS)
     BUILD_PKG_ARCH     ${BUILD_PKG_ARCH}
     BUILD_PKG_DIR      ${BUILD_PKG_DIR}
     BUILD_PKG_DIST     ${BUILD_PKG_DIST}
@@ -152,21 +153,27 @@ S=$(MPOOL_SRC_DIR)/scripts
 ifeq ($(findstring release,$(MAKECMDGOALS)),release)
 	BUILD_TYPE := release
 	BUILD_STYPE := r
+	BUILD_CDEFS := -DMPOOL_BUILD_RELEASE
 else ifeq ($(findstring relwithdebug,$(MAKECMDGOALS)),relwithdebug)
 	BUILD_TYPE := relwithdebug
 	BUILD_STYPE := i
+	BUILD_CDEFS := -DMPOOL_BUILD_RELEASE
 else ifeq ($(findstring relassert,$(MAKECMDGOALS)),relassert)
 	BUILD_TYPE := relassert
 	BUILD_STYPE := a
+	BUILD_CDEFS := -DMPOOL_BUILD_RELASSERT -D_FORTIFY_SOURCE=2
 else ifeq ($(findstring optdebug,$(MAKECMDGOALS)),optdebug)
 	BUILD_TYPE := optdebug
 	BUILD_STYPE := o
+	BUILD_CDEFS := -DMPOOL_BUILD_DEBUG
 else ifeq ($(findstring debug,$(MAKECMDGOALS)),debug)
 	BUILD_TYPE := debug
 	BUILD_STYPE := d
+	BUILD_CDEFS := -DMPOOL_BUILD_DEBUG -DDEBUG_RCU
 else
 	BUILD_TYPE := release
 	BUILD_STYPE := r
+	BUILD_CDEFS := -DMPOOL_BUILD_RELEASE
 endif
 
 
@@ -234,6 +241,7 @@ define config-gen =
 	echo 'Set( BUILD_NUMBER        "$(BUILD_NUMBER)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_TYPE          "$(BUILD_TYPE)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_STYPE         "$(BUILD_STYPE)" CACHE STRING "" )' ;\
+	echo 'Set( BUILD_CDEFS         "$(BUILD_CDEFS)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_PKG_ARCH      "$(BUILD_PKG_ARCH)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_PKG_DIST      "$(BUILD_PKG_DIST)" CACHE STRING "" )' ;\
 	echo 'Set( BUILD_PKG_REL       "$(BUILD_PKG_REL)" CACHE STRING "" )' ;\
