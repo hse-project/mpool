@@ -147,9 +147,9 @@ mpool_list_yaml_mclass(
 
 static void
 mpool_list_yaml_usage(
-	const struct mp_usage  *usage,
-	int                     verbosity,
-	struct yaml_context    *yc)
+	const struct mpool_usage   *usage,
+	int                         verbosity,
+	struct yaml_context        *yc)
 {
 	char    value[32];
 	u64     space;
@@ -345,7 +345,7 @@ mpool_ls_list_tab(
 
 	const struct mpool_xprops  *xprops;
 	const struct mpool_params  *params;
-	const struct mp_usage      *usage;
+	const struct mpool_usage   *usage;
 
 	double  total, used, usable, free;
 	char    totalstr[32], usedstr[32];

@@ -65,7 +65,7 @@
 static size_t perf_seq_writes_write_size = 4096;    /* Bytes */
 static size_t perf_seq_writes_total_size;         /* Bytes, 0 = all available */
 static size_t perf_seq_writes_thread_cnt = 1;
-static char perf_seq_writes_mpool[MPOOL_NAME_LEN_MAX];
+static char perf_seq_writes_mpool[MPOOL_NAMESZ_MAX];
 static bool perf_seq_writes_pre_alloc;
 static bool perf_seq_writes_post_commit;
 static bool perf_seq_writes_reads;
@@ -507,7 +507,7 @@ static mpool_err_t perf_seq_writes(int argc, char **argv)
 	struct mpft_thread_args   *targ = NULL;
 	struct mpft_thread_resp   *tresp = NULL;
 	struct mpool              *mp;
-	struct mp_usage            usage;
+	struct mpool_usage         usage;
 	struct mpool_params        params;
 	u64                        mblocksz;
 

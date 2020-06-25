@@ -16,7 +16,7 @@ struct imp_media_struct {
 };
 
 struct imp_pool {
-	char                        mp_name[MPOOL_NAME_LEN_MAX];
+	char                        mp_name[MPOOL_NAMESZ_MAX];
 	struct mpool_uuid           mp_uuid;
 	bool                        mp_activated;
 	int                         mp_media_cnt;
@@ -24,7 +24,7 @@ struct imp_pool {
 };
 
 struct imp_entry {
-	char                mp_name[MPOOL_NAME_LEN_MAX];
+	char                mp_name[MPOOL_NAMESZ_MAX];
 	struct mpool_uuid   mp_uuid;
 	struct pd_prop      mp_pd_prop;
 	char                mp_path[NAME_MAX + 1];

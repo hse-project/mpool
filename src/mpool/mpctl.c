@@ -576,7 +576,7 @@ mpool_mclass_get(struct mpool *mp, enum mp_media_classp mclass, struct mpool_mcl
 		.ls_cmd = MPIOC_LIST_CMD_PROP_GET,
 	};
 	struct mpool_mclass_xprops *xprops;
-	struct mp_usage            *usage;
+	struct mpool_usage         *usage;
 
 	merr_t  err;
 	int     i;
@@ -998,7 +998,7 @@ uint64_t mpool_params_set(struct mpool *mp, struct mpool_params *params, struct 
 	return err;
 }
 
-uint64_t mpool_usage_get(struct mpool *mp, struct mp_usage *usage)
+uint64_t mpool_usage_get(struct mpool *mp, struct mpool_usage *usage)
 {
 	struct mpioc_prop   prop = { };
 	struct mpioc_list   ls = {
@@ -1021,7 +1021,7 @@ uint64_t mpool_usage_get(struct mpool *mp, struct mp_usage *usage)
 	return 0;
 }
 
-uint64_t mpool_dev_props_get(struct mpool *mp, const char *devname, struct mp_devprops *props)
+uint64_t mpool_dev_props_get(struct mpool *mp, const char *devname, struct mpool_devprops *props)
 {
 	struct mpioc_devprops  dprops;
 

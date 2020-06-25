@@ -139,6 +139,7 @@ static void usage(void)
 	printf("mpool                name of mpool to use\n");
 }
 
+#define MPOOL_MBSIZE_MB_MAX         64
 
 static int fill_rndbuf(void)
 {
@@ -155,7 +156,7 @@ static int fill_rndbuf(void)
 		return 1;
 	}
 
-	rndbufsz = MPOOL_MBSIZE_MB_MAX;
+	rndbufsz = MPOOL_MBSIZE_MB_MAX << 20;
 
 	rc = posix_memalign((void **)&rndbuf, PAGE_SIZE, rndbufsz);
 	if (rc) {

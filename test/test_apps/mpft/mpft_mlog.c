@@ -112,14 +112,14 @@ static u32 calc_record_count(u64 total_size, u32 record_size)
 static size_t perf_seq_writes_record_size = 32;    /* Bytes */
 static size_t perf_seq_writes_total_size;         /* Bytes, 0 = all available */
 static size_t perf_seq_writes_thread_cnt = 1;
-static char   perf_seq_writes_mpool[MPOOL_NAME_LEN_MAX];
+static char   perf_seq_writes_mpool[MPOOL_NAMESZ_MAX];
 static bool   perf_seq_writes_sync;
 static bool   perf_seq_writes_read;
 static bool   perf_seq_writes_verify;
 static bool   perf_seq_writes_skipser;
 static char   perf_seq_writes_pattern[MAX_PATTERN_SIZE];
 static unsigned int mlog_mclassp = MP_MED_CAPACITY;
-static char   mlog_mclassp_str[MPOOL_NAME_LEN_MAX] = "CAPACITY";
+static char   mlog_mclassp_str[MPOOL_NAMESZ_MAX] = "CAPACITY";
 
 static struct param_inst perf_seq_writes_params[] = {
 	PARAM_INST_STRING(mlog_mclassp_str, sizeof(mlog_mclassp_str), "mc", "media class"),
@@ -578,7 +578,7 @@ static mpool_err_t perf_seq_writes(int argc, char **argv)
 	}
 
 	if (perf_seq_writes_total_size == 0) {
-		struct mp_usage    usage;
+		struct mpool_usage usage;
 
 		err = mpool_usage_get(mp, &usage);
 		if (err) {
@@ -859,7 +859,7 @@ u8 oflags = 0; /* flags to be used for mpool_mlog_open() */
  * 9. Cleanup
  */
 
-char mlog_correctness_simple_mpool[MPOOL_NAME_LEN_MAX];
+char mlog_correctness_simple_mpool[MPOOL_NAMESZ_MAX];
 
 static struct param_inst mlog_correctness_simple_params[] = {
 	PARAM_INST_STRING(mlog_mclassp_str, sizeof(mlog_mclassp_str), "mc", "media class"),
@@ -1064,7 +1064,7 @@ static int verify_buf(char *buf_in, size_t buf_len, char val)
 #define BUF_SIZE 4096
 #define BUF_CNT  512
 
-char mlog_correctness_basicio_mpool[MPOOL_NAME_LEN_MAX];
+char mlog_correctness_basicio_mpool[MPOOL_NAMESZ_MAX];
 
 static struct param_inst mlog_correctness_basicio_params[] = {
 	PARAM_INST_STRING(mlog_mclassp_str, sizeof(mlog_mclassp_str), "mc", "media class"),
@@ -1374,7 +1374,7 @@ close_mp:
  * 8. Cleanup
  */
 
-char mlog_correctness_recovery_mpool[MPOOL_NAME_LEN_MAX];
+char mlog_correctness_recovery_mpool[MPOOL_NAMESZ_MAX];
 
 static struct param_inst mlog_correctness_recovery_params[] = {
 	PARAM_INST_STRING(mlog_mclassp_str, sizeof(mlog_mclassp_str), "mc", "media class"),

@@ -174,7 +174,7 @@ mpool_mclass_get(struct mpool *mp, enum mp_media_classp mclass, struct mpool_mcl
  * @mp:    mpool handle
  * @usage: mpool usage (output)
  */
-uint64_t mpool_usage_get(struct mpool *mp, struct mp_usage *usage);
+uint64_t mpool_usage_get(struct mpool *mp, struct mpool_usage *usage);
 
 /**
  * mpool_dev_props_get() - Get properties of a device within an mpool
@@ -182,7 +182,7 @@ uint64_t mpool_usage_get(struct mpool *mp, struct mp_usage *usage);
  * @devname: device name
  * @dprops:  device props (output)
  */
-uint64_t mpool_dev_props_get(struct mpool *mp, const char *devname, struct mp_devprops *dprops);
+uint64_t mpool_dev_props_get(struct mpool *mp, const char *devname, struct mpool_devprops *dprops);
 
 /**
  * mpool_params_init() - initialize mpool params
@@ -380,39 +380,6 @@ uint64_t mpool_mlog_props_get(struct mpool_mlog *mlogh, struct mlog_props *props
 
 
 /******************************** MDC APIs ************************************/
-
-/**
- * enum mdc_open_flags -
- * @MDC_OF_SKIP_SER: appends and reads are guaranteed to be serialized
- *                   outside of the MDC API
- */
-enum mdc_open_flags {
-	MDC_OF_SKIP_SER  = 0x1,
-};
-
-/**
- * struct mdc_capacity -
- * @mdt_captgt: capacity target for mlog in bytes
- * @mpt_spare:  true if alloc MDC from spare space
- */
-struct mdc_capacity {
-	uint64_t   mdt_captgt;
-	bool       mdt_spare;
-};
-
-/**
- * struct mdc_props -
- * @mdc_objid1:
- * @mdc_objid2:
- * @mdc_alloc_cap:
- * @mdc_mclassp:
- */
-struct mdc_props {
-	uint64_t               mdc_objid1;
-	uint64_t               mdc_objid2;
-	uint64_t               mdc_alloc_cap;
-	enum mp_media_classp   mdc_mclassp;
-};
 
 /**
  * mpool_mdc_alloc() - Alloc an MDC

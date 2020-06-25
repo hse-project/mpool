@@ -98,7 +98,7 @@ struct mpool {
 	int                  mp_magic;
 	int                  mp_fd;
 	int                  mp_flags;
-	char                 mp_name[MPOOL_NAME_LEN_MAX]; /* mpool name */
+	char                 mp_name[MPOOL_NAMESZ_MAX]; /* mpool name */
 	u16                  mp_mlidx;
 	u16                  mp_mltot;
 	struct mutex         mp_lock;

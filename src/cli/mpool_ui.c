@@ -44,9 +44,9 @@ static void mpool_params_defaults(struct mpool_params *params)
 	u64 val;
 
 	memset(params, 0, sizeof(*params));
-	params->mp_uid = MPOOL_UID_INVALID;
-	params->mp_gid = MPOOL_GID_INVALID;
-	params->mp_mode = MPOOL_MODE_INVALID;
+	params->mp_uid = -1;
+	params->mp_gid = -1;
+	params->mp_mode = -1;
 
 	err = sysfs_get_val_u64(path, "uid", false, &val);
 	if (!err)
@@ -62,7 +62,6 @@ static void mpool_params_defaults(struct mpool_params *params)
 
 	params->mp_spare_cap =  MPOOL_SPARES_DEFAULT;
 	params->mp_spare_stg =  MPOOL_SPARES_DEFAULT;
-	params->mp_mclassp  =  MPOOL_MCLASS_DEFAULT;
 	params->mp_ra_pages_max = MPOOL_RA_PAGES_MAX;
 	params->mp_mdc0cap = 0;
 	params->mp_mdcncap = 0;
@@ -103,7 +102,7 @@ static merr_t mpool_prepare(char **devices, int dcnt)
 			err = mp_sb_magic_check(devices[i], &devrpt);
 			if ((merr_errno(err) == EBUSY) && co.co_force) {
 				bool activated;
-				char mp_name[MPOOL_NAME_LEN_MAX + 1];
+				char mp_name[MPOOL_NAMESZ_MAX + 1];
 
 				/*
 				 * The device belongs to an mpool.
@@ -148,7 +147,7 @@ static merr_t mpool_prepare(char **devices, int dcnt)
 		 * and so the formatting done above did not erase them.
 		 */
 		if (co.co_force) {
-			size_t  pool_lst_len = dcnt * (1 + MPOOL_NAME_LEN_MAX);
+			size_t  pool_lst_len = dcnt * (1 + MPOOL_NAMESZ_MAX);
 			char   *pool_lst;
 
 			pool_lst = calloc(1, pool_lst_len);
@@ -203,6 +202,14 @@ exit:
 /**
  * mpool create <mpool> <device>
  */
+
+#define MPOOL_MBSIZE_MB_MIN         1
+#define MPOOL_MBSIZE_MB_MAX         64
+
+#define MPOOL_MDCNUM_MAX            64
+
+#define MPOOL_MDC0CAP_MB_MAX        512
+#define MPOOL_MDCNCAP_MB_MAX        512
 
 static struct mpool_params params;
 

@@ -32,51 +32,28 @@ typedef uuid_t uuid_le;
 #define MPOOL_LABELSZ_MAX           64
 #define PD_NAMESZ_MAX               32
 
-#define MPOOL_NAME_LEN_MAX          MPOOL_NAMESZ_MAX
-#define PD_NAME_LEN_MAX             PD_NAMESZ_MAX
-
 #define MPC_DEV_SUBDIR              "mpool"
 #define MPC_DEV_CTLNAME             MPC_DEV_SUBDIR "ctl"
 #define MPC_DEV_CTLPATH             "/dev/" MPC_DEV_CTLNAME
 
-/*
- * Mpool default UID, GID and Mode
- */
-#define MPOOL_UID_INVALID           (-1)
-#define MPOOL_GID_INVALID           (-1)
-#define MPOOL_MODE_INVALID          (-1)
-
-#define MPOOL_LABEL_DEFAULT         "raw"
 #define MPOOL_LABEL_INVALID         ""
+#define MPOOL_LABEL_DEFAULT         "raw"
 
-#define MPOOL_RA_PAGES_MAX          ((128 * 1024) / PAGE_SIZE)
 #define MPOOL_RA_PAGES_INVALID      U32_MAX
+#define MPOOL_RA_PAGES_MAX          ((128 * 1024) / PAGE_SIZE)
 
-/*
- * Mpool default metadata parameters
- */
-#define MPOOL_MCLASS_DEFAULT        MP_MED_CAPACITY
 #define MPOOL_MCLASS_INVALID        MP_MED_INVALID
+#define MPOOL_MCLASS_DEFAULT        MP_MED_CAPACITY
 
-/* Mpool Root Log Capacity */
-#define MPOOL_ROOT_LOG_CAP          (8 * 1024 * 1024)
-
-/*
- * Default percent (%) of spare capacity on mpool drives
- */
 #define MPOOL_SPARES_INVALID        U8_MAX
 #define MPOOL_SPARES_DEFAULT        5
 
-/* Default mblock size in MiB for any media class. */
-#define MPOOL_MBSIZE_MB_MIN         1
-#define MPOOL_MBSIZE_MB_MAX         64
+#define MPOOL_ROOT_LOG_CAP          (8 * 1024 * 1024)
+
 #define MPOOL_MBSIZE_MB_DEFAULT     32
 
 #define MPOOL_MDCNUM_DEFAULT        16
-#define MPOOL_MDCNUM_MAX            64
 
-#define MPOOL_MDC0CAP_MB_MAX        512
-#define MPOOL_MDCNCAP_MB_MAX        512
 /*
  * MPOOL struct definitions used by the ioctl commands.
  */
@@ -111,7 +88,7 @@ enum mp_media_classp {
 #define MP_MED_INVALID     U8_MAX
 
 /**
- * struct mp_devprops -
+ * struct mpool_devprops -
  * @pdp_devid:   UUID for drive
  * @pdp_mclassp: enum mp_media_classp
  * @pdp_status:  enum pd_status
@@ -123,7 +100,7 @@ enum mp_media_classp {
  * @pdp_fusable: free usable capacity of drive
  * @pdp_used:    used capacity of drive:
  */
-struct mp_devprops {
+struct mpool_devprops {
 	uuid_le    pdp_devid;
 	uint8_t    pdp_mclassp;
 	uint8_t    pdp_status;
@@ -139,14 +116,13 @@ struct mp_devprops {
 };
 
 /**
- * struct mp_params -
+ * struct mpool_params -
  * @mp_poolid:          UUID of mpool
  * @mp_type:            user-specified identifier
  * @mp_uid:
  * @mp_gid:
  * @mp_mode:
  * @mp_stat:            overall mpool status (enum mpool_status)
- * @mp_mclassp:
  * @mp_mdc_captgt:      user MDC capacity
  * @mp_oidv:            user MDC OIDs
  * @mp_ra_pages_max:    max VMA map readahead pages
@@ -164,7 +140,7 @@ struct mpool_params {
 	uint8_t     mp_stat;
 	uint8_t     mp_spare_cap;
 	uint8_t     mp_spare_stg;
-	uint8_t     mp_mclassp;
+	uint8_t     mp_rsvd0;
 	uint64_t    mp_mdc_captgt;
 	uint64_t    mp_oidv[2];
 	uint32_t    mp_ra_pages_max;
@@ -183,7 +159,7 @@ struct mpool_params {
 };
 
 /**
- * struct mp_usage - in bytes
+ * struct mpool_usage - in bytes
  * @mpu_total:   raw capacity for all drives
  * @mpu_usable:  usable capacity for all drives
  * @mpu_fusable: free usable capacity for all drives
@@ -199,7 +175,7 @@ struct mpool_params {
  * @mpu_mblock_cnt:  number of active mblocks
  * @mpu_mlog_cnt:    number of active mlogs
  */
-struct mp_usage {
+struct mpool_usage {
 	uint64_t   mpu_total;
 	uint64_t   mpu_usable;
 	uint64_t   mpu_fusable;
@@ -239,7 +215,7 @@ struct mpool_mclass_xprops {
 	uint32_t                   mc_zonepg;
 	uint64_t                   mc_features;
 	uint64_t                   mc_rsvd3;
-	struct mp_usage            mc_usage;
+	struct mpool_usage         mc_usage;
 };
 
 /**
@@ -261,35 +237,6 @@ struct mpool_mclass_props {
 };
 
 /**
- * mp_asyncctx_ioc - asynchronous mblock io context
- * @mp_ctx:
- * @mp_enabled:
- * @mp_err:
- */
-struct mp_asyncctx_ioc {
-	void __user    *mp_ctx;
-	uint8_t         mp_enabled;
-	uint8_t         mp_rsvd1[7];
-	uint64_t        mp_err;
-};
-
-/**
- * struct mpool_mdparm -
- * @mdp_mclassp: media class for metadata, enum mp_media_classp
- *	can be a valid class, or MP_MED_ANY if any class can be used
- *	for metadata. enum mp_media_classp
- *
- * Note: in order to avoid passing enums across user-kernel boundary
- * declare the following as uint8_t
- * mdp_mclassp: enum mp_media_classp
- *
- */
-struct mpool_mdparm {
-	uint8_t    mdp_mclassp;
-	uint8_t    mdp_rsvd1[7];
-};
-
-/**
  * struct mpool_xprops - Extended mpool properties
  * @ppx_params: mpool configuration parameters
  * @ppx_drive_spares: percent spare zones for drives in each media class
@@ -297,72 +244,11 @@ struct mpool_mdparm {
  */
 struct mpool_xprops {
 	struct mpool_params     ppx_params;
-	struct mpool_mdparm     ppx_mdparm;
-	uint16_t                ppx_rsvd[MP_MED_NUMBER];
+	uint8_t                 ppx_rsvd[MP_MED_NUMBER];
 	uint8_t                 ppx_drive_spares[MP_MED_NUMBER];
 	uint16_t                ppx_uacnt[MP_MED_NUMBER];
 	uint32_t                ppx_pd_mclassv[MP_MED_NUMBER];
 	char                    ppx_pd_namev[MP_MED_NUMBER][PD_NAMESZ_MAX];
-};
-
-/*
- * Drive properties used by the ioctl commands.
- */
-
-/**
- * struct pd_znparam - zone parameter arg used in compute/set API functions
- * @dvb_zonepg:     zone size in PAGE_SIZE units.
- * @dvb_zonetot:    total number of zones
- */
-struct pd_znparam {
-	uint32_t   dvb_zonepg;
-	uint32_t   dvb_zonetot;
-	uint64_t   dvb_rsvd1;
-};
-
-#define PD_DEV_ID_LEN              64
-
-/**
- * struct pd_prop - PD properties
- * @pdp_didstr:         drive id string (model)
- * @pdp_devtype:	device type (enum pd_devtype)
- * @pdp_phys_if:	physical interface of the drive
- *			Determined by the device discovery.
- *			(device_phys_if)
- * @pdp_mclassp:        performance characteristic of the media class
- *			Determined by the user, not by the device discovery.
- *			(enum mp_media_classp)
- * @pdp_cmdopt:         enum pd_cmd_opt. Features of the PD.
- * @pdp_zparam:	zone parameters
- * @pdp_discard_granularity: specified by
- *	/sys/block/<disk>/queue/discard_granularity
- * @pdp_sectorsz:	Sector size, exponent base 2
- * @pdp_optiosz:        Optimal IO size
- * @pdp_devsz:		device size in bytes
- *
- * Note: in order to avoid passing enums across user-kernel boundary
- * declare the following as uint8_t
- * pdp_devtype: enum pd_devtype
- * pdp_devstate: enum pd_state
- * pdp_phys_if: enum device_phys_if
- * pdp_mclassp: enum mp_media_classp
- */
-struct pd_prop {
-	char		        pdp_didstr[PD_DEV_ID_LEN];
-	uint8_t                 pdp_devtype;
-	uint8_t                 pdp_devstate;
-	uint8_t                 pdp_phys_if;
-	uint8_t                 pdp_mclassp;
-	uint32_t                pdp_rsvd1;
-	uint64_t                pdp_cmdopt;
-
-	struct pd_znparam       pdp_zparam;
-	uint32_t                pdp_discard_granularity;
-	uint32_t                pdp_sectorsz;
-	uint32_t                pdp_optiosz;
-	uint32_t                pdp_rsvd2;
-	uint64_t	        pdp_devsz;
-	uint64_t	        pdp_rsvd3;
 };
 
 /*
@@ -461,6 +347,38 @@ struct mlog_props_ex {
 	uint64_t            lpx_rsvd2;
 };
 
+/**
+ * enum mdc_open_flags -
+ * @MDC_OF_SKIP_SER: appends and reads are guaranteed to be serialized
+ *                   outside of the MDC API
+ */
+enum mdc_open_flags {
+	MDC_OF_SKIP_SER  = 0x1,
+};
+
+/**
+ * struct mdc_capacity -
+ * @mdt_captgt: capacity target for mlog in bytes
+ * @mpt_spare:  true if alloc MDC from spare space
+ */
+struct mdc_capacity {
+	uint64_t   mdt_captgt;
+	bool       mdt_spare;
+};
+
+/**
+ * struct mdc_props -
+ * @mdc_objid1:
+ * @mdc_objid2:
+ * @mdc_alloc_cap:
+ * @mdc_mclassp:
+ */
+struct mdc_props {
+	uint64_t               mdc_objid1;
+	uint64_t               mdc_objid2;
+	uint64_t               mdc_alloc_cap;
+	enum mp_media_classp   mdc_mclassp;
+};
 
 /*
  * mcache struct definitions used by the ioctl commands.
@@ -480,6 +398,65 @@ enum mpc_vma_advice {
 	MPC_VMA_PINNED
 };
 
+/*
+ * Drive properties used by the ioctl commands.
+ */
+
+/**
+ * struct pd_znparam - zone parameter arg used in compute/set API functions
+ * @dvb_zonepg:     zone size in PAGE_SIZE units.
+ * @dvb_zonetot:    total number of zones
+ */
+struct pd_znparam {
+	uint32_t   dvb_zonepg;
+	uint32_t   dvb_zonetot;
+	uint64_t   dvb_rsvd1;
+};
+
+#define PD_DEV_ID_LEN              64
+
+/**
+ * struct pd_prop - PD properties
+ * @pdp_didstr:         drive id string (model)
+ * @pdp_devtype:	device type (enum pd_devtype)
+ * @pdp_phys_if:	physical interface of the drive
+ *			Determined by the device discovery.
+ *			(device_phys_if)
+ * @pdp_mclassp:        performance characteristic of the media class
+ *			Determined by the user, not by the device discovery.
+ *			(enum mp_media_classp)
+ * @pdp_cmdopt:         enum pd_cmd_opt. Features of the PD.
+ * @pdp_zparam:	zone parameters
+ * @pdp_discard_granularity: specified by
+ *	/sys/block/<disk>/queue/discard_granularity
+ * @pdp_sectorsz:	Sector size, exponent base 2
+ * @pdp_optiosz:        Optimal IO size
+ * @pdp_devsz:		device size in bytes
+ *
+ * Note: in order to avoid passing enums across user-kernel boundary
+ * declare the following as uint8_t
+ * pdp_devtype: enum pd_devtype
+ * pdp_devstate: enum pd_state
+ * pdp_phys_if: enum device_phys_if
+ * pdp_mclassp: enum mp_media_classp
+ */
+struct pd_prop {
+	char		        pdp_didstr[PD_DEV_ID_LEN];
+	uint8_t                 pdp_devtype;
+	uint8_t                 pdp_devstate;
+	uint8_t                 pdp_phys_if;
+	uint8_t                 pdp_mclassp;
+	uint32_t                pdp_rsvd1;
+	uint64_t                pdp_cmdopt;
+
+	struct pd_znparam       pdp_zparam;
+	uint32_t                pdp_discard_granularity;
+	uint32_t                pdp_sectorsz;
+	uint32_t                pdp_optiosz;
+	uint32_t                pdp_rsvd2;
+	uint64_t	        pdp_devsz;
+	uint64_t	        pdp_rsvd3;
+};
 
 /*
  * IOCTL arguments.
@@ -555,7 +532,7 @@ struct mpioc_list {
 struct mpioc_prop {
 	struct mpioc_cmn            pr_cmn;         /* Must be first field! */
 	struct mpool_xprops         pr_xprops;
-	struct mp_usage             pr_usage;
+	struct mpool_usage          pr_usage;
 	struct mpool_mclass_xprops  pr_mcxv[MP_MED_NUMBER];
 	uint32_t                    pr_mcxc;
 	uint32_t                    pr_rsvd1;
@@ -565,7 +542,7 @@ struct mpioc_prop {
 struct mpioc_devprops {
 	struct mpioc_cmn       dpr_cmn;         /* Must be first field! */
 	char                   dpr_pdname[PD_NAMESZ_MAX];
-	struct mp_devprops     dpr_devprops;
+	struct mpool_devprops  dpr_devprops;
 };
 
 /**
@@ -702,7 +679,6 @@ union mpioc_union {
 
 #define MPIOC_MP_CREATE         _IOWR(MPIOC_MAGIC, 1, struct mpioc_mpool)
 #define MPIOC_MP_DESTROY        _IOWR(MPIOC_MAGIC, 2, struct mpioc_mpool)
-
 #define MPIOC_MP_ACTIVATE       _IOWR(MPIOC_MAGIC, 5, struct mpioc_mpool)
 #define MPIOC_MP_DEACTIVATE     _IOWR(MPIOC_MAGIC, 6, struct mpioc_mpool)
 #define MPIOC_MP_RENAME         _IOWR(MPIOC_MAGIC, 7, struct mpioc_mpool)
@@ -729,13 +705,10 @@ union mpioc_union {
 #define MPIOC_MLOG_ERASE        _IOWR(MPIOC_MAGIC, 43, struct mpioc_mlog_id)
 
 #define MPIOC_MB_ALLOC          _IOWR(MPIOC_MAGIC, 50, struct mpioc_mblock)
-
 #define MPIOC_MB_ABORT          _IOWR(MPIOC_MAGIC, 52, struct mpioc_mblock_id)
 #define MPIOC_MB_COMMIT         _IOWR(MPIOC_MAGIC, 53, struct mpioc_mblock_id)
 #define MPIOC_MB_DELETE         _IOWR(MPIOC_MAGIC, 54, struct mpioc_mblock_id)
-
 #define MPIOC_MB_FIND           _IOWR(MPIOC_MAGIC, 56, struct mpioc_mblock)
-
 #define MPIOC_MB_READ           _IOWR(MPIOC_MAGIC, 60, struct mpioc_mblock_rw)
 #define MPIOC_MB_WRITE          _IOWR(MPIOC_MAGIC, 61, struct mpioc_mblock_rw)
 

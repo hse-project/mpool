@@ -32,7 +32,7 @@ static void show_args(int argc, char **argv)
  * Create an mpool, open it, close it, destroy it. See that it is gone.
  */
 
-char mp_correctness_simple_mpool[MPOOL_NAME_LEN_MAX];
+char mp_correctness_simple_mpool[MPOOL_NAMESZ_MAX];
 
 static struct param_inst mp_correctness_simple_params[] = {
 	PARAM_INST_STRING(mp_correctness_simple_mpool,
@@ -143,7 +143,7 @@ close_mp:
  * See that it fails.
  */
 
-char mp_correctness_rdonly_open_mpool[MPOOL_NAME_LEN_MAX];
+char mp_correctness_rdonly_open_mpool[MPOOL_NAMESZ_MAX];
 
 static struct param_inst mp_correctness_rdonly_open_params[] = {
 	PARAM_INST_STRING(mp_correctness_rdonly_open_mpool,
@@ -222,7 +222,7 @@ mpool_err_t mp_correctness_rdonly_open(int argc, char **argv)
  * See that it fails on both.
  */
 
-char mp_correctness_rdwr_open_mpool[MPOOL_NAME_LEN_MAX];
+char mp_correctness_rdwr_open_mpool[MPOOL_NAMESZ_MAX];
 
 static struct param_inst mp_correctness_rdwr_open_params[] = {
 	PARAM_INST_STRING(mp_correctness_rdwr_open_mpool,

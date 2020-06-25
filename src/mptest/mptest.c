@@ -84,17 +84,6 @@ static const char *enum_val2name(const char **strv, uint strc, uint val)
 	return strv[(val < strc && strv[val]) ? val : strc];
 }
 
-static uint enum_name2val(const char **strv, uint strc, const char *name)
-{
-	uint i;
-
-	for (i = 0; i < strc; ++i)
-		if (strv[i] && 0 == strcmp(strv[i], name))
-			return i;
-
-	return -1;
-}
-
 static void syntax(const char *fmt, ...)
 {
 	char msg[256];
@@ -210,8 +199,6 @@ static void prop_init(struct mpioc_prop *prop)
 
 	/* TODO: These default properties will need to be parameterized */
 
-	prop->pr_xprops.ppx_mdparm.mdp_mclassp = MP_MED_CAPACITY;
-
 	prop->pr_xprops.ppx_params.mp_uid = -1;
 	prop->pr_xprops.ppx_params.mp_gid = -1;
 	prop->pr_xprops.ppx_params.mp_mode = -1;
@@ -219,7 +206,6 @@ static void prop_init(struct mpioc_prop *prop)
 
 static void prop_dump(const struct mpioc_prop *prop, const char *which)
 {
-	const struct mpool_mdparm  *mdparm;
 	const struct mpool_params  *props;
 
 	char            uidstr[32], gidstr[32], modestr[32];
@@ -268,8 +254,6 @@ static void prop_dump(const struct mpioc_prop *prop, const char *which)
 
 	uuid_unparse(prop->pr_xprops.ppx_params.mp_poolid, uuidstr);
 
-	mdparm = &prop->pr_xprops.ppx_mdparm;
-
 	if (headers)
 		printf("%-*s  %-10s  %s\n", len, "NAME", "PROPERTY", "VALUE");
 
@@ -281,10 +265,6 @@ static void prop_dump(const struct mpioc_prop *prop, const char *which)
 
 	if (!which || strstr(which, "gid"))
 		printf("%-*s  gid         %s\n", len, name, gidstr);
-
-	if (!which || strstr(which, "mclassp"))
-		printf("%-*s  mclassp     %s\n", len, name,
-		       ENUM_VAL2NAME(mp_media_classp, mdparm->mdp_mclassp));
 
 	if (!which || strstr(which, "mode"))
 		printf("%-*s  mode        %s\n", len, name, modestr);
@@ -335,7 +315,6 @@ prop_decode(struct mpioc_prop *prop, const char *list, const char *sep, const ch
 	char    buf[1024];
 	ulong   result;
 	char   *end;
-	uint    idx;
 	int     rc;
 
 	if (!prop || !list)
@@ -368,18 +347,6 @@ prop_decode(struct mpioc_prop *prop, const char *list, const char *sep, const ch
 
 		if (valid && !strstr(valid, name)) {
 			syntax("invalid property '%s'", name);
-			rc = EINVAL;
-			break;
-		}
-
-		if (0 == strcmp(name, "mclassp")) {
-			idx = ENUM_NAME2VAL(mp_media_classp, value);
-			if (idx != -1) {
-				prop->pr_xprops.ppx_mdparm.mdp_mclassp = idx;
-				continue;
-			}
-
-			eprint("invalid media classp '%s'", value);
 			rc = EINVAL;
 			break;
 		}
@@ -584,7 +551,6 @@ static int create_command(int argc, char **argv)
 	};
 
 	enum mp_media_classp   *mclassp;
-	struct mpool_mdparm    *mdparm;
 	struct mpioc_mpool      mp;
 	struct mpioc_prop       prop;
 
@@ -697,7 +663,6 @@ static int create_command(int argc, char **argv)
 
 	memset(&mp, 0, sizeof(mp));
 	strcpy(mp.mp_params.mp_name, mpname);
-	mdparm = &prop.pr_xprops.ppx_mdparm;
 	mp.mp_params = prop.pr_xprops.ppx_params;
 
 	if (1) {
@@ -760,7 +725,6 @@ static int create_command(int argc, char **argv)
 			params.mp_uid     = mp.mp_params.mp_uid;
 			params.mp_gid     = mp.mp_params.mp_gid;
 			params.mp_mode    = mp.mp_params.mp_mode;
-			params.mp_mclassp = mdparm->mdp_mclassp;
 
 			err = mpool_create(mpname, devicev[0], &params, 0, &ei);
 			if (err) {
@@ -2196,7 +2160,7 @@ static void main_help(int argc, char **argv)
 	printf("%8zu  mpioc_prop\n", sizeof(struct mpioc_prop));
 	printf("%8zu  mpool_xprops\n", sizeof(struct mpool_xprops));
 	printf("%8zu  mpool_mclass_xprops\n", sizeof(struct mpool_mclass_xprops));
-	printf("%8zu  mp_usage\n", sizeof(struct mp_usage));
+	printf("%8zu  mpool_usage\n", sizeof(struct mpool_usage));
 }
 
 static int help_command(int argc, char **argv)

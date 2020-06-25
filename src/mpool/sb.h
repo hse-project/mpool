@@ -9,7 +9,6 @@
 #include <util/platform.h>
 
 struct mpool_dev_info;
-struct mpool_mdparm;
 
 /*
  * Drives have 2 superblocks.

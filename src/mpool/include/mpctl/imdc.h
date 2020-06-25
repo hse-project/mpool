@@ -41,7 +41,7 @@ struct mpool_mdc {
 	struct mpool_mlog  *mdc_logh2;
 	struct mpool_mlog  *mdc_alogh;
 	struct mutex        mdc_lock;
-	char                mdc_mpname[MPOOL_NAME_LEN_MAX];
+	char                mdc_mpname[MPOOL_NAMESZ_MAX];
 	int                 mdc_valid;
 	int                 mdc_magic;
 	u8                  mdc_flags;

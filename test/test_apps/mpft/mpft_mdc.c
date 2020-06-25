@@ -60,7 +60,7 @@ static void show_args(int argc, char **argv)
  * 6. Cleanup
  */
 
-char mdc_correctness_simple_mpool[MPOOL_NAME_LEN_MAX];
+char mdc_correctness_simple_mpool[MPOOL_NAMESZ_MAX];
 
 static struct param_inst mdc_correctness_simple_params[] = {
 	PARAM_INST_STRING(mdc_correctness_simple_mpool,
@@ -295,7 +295,7 @@ close_mp:
  * 10. Cleanup
  */
 
-char mdc_correctness_mp_release_mpool[MPOOL_NAME_LEN_MAX];
+char mdc_correctness_mp_release_mpool[MPOOL_NAMESZ_MAX];
 
 static struct param_inst mdc_correctness_mp_release_params[] = {
 	PARAM_INST_STRING(mdc_correctness_mp_release_mpool,
@@ -477,7 +477,7 @@ close_mp:
  * 14. Cleanup
  */
 
-char mdc_correctness_multi_reader_single_app_mpool[MPOOL_NAME_LEN_MAX];
+char mdc_correctness_multi_reader_single_app_mpool[MPOOL_NAMESZ_MAX];
 
 static struct param_inst mdc_correctness_multi_reader_single_app_params[] = {
 	PARAM_INST_STRING(mdc_correctness_multi_reader_single_app_mpool,
@@ -757,7 +757,7 @@ close_mp:
  * 11. Cleanup
  */
 
-char mdc_correctness_reader_then_writer_mpool[MPOOL_NAME_LEN_MAX];
+char mdc_correctness_reader_then_writer_mpool[MPOOL_NAMESZ_MAX];
 
 static struct param_inst mdc_correctness_reader_then_writer_params[] = {
 	PARAM_INST_STRING(mdc_correctness_reader_then_writer_mpool,
@@ -966,7 +966,7 @@ close_mp:
  * 10. Cleanup
  */
 
-char mdc_correctness_writer_then_reader_mpool[MPOOL_NAME_LEN_MAX];
+char mdc_correctness_writer_then_reader_mpool[MPOOL_NAMESZ_MAX];
 
 static struct param_inst mdc_correctness_writer_then_reader_params[] = {
 	PARAM_INST_STRING(mdc_correctness_writer_then_reader_mpool,
@@ -1167,7 +1167,7 @@ close_mp:
  * 10. Cleanup
  */
 
-char mdc_correctness_multi_mdc_mpool[MPOOL_NAME_LEN_MAX];
+char mdc_correctness_multi_mdc_mpool[MPOOL_NAMESZ_MAX];
 u32  mdc_correctness_multi_mdc_mdc_cnt = 4;
 struct oid_s {
 	u64 oid[2];

@@ -33,7 +33,7 @@ struct mpool_dev_info {
 	struct pd_dev_parm      pdi_parm;
 	atomic_t                pdi_status; /* Barriers or acq/rel required */
 	enum pd_state_omf       pdi_state;
-	char                    pdi_name[PD_NAME_LEN_MAX];
+	char                    pdi_name[PD_NAMESZ_MAX];
 };
 
 /* Shortcuts */
@@ -54,7 +54,7 @@ struct mpool_dev_info {
  */
 struct mpool_descriptor {
 	struct mpool_dev_info   *pds_pdv;
-	char                     pds_name[MPOOL_NAME_LEN_MAX];
+	char                     pds_name[MPOOL_NAMESZ_MAX];
 };
 
 /**
