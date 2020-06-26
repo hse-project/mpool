@@ -26,13 +26,14 @@ xoptionv[] = {
 	{ 'd', "deactivate",  "a", "Deactivate all mpools", &co.co_deactivate, },
 	{ 'f', "force",      NULL, "Override safeguards", &co.co_force, },
 	{ 'H', "noheadings", NULL, "Suppress headers", &co.co_noheadings, },
-	{ 'h', "help",       NULL, "Show this help list", &co.co_help, },
+	{ 'h', "help",        "V", "Show this help list", &co.co_help, },
 	{ 'L', "log",        NULL, "Output to log file", &co.co_log, .opthidden = true, },
 	{ 'N', "noresolve",  NULL, "Do not resolve uid/gid names", &co.co_noresolve, },
 	{ 'n', "dry-run",    NULL, "dry run", &co.co_dry_run, },
-	{ 'p', "nosuffix",   NULL, "Print numbers in machine readable format", &co.co_nosuffix, },
+	{ 'p', "nosuffix",   NULL, "Print machine readable numbers", &co.co_nosuffix, },
 	{ 'r', "resize",     NULL, "Resize mpool", &co.co_resize, },
 	{ 'T', "mutest",     NULL, "Enable mutest mode", &co.co_mutest, .opthidden = true, },
+	{ 'V', "version",     "h", "Show version", &co.co_version, },
 	{ 'v', "verbose",    NULL, "Increase verbosity", &co.co_verbose, },
 	{ 'Y', "yaml",       NULL, "Output in yaml", &co.co_yaml, },
 	{ -1 },
@@ -74,7 +75,15 @@ mpool_err_t process_verb(struct subject_s *subject, int argc, char **argv)
 	struct subject_s   *s = subject;
 	struct verb_s      *v = NULL;
 
+	if (co.co_version) {
+		co.co_fp = stdout;
+		s->version();
+		return 0;
+	}
+
 	if (argc < 1) {
+		co.co_fp = stdout;
+
 		s->usage();
 		s->help(MPOOL_VERBOSE);
 
@@ -89,7 +98,8 @@ mpool_err_t process_verb(struct subject_s *subject, int argc, char **argv)
 
 	v = find_verb(s, argv[0]);
 	if (!v) {
-		fprintf(co.co_fp, "%s: invalid command '%s', use -h for help\n", progname, argv[0]);
+		fprintf(co.co_fp, "%s: invalid command '%s', use -h for help\n",
+			progname, argv[0]);
 		return EX_USAGE;
 	}
 
@@ -100,7 +110,14 @@ mpool_err_t process_verb(struct subject_s *subject, int argc, char **argv)
 		return EX_USAGE;
 
 	if (co.co_help && v->help) {
+		co.co_fp = stdout;
 		v->help(v, MPOOL_VERBOSE);
+		return 0;
+	}
+
+	if (co.co_version) {
+		co.co_fp = stdout;
+		s->version();
 		return 0;
 	}
 
@@ -115,7 +132,7 @@ main(int argc, char **argv)
 	progname = strrchr(argv[0], '/');
 	progname = progname ? progname + 1 : argv[0];
 
-	if (xgetopt(argc, argv, "+hTv", xoptionv))
+	if (xgetopt(argc, argv, "+hTVv", xoptionv))
 		return EX_USAGE;
 
 	show_advanced_params = !!co.co_mutest;

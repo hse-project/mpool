@@ -157,11 +157,6 @@ int xgetopt(int argc, char **argv, const char *optstring, const struct xoption *
 		}
 
 		switch (c) {
-		case 'h':
-			/* if you ask for help, output to stdout */
-			co.co_fp = stdout;
-			break;
-
 		case ':':
 			fprintf(co.co_fp, "%s: option %s requires an argument, use -h for help\n",
 				progname, name);
@@ -202,7 +197,7 @@ void xgetopt_usage(const char *optstring, const struct xoption *xoptionv)
 	const char *hdr = "\nOptions:\n";
 	const char *valname = "ARG";
 	const struct xoption *opt;
-	int     width = 2;
+	int     width = 0;
 	size_t  len;
 
 	if (!optstring || !xoptionv)
@@ -212,11 +207,11 @@ void xgetopt_usage(const char *optstring, const struct xoption *xoptionv)
 		if (!strchr(optstring, opt->optopt))
 			continue;
 
-		len = strlen(opt->optlong ?: "");
+		len = opt->optlong ? strlen(opt->optlong) + 4 : 0;
 		if (opt->optval)
 			len += strlen(valname) + 1;
 		if (len > width)
-			width = len + 4;
+			width = len;
 	}
 
 	for (opt = xoptionv; opt->optopt > 0; ++opt) {
@@ -237,8 +232,8 @@ void xgetopt_usage(const char *optstring, const struct xoption *xoptionv)
 			fmt = opt->optlong ? ", --%s=%s" : " %s%s";
 		snprintf(argbuf, sizeof(argbuf), fmt, opt->optlong ?: "", valname);
 
-		fprintf(co.co_fp, "%s  -%c%-*s    %s%s\n", hdr, opt->optopt, width, argbuf,
-			opt->optdesc, excludes);
+		fprintf(co.co_fp, "%s  -%c%-*s    %s%s\n",
+			hdr, opt->optopt, width, argbuf, opt->optdesc, excludes);
 
 		hdr = "";
 	}

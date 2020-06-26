@@ -55,6 +55,7 @@ struct common_opts {
 	int     co_nosuffix;    /* -p, --nosuffix           */
 	int     co_resize;      /* -r, --resize             */
 	int     co_mutest;      /* -T, --micron_test_only   */
+	int     co_version;     /* -V, --version            */
 	int     co_verbose;     /* -v, --verbose            */
 	int     co_yaml;        /* -Y, --yaml               */
 	FILE   *co_fp;          /* stdout / stderr based on opt_help */

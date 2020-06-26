@@ -37,6 +37,8 @@ static const char *fmt_extraneous = "%s: extraneous argument `%s' detected, use 
 
 static char stgdev[128];
 
+static void mpool_version_impl(void);
+
 static void mpool_params_defaults(struct mpool_params *params)
 {
 	const char *path = "/sys/module/mpool/parameters/mpc_default_";
@@ -228,7 +230,7 @@ static struct param_inst create_paramsv[] = {
 	PARAM_INST_END
 };
 
-void mpool_create_help(struct verb_s *v, bool terse)
+static void mpool_create_help(struct verb_s *v, bool terse)
 {
 	struct help_s  h = {
 		.token = "create",
@@ -245,7 +247,7 @@ void mpool_create_help(struct verb_s *v, bool terse)
 	mpool_generic_verb_help(v, &h, terse, create_paramsv, 0);
 }
 
-merr_t mpool_create_func(struct verb_s *v, int argc, char **argv)
+static merr_t mpool_create_func(struct verb_s *v, int argc, char **argv)
 {
 	struct mpool_devrpt     ei = { };
 	struct pd_prop          props;
@@ -392,7 +394,7 @@ static struct param_inst add_paramsv[] = {
 	PARAM_INST_END
 };
 
-void mpool_add_help(struct verb_s *v, bool terse)
+static void mpool_add_help(struct verb_s *v, bool terse)
 {
 	struct help_s  h = {
 		.token = "add",
@@ -410,7 +412,7 @@ void mpool_add_help(struct verb_s *v, bool terse)
 	mpool_generic_verb_help(v, &h, terse, add_paramsv, 0);
 }
 
-merr_t mpool_add_func(struct verb_s *v, int argc, char **argv)
+static merr_t mpool_add_func(struct verb_s *v, int argc, char **argv)
 {
 	struct mpool_devrpt     ei = { };
 	struct pd_prop          props;
@@ -488,7 +490,7 @@ merr_t mpool_add_func(struct verb_s *v, int argc, char **argv)
  * mpool destroy <mpool>
  */
 
-void mpool_destroy_help(struct verb_s *v, bool terse)
+static void mpool_destroy_help(struct verb_s *v, bool terse)
 {
 	struct help_s  h = {
 		.token = "destroy",
@@ -505,7 +507,7 @@ void mpool_destroy_help(struct verb_s *v, bool terse)
 	mpool_generic_verb_help(v, &h, terse, NULL, 0);
 }
 
-merr_t mpool_destroy_func(struct verb_s *v, int argc, char **argv)
+static merr_t mpool_destroy_func(struct verb_s *v, int argc, char **argv)
 {
 	struct mpool_devrpt ei = { };
 	const char         *mpname;
@@ -538,7 +540,7 @@ merr_t mpool_destroy_func(struct verb_s *v, int argc, char **argv)
 	return err;
 }
 
-void mpool_scan_help(struct verb_s *v, bool terse)
+static void mpool_scan_help(struct verb_s *v, bool terse)
 {
 	struct help_s  h = {
 		.token = "scan",
@@ -555,7 +557,7 @@ void mpool_scan_help(struct verb_s *v, bool terse)
 	mpool_generic_verb_help(v, &h, terse, NULL, 0);
 }
 
-merr_t mpool_scan_func(struct verb_s *v, int argc, char **argv)
+static merr_t mpool_scan_func(struct verb_s *v, int argc, char **argv)
 {
 	struct mpool_devrpt     ei = { };
 	struct mpool_params    *allv, *actv;
@@ -683,7 +685,7 @@ static struct param_inst activate_paramsv[] = {
 	PARAM_INST_END
 };
 
-void mpool_activate_help(struct verb_s *v, bool terse)
+static void mpool_activate_help(struct verb_s *v, bool terse)
 {
 	struct help_s  h = {
 		.token = "activate",
@@ -700,7 +702,7 @@ void mpool_activate_help(struct verb_s *v, bool terse)
 	mpool_generic_verb_help(v, &h, terse, activate_paramsv, 0);
 }
 
-merr_t mpool_activate_func(struct verb_s *v, int argc, char **argv)
+static merr_t mpool_activate_func(struct verb_s *v, int argc, char **argv)
 {
 	struct mpool_devrpt ei = { };
 	const char         *mpname;
@@ -782,7 +784,7 @@ struct param_inst set_paramsv[] = {
 	PARAM_INST_END
 };
 
-void mpool_set_help(struct verb_s *v, bool terse)
+static void mpool_set_help(struct verb_s *v, bool terse)
 {
 	struct help_s  h = {
 		.token   = "set",
@@ -799,7 +801,7 @@ void mpool_set_help(struct verb_s *v, bool terse)
 	mpool_generic_verb_help(v, &h, terse, set_paramsv, 0);
 }
 
-merr_t mpool_set_func(struct verb_s *v, int argc, char **argv)
+static merr_t mpool_set_func(struct verb_s *v, int argc, char **argv)
 {
 	struct mpool_devrpt     ei = { };
 	struct mpool           *mp;
@@ -854,7 +856,7 @@ merr_t mpool_set_func(struct verb_s *v, int argc, char **argv)
 	return err;
 }
 
-void mpool_get_help(struct verb_s *v, bool terse)
+static void mpool_get_help(struct verb_s *v, bool terse)
 {
 	struct help_s  h = {
 		.token = "get",
@@ -868,7 +870,7 @@ void mpool_get_help(struct verb_s *v, bool terse)
 	mpool_generic_verb_help(v, &h, terse, NULL, 0);
 }
 
-merr_t mpool_get_func(struct verb_s *v, int argc, char **argv)
+static merr_t mpool_get_func(struct verb_s *v, int argc, char **argv)
 {
 	struct mpool_params    *paramsv, *params;
 	struct mpool_devrpt       ei;
@@ -991,7 +993,7 @@ merr_t mpool_get_func(struct verb_s *v, int argc, char **argv)
 /**
  * mpool deactivate <mpool>
  */
-void mpool_deactivate_help(struct verb_s *v, bool terse)
+static void mpool_deactivate_help(struct verb_s *v, bool terse)
 {
 	struct help_s  h = {
 		.token = "deactivate",
@@ -1007,7 +1009,7 @@ void mpool_deactivate_help(struct verb_s *v, bool terse)
 	mpool_generic_verb_help(v, &h, terse, NULL, 0);
 }
 
-merr_t mpool_deactivate_func(struct verb_s *v, int argc, char **argv)
+static merr_t mpool_deactivate_func(struct verb_s *v, int argc, char **argv)
 {
 	struct mpool_devrpt ei = { };
 	const char         *mpname;
@@ -1044,7 +1046,7 @@ merr_t mpool_deactivate_func(struct verb_s *v, int argc, char **argv)
 /**
  * mpool rename
  */
-void mpool_rename_help(struct verb_s *v, bool terse)
+static void mpool_rename_help(struct verb_s *v, bool terse)
 {
 	struct help_s  h = {
 		.token = "rename",
@@ -1059,7 +1061,7 @@ void mpool_rename_help(struct verb_s *v, bool terse)
 	mpool_generic_verb_help(v, &h, terse, NULL, 0);
 }
 
-merr_t mpool_rename_func(struct verb_s *v, int argc, char **argv)
+static merr_t mpool_rename_func(struct verb_s *v, int argc, char **argv)
 {
 	struct mpool_devrpt ei = { };
 	const char         *oldmp, *newmp;
@@ -1096,7 +1098,7 @@ merr_t mpool_rename_func(struct verb_s *v, int argc, char **argv)
 /**
  * mpool version
  */
-void mpool_version_help(struct verb_s *v, bool terse)
+static void mpool_version_help(struct verb_s *v, bool terse)
 {
 	struct help_s  h = {
 		.token   = "version",
@@ -1108,20 +1110,14 @@ void mpool_version_help(struct verb_s *v, bool terse)
 	mpool_generic_verb_help(v, &h, terse, NULL, 0);
 }
 
-merr_t mpool_version_func(struct verb_s *v, int argc, char **argv)
+static merr_t mpool_version_func(struct verb_s *v, int argc, char **argv)
 {
 	if (argc > 1) {
 		fprintf(co.co_fp, fmt_extraneous, progname, argv[1]);
 		return merr(EINVAL);
 	}
 
-	if (co.co_verbose) {
-		fprintf(co.co_fp, "version: %s\n", mpool_version);
-		fprintf(co.co_fp, "tag:     %s\n", mpool_tag);
-		fprintf(co.co_fp, "sha:     %s\n", mpool_sha);
-	} else {
-		fprintf(co.co_fp, "%s\n", mpool_version);
-	}
+	mpool_version_impl();
 
 	return 0;
 }
@@ -1153,7 +1149,7 @@ const struct xoption mpool_test_xoptionv[] = {
 	{ -1 }
 };
 
-void mpool_test_help(struct verb_s *v, bool terse)
+static void mpool_test_help(struct verb_s *v, bool terse)
 {
 	struct help_s  h = {
 		.token   = "test",
@@ -1165,7 +1161,7 @@ void mpool_test_help(struct verb_s *v, bool terse)
 	mpool_generic_verb_help(v, &h, terse, NULL, 0);
 }
 
-merr_t mpool_test_func(struct verb_s *v, int argc, char **argv)
+static merr_t mpool_test_func(struct verb_s *v, int argc, char **argv)
 {
 	printf("%d %d %d %ld %d %u %d %s\n", argc, co.co_verbose, test.val64flg, test.val64,
 	       test.uidflg, test.uid, test.strflg, test.str ?: "");
@@ -1173,7 +1169,7 @@ merr_t mpool_test_func(struct verb_s *v, int argc, char **argv)
 	return 0;
 }
 
-void mpool_help(bool terse)
+static void mpool_help(bool terse)
 {
 	struct help_s  h = {
 		.token = "mpool",
@@ -1183,24 +1179,41 @@ void mpool_help(bool terse)
 	mpool_generic_sub_help(&h, terse);
 }
 
-void mpool_usage(void)
+static void mpool_version_impl(void)
+{
+	if (co.co_verbose) {
+		fprintf(co.co_fp, "version: %s\n", mpool_version);
+		fprintf(co.co_fp, "tag:     %s\n", mpool_tag);
+		fprintf(co.co_fp, "sha:     %s\n", mpool_sha);
+	} else {
+		fprintf(co.co_fp, "%s\n", mpool_version);
+	}
+
+}
+
+static void mpool_usage(void)
 {
 	fprintf(co.co_fp, "usage: %s <command> [options] [args]\n", progname);
+	fprintf(co.co_fp, "usage: %s -h [-v]\n", progname);
+	fprintf(co.co_fp, "usage: %s -V [-v]\n", progname);
+	fprintf(co.co_fp, "-h, --help     show this help list\n");
+	fprintf(co.co_fp, "-V, --version  show version\n");
+	fprintf(co.co_fp, "-v, --verbose  increase verbosity\n");
 }
 
 static struct verb_s mpool_verb[] = {
-	{ "activate",   "fhrTv",    mpool_activate_func, mpool_activate_help, },
-	{ "add",        "DfhTv",    mpool_add_func,      mpool_add_help, },
-	{ "create",     "DfhTv",    mpool_create_func,   mpool_create_help, },
-	{ "deactivate", "hTv",    mpool_deactivate_func, mpool_deactivate_help,},
-	{ "destroy",    "fhTv",     mpool_destroy_func,  mpool_destroy_help, },
-	{ "get",        "HhNTv",    mpool_get_func,      mpool_get_help, },
-	{ "list",       "HhNpTvY",  mpool_list_func,     mpool_list_help, },
-	{ "rename",     "fhTv",     mpool_rename_func,   mpool_rename_help,},
-	{ "scan",       "adHhNTvY", mpool_scan_func,     mpool_scan_help, },
-	{ "set",        "hTv",      mpool_set_func,      mpool_set_help, },
-	{ "version",    "hTv",      mpool_version_func,  mpool_version_help, },
-	{ "test",       "adhiusTv", mpool_test_func,     mpool_test_help,
+	{ "activate",   "fhrTVv",       mpool_activate_func, mpool_activate_help, },
+	{ "add",        "DfhTVv",       mpool_add_func,      mpool_add_help, },
+	{ "create",     "DfhTVv",       mpool_create_func,   mpool_create_help, },
+	{ "deactivate", "hTVv",       mpool_deactivate_func, mpool_deactivate_help,},
+	{ "destroy",    "fhTVv",        mpool_destroy_func,  mpool_destroy_help, },
+	{ "get",        "HhNTVv",       mpool_get_func,      mpool_get_help, },
+	{ "list",       "HhNpTVvY",     mpool_list_func,     mpool_list_help, },
+	{ "rename",     "fhTVv",        mpool_rename_func,   mpool_rename_help,},
+	{ "scan",       "adHhNTVvY",    mpool_scan_func,     mpool_scan_help, },
+	{ "set",        "hTVv",         mpool_set_func,      mpool_set_help, },
+	{ "version",    "hTVv",         mpool_version_func,  mpool_version_help, },
+	{ "test",       "adhiusTVv",    mpool_test_func,     mpool_test_help,
 	  .xoption = mpool_test_xoptionv, .hidden = true, },
 	{ NULL },
 };
@@ -1210,4 +1223,5 @@ struct subject_s mpool_ui = {
 	.verb  = mpool_verb,
 	.help  = mpool_help,
 	.usage = mpool_usage,
+	.version = mpool_version_impl,
 };

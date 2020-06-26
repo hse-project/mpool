@@ -20,6 +20,7 @@ typedef mpool_err_t verb_func_t(struct verb_s *v, int argc, char **argv);
 
 typedef void vhelp_func_t(struct verb_s *, bool terse);
 typedef void shelp_func_t(bool terse);
+typedef void version_func_t(void);
 typedef void usage_func_t(void);
 
 struct verb_s {
@@ -32,10 +33,11 @@ struct verb_s {
 };
 
 struct subject_s {
-	char            *name;
-	struct verb_s   *verb;
-	shelp_func_t    *help;
-	usage_func_t    *usage;
+	char           *name;
+	struct verb_s  *verb;
+	shelp_func_t   *help;
+	usage_func_t   *usage;
+	version_func_t *version;
 };
 
 struct help_s {
