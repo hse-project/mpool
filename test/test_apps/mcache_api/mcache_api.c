@@ -449,7 +449,7 @@ mcache_boundary_test(
 	}
 
 	uint     page_count = test_map_info[0].mblocklen / PAGE_SIZE;
-	size_t  *pagenumv   = malloc(sizeof(size_t) * page_count);
+	off_t   *pagenumv   = malloc(sizeof(size_t) * page_count);
 	void   **addrv      = malloc(sizeof(void *) * page_count);
 
 	if (!pagenumv || !addrv) {

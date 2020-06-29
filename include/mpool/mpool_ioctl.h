@@ -258,18 +258,18 @@ struct mpool_xprops {
 /*
  * struct mblock_props -
  *
- * @mpr_objid:       mblock identifier
- * @mpr_alloc_cap:   allocated capacity in bytes
- * @mpr_write_len:   written user-data in bytes
- * @mpr_stripe_len:  stripe length in bytes
- * @mpr_mclassp:     media class
- * @mpr_iscommitted: Is this mblock committed?
+ * @mpr_objid:        mblock identifier
+ * @mpr_alloc_cap:    allocated capacity in bytes
+ * @mpr_write_len:    written user-data in bytes
+ * @mpr_optimal_wrsz: optimal write size(in bytes) for all but the last incremental mblock write
+ * @mpr_mclassp:      media class
+ * @mpr_iscommitted:  Is this mblock committed?
  */
 struct mblock_props {
 	uint64_t                mpr_objid;
 	uint32_t                mpr_alloc_cap;
 	uint32_t                mpr_write_len;
-	uint32_t                mpr_stripe_len;
+	uint32_t                mpr_optimal_wrsz;
 	uint32_t                mpr_mclassp; /* enum mp_media_classp */
 	uint8_t                 mpr_iscommitted;
 	uint8_t                 mpr_rsvd1[7];
@@ -576,13 +576,13 @@ struct mpioc_mblock_id {
 #define MPIOC_KIOV_MAX          (1024)
 
 struct mpioc_mblock_rw {
-	struct mpioc_cmn        mb_cmn;     /* Must be first field! */
-	uint64_t                mb_objid;
-	int64_t                 mb_offset;
-	uint32_t                mb_rsvd2;
-	uint16_t                mb_rsvd3;
-	uint16_t                mb_iov_cnt;
-	struct iovec __user    *mb_iov;
+	struct mpioc_cmn            mb_cmn;     /* Must be first field! */
+	uint64_t                    mb_objid;
+	int64_t                     mb_offset;
+	uint32_t                    mb_rsvd2;
+	uint16_t                    mb_rsvd3;
+	uint16_t                    mb_iov_cnt;
+	const struct iovec __user  *mb_iov;
 };
 
 /*

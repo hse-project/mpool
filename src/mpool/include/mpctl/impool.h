@@ -147,6 +147,6 @@ mpool_err_t mp_trim_device(int devicec, char **devicev, struct mpool_devrpt *dev
  * @mp_name: if not NULL the mpool name is copied there.
  * @mp_name_sz:
  */
-uint64_t mp_dev_activated(char *devpath, bool *activated, char *mp_name, size_t mp_name_sz);
+mpool_err_t mp_dev_activated(char *devpath, bool *activated, char *mp_name, size_t mp_name_sz);
 
 #endif /* MPCTL_IMPOOL_H */

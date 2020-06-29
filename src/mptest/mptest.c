@@ -1264,12 +1264,12 @@ static void mb_dump(struct mblock_props *props)
 	if (headers)
 		printf("%*s  PROPERTY    VALUE\n", (int)strlen(name), "MBID");
 
-	printf("%s  objid       0x%lx\n", name, props->mpr_objid);
-	printf("%s  alloc_cap   %u\n", name, props->mpr_alloc_cap);
-	printf("%s  write_len   %u\n", name, props->mpr_write_len);
-	printf("%s  stripe_len  %u\n", name, props->mpr_write_len);
-	printf("%s  mclassp     %s\n", name, ENUM_VAL2NAME(mp_media_classp, props->mpr_mclassp));
-	printf("%s  committed   %u\n", name, props->mpr_iscommitted);
+	printf("%s  objid        0x%lx\n", name, props->mpr_objid);
+	printf("%s  alloc_cap    %u\n", name, props->mpr_alloc_cap);
+	printf("%s  write_len    %u\n", name, props->mpr_write_len);
+	printf("%s  optimal_wrsz %u\n", name, props->mpr_optimal_wrsz);
+	printf("%s  mclassp      %s\n", name, ENUM_VAL2NAME(mp_media_classp, props->mpr_mclassp));
+	printf("%s  committed    %u\n", name, props->mpr_iscommitted);
 }
 
 static void mb_help(int argc, char **argv)

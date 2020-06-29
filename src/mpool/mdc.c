@@ -94,7 +94,7 @@ static merr_t mdc_mpname_get(struct mpool *mp, char *mpname, size_t mplen)
 	return 0;
 }
 
-uint64_t
+mpool_err_t
 mpool_mdc_alloc(
 	struct mpool               *mp,
 	u64                        *logid1,
@@ -138,7 +138,7 @@ mpool_mdc_alloc(
 	return 0;
 }
 
-uint64_t mpool_mdc_commit(struct mpool *mp, u64 logid1, u64 logid2)
+mpool_err_t mpool_mdc_commit(struct mpool *mp, u64 logid1, u64 logid2)
 {
 	merr_t err;
 
@@ -164,7 +164,7 @@ uint64_t mpool_mdc_commit(struct mpool *mp, u64 logid1, u64 logid2)
 	return 0;
 }
 
-uint64_t mpool_mdc_delete(struct mpool *mp, u64 logid1, u64 logid2)
+mpool_err_t mpool_mdc_delete(struct mpool *mp, u64 logid1, u64 logid2)
 {
 	merr_t rval = 0, err;
 
@@ -186,7 +186,7 @@ uint64_t mpool_mdc_delete(struct mpool *mp, u64 logid1, u64 logid2)
 	return rval;
 }
 
-uint64_t mpool_mdc_abort(struct mpool *mp, u64 logid1, u64 logid2)
+mpool_err_t mpool_mdc_abort(struct mpool *mp, u64 logid1, u64 logid2)
 {
 	merr_t rval = 0, err;
 
@@ -205,7 +205,7 @@ uint64_t mpool_mdc_abort(struct mpool *mp, u64 logid1, u64 logid2)
 }
 
 
-uint64_t
+mpool_err_t
 mpool_mdc_open(
 	struct mpool        *mp,
 	u64                  logid1,
@@ -376,7 +376,7 @@ exit:
 	return err;
 }
 
-uint64_t mpool_mdc_cstart(struct mpool_mdc *mdc)
+mpool_err_t mpool_mdc_cstart(struct mpool_mdc *mdc)
 {
 	struct mpool_mlog  *tgth = NULL;
 
@@ -414,7 +414,7 @@ uint64_t mpool_mdc_cstart(struct mpool_mdc *mdc)
 	return err;
 }
 
-uint64_t mpool_mdc_cend(struct mpool_mdc *mdc)
+mpool_err_t mpool_mdc_cend(struct mpool_mdc *mdc)
 {
 	struct mpool_mlog  *srch = NULL;
 	struct mpool_mlog  *tgth = NULL;
@@ -461,7 +461,7 @@ uint64_t mpool_mdc_cend(struct mpool_mdc *mdc)
 	return err;
 }
 
-uint64_t mpool_mdc_close(struct mpool_mdc *mdc)
+mpool_err_t mpool_mdc_close(struct mpool_mdc *mdc)
 {
 	merr_t err = 0;
 	merr_t rval = 0;
@@ -498,7 +498,7 @@ uint64_t mpool_mdc_close(struct mpool_mdc *mdc)
 	return rval;
 }
 
-uint64_t mpool_mdc_sync(struct mpool_mdc *mdc)
+mpool_err_t mpool_mdc_sync(struct mpool_mdc *mdc)
 {
 	merr_t err;
 	bool   rw = false;
@@ -520,7 +520,7 @@ uint64_t mpool_mdc_sync(struct mpool_mdc *mdc)
 	return err;
 }
 
-uint64_t mpool_mdc_rewind(struct mpool_mdc *mdc)
+mpool_err_t mpool_mdc_rewind(struct mpool_mdc *mdc)
 {
 	merr_t err;
 	bool   rw = false;
@@ -542,12 +542,7 @@ uint64_t mpool_mdc_rewind(struct mpool_mdc *mdc)
 	return err;
 }
 
-uint64_t
-mpool_mdc_read(
-	struct mpool_mdc   *mdc,
-	void               *data,
-	size_t              len,
-	size_t             *rdlen)
+mpool_err_t mpool_mdc_read(struct mpool_mdc *mdc, void *data, size_t len, size_t *rdlen)
 {
 	merr_t err;
 	bool   rw = true;
@@ -569,12 +564,7 @@ mpool_mdc_read(
 	return err;
 }
 
-uint64_t
-mpool_mdc_append(
-	struct mpool_mdc   *mdc,
-	void               *data,
-	ssize_t             len,
-	bool                sync)
+mpool_err_t mpool_mdc_append(struct mpool_mdc *mdc, void *data, ssize_t len, bool sync)
 {
 	struct iovec iov;
 	merr_t       err;
@@ -600,7 +590,7 @@ mpool_mdc_append(
 	return err;
 }
 
-uint64_t mpool_mdc_usage(struct mpool_mdc *mdc, size_t *usage)
+mpool_err_t mpool_mdc_usage(struct mpool_mdc *mdc, size_t *usage)
 {
 	merr_t err;
 	bool   rw = false;
@@ -622,7 +612,7 @@ uint64_t mpool_mdc_usage(struct mpool_mdc *mdc, size_t *usage)
 	return err;
 }
 
-uint64_t mpool_mdc_get_root(struct mpool *mp, u64 *oid1, u64 *oid2)
+mpool_err_t mpool_mdc_get_root(struct mpool *mp, u64 *oid1, u64 *oid2)
 {
 	struct mpool_params    params;
 	merr_t                 err;

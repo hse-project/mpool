@@ -261,7 +261,7 @@ verify_page_vec(
 	struct minfo *minfo,
 	void        **pagev,
 	uint         *objnumv,
-	size_t       *offsetv,
+	off_t        *offsetv,
 	uint64_t     *mbidv,
 	int           pagec,
 	struct stats *stats)
@@ -308,13 +308,13 @@ verify_with_mcache(
 	)
 {
 	uint             objnumv[mcmaxpages];
-	size_t           offsetv[mcmaxpages];
+	off_t            offsetv[mcmaxpages];
 	void            *pagev[mcmaxpages];
 	uint64_t         mbidv[mcmaxmblocks];
 	int              mbidc;
 	int              pagec;
 	int              i;
-	mpool_err_t           err;
+	mpool_err_t      err;
 	char             errbuf[64];
 	char            *buf = NULL;
 	int              fail = 0;
