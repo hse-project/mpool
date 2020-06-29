@@ -196,10 +196,9 @@ exit:
 	return err;
 }
 
-#define PARAM_INST_MBSZ(_val, _name, _msg)                \
-	{ { _name"=%s", sizeof(u32), 1, 64 + 1,	          \
-	   get_u32, show_u32, check_u32 },                \
-	   (void *)&(_val), (_msg), PARAM_FLAG_TUNABLE }
+#define PARAM_INST_MBSZ(_val, _name, _msg)					\
+	{ { _name"=%s", sizeof(u32), 1, 64 + 1, get_u32, show_u32, check_u32 }, \
+	  &(_val), (_msg), PARAM_FLAG_TUNABLE, 0, 1, 0 }
 
 /**
  * mpool create <mpool> <device>
@@ -219,10 +218,12 @@ static struct param_inst create_paramsv[] = {
 	PARAM_INST_UID(params.mp_uid, "uid", "spec file user ID"),
 	PARAM_INST_GID(params.mp_gid, "gid", "spec file group ID"),
 	PARAM_INST_MODE(params.mp_mode, "mode", "spec file mode bits"),
-	PARAM_INST_STRING(params.mp_label, sizeof(params.mp_label), "label", "limited ascii text"),
-	PARAM_INST_MBSZ(params.mp_mblocksz[MP_MED_CAPACITY], "capsz",
-			"capacity device mblock size"),
-	PARAM_INST_MBSZ(params.mp_mblocksz[MP_MED_STAGING], "stgsz", "staging device mblock size"),
+	PARAM_INST_STRING(params.mp_label, sizeof(params.mp_label),
+			  "label", "limited ascii text"),
+	PARAM_INST_MBSZ(params.mp_mblocksz[MP_MED_CAPACITY],
+			"capsz", "capacity device mblock size"),
+	PARAM_INST_MBSZ(params.mp_mblocksz[MP_MED_STAGING],
+			"stgsz", "staging device mblock size"),
 	PARAM_INST_U16_ADV(params.mp_mdc0cap, "mdc0cap", "MDC0 capacity in MiB"),
 	PARAM_INST_U16_ADV(params.mp_mdcncap, "mdcncap", "MDCN capacity in MiB"),
 	PARAM_INST_U16_ADV(params.mp_mdcnum, "mdcnum", "Number of mpool internal MDCs"),
@@ -268,6 +269,12 @@ static merr_t mpool_create_func(struct verb_s *v, int argc, char **argv)
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
 		fprintf(co.co_fp, "%s: unable to convert `%s': %s\n",
 			progname, argv[argind], errbuf);
+		return err;
+	}
+
+	err = verify_params(create_paramsv, errbuf, sizeof(errbuf));
+	if (err) {
+		fprintf(co.co_fp, "%s: %s\n", progname, errbuf);
 		return err;
 	}
 
@@ -389,8 +396,9 @@ errout:
 static struct mpool_params aparams;
 
 static struct param_inst add_paramsv[] = {
-	PARAM_INST_STRING(stgdev, sizeof(stgdev), "stgdev", "staging device"),
-	PARAM_INST_MBSZ(aparams.mp_mblocksz[MP_MED_STAGING], "stgsz", "staging device mblock size"),
+	PARAM_INST_XSTRING(stgdev, sizeof(stgdev), "stgdev", "staging device", 0, 1, 1),
+	PARAM_INST_MBSZ(aparams.mp_mblocksz[MP_MED_STAGING],
+			"stgsz", "staging device mblock size"),
 	PARAM_INST_END
 };
 
@@ -433,6 +441,12 @@ static merr_t mpool_add_func(struct verb_s *v, int argc, char **argv)
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
 		fprintf(co.co_fp, "%s: unable to convert `%s': %s\n",
 			progname, argv[argind], errbuf);
+		return err;
+	}
+
+	err = verify_params(add_paramsv, errbuf, sizeof(errbuf));
+	if (err) {
+		fprintf(co.co_fp, "%s: %s\n", progname, errbuf);
 		return err;
 	}
 
@@ -724,6 +738,12 @@ static merr_t mpool_activate_func(struct verb_s *v, int argc, char **argv)
 		return err;
 	}
 
+	err = verify_params(activate_paramsv, errbuf, sizeof(errbuf));
+	if (err) {
+		fprintf(co.co_fp, "%s: %s\n", progname, errbuf);
+		return err;
+	}
+
 	argc -= argind;
 	argv += argind;
 
@@ -759,10 +779,9 @@ static merr_t mpool_activate_func(struct verb_s *v, int argc, char **argv)
 	return 0;
 }
 
-#define PARAM_INST_RA(_val, _name, _msg)			\
-	{ { _name"=%s", sizeof(u32), 0, MPOOL_RA_PAGES_MAX + 1,	\
-	   get_u32, show_u32, check_u32 },			\
-	   (void *)&(_val), (_msg), PARAM_FLAG_TUNABLE }
+#define PARAM_INST_RA(_val, _name, _msg) \
+	{ { _name"=%s", sizeof(u32), 0, MPOOL_RA_PAGES_MAX + 1, get_u32, show_u32, check_u32 },\
+	  &(_val), (_msg), PARAM_FLAG_TUNABLE, 0, 1, 0 }
 
 /**
  * mpool set [mpool] [--verbose]
@@ -818,6 +837,12 @@ static merr_t mpool_set_func(struct verb_s *v, int argc, char **argv)
 		mpool_strinfo(err, errbuf, sizeof(errbuf));
 		fprintf(co.co_fp, "%s: unable to convert `%s': %s\n",
 			progname, argv[argind], errbuf);
+		return err;
+	}
+
+	err = verify_params(set_paramsv, errbuf, sizeof(errbuf));
+	if (err) {
+		fprintf(co.co_fp, "%s: %s\n", progname, errbuf);
 		return err;
 	}
 
