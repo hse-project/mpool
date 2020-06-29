@@ -105,19 +105,21 @@ struct param_type {
 
 /**
  * struct param_inst -
- * @pi_type:  parameter props and getter/setter ops
- * @pi_value: ptr to the parameter
- * @pi_msg:   Short description of the parameter
- * @pi_entered: set to false before the command line parameters are parsed.
- *	The parser set it to true if the parameter is present/entered on the
- *	command line.
+ * @pi_type:      parameter props and getter/setter ops
+ * @pi_value:     ptr to the parameter
+ * @pi_msg:       short description of the parameter
+ * @pi_given_min: minimum times this param must be given
+ * @pi_given_max: maximum times this param may be given
+ * @pi_given:     number of times param was given
  */
 struct param_inst {
 	struct param_type   pi_type;
 	void               *pi_value;
 	char               *pi_msg;
 	u32                 pi_flags;
-	bool                pi_entered;
+	int                 pi_given_min;
+	int                 pi_given_max;
+	int                 pi_given;
 };
 
 param_get_t get_u8;
@@ -148,6 +150,7 @@ param_get_t get_s64;
 
 param_get_t get_string;
 param_show_t show_string;
+param_check_t check_string;
 
 param_get_t get_bool;
 param_show_t show_bool;
@@ -183,6 +186,18 @@ size_t space_to_string(u64 spc, char *string, size_t strsz);
 mpool_err_t process_params(int argc, char **argv, struct param_inst *pi, int *next_arg, u32 flag);
 
 /**
+ * verify_params() - post-process parameter verification
+ * @paramv:  vector of parameters
+ * @buf:     buffer for error message
+ * @bufsz:   size of buf[]
+ *
+ * This function verifies that each parameter was given no more and no fewer
+ * times than specified at parameter creation via the %pi_given_min and
+ * %pi_given_max fields.
+ */
+mpool_err_t verify_params(const struct param_inst *paramv, char *buf, size_t bufsz);
+
+/**
  * show_default_params() - show available params
  * @params: struct param *, list of available params
  * @flag:
@@ -197,28 +212,25 @@ enum param_flag {
 	PARAM_FLAG_BOUND_CK     = 0x8,
 };
 
-#define PARAM_TYPE_END {NULL, 0, 0, 0, 0, 0, NULL}
-
-#define PARAM_INST(ptype, val, msg)  {ptype, (void *)&val, msg, 0}
-
-#define PARAM_INST_ADV(ptype, val, msg) {ptype, (void *)&val, msg, \
-			PARAM_FLAG_ADVANCED}
-
-#define PARAM_INST_END \
-	{PARAM_TYPE_END, 0, NULL, 0}
+#define PARAM_TYPE_END      {NULL, 0, 0, 0, 0, 0, NULL}
+#define PARAM_INST_END      {PARAM_TYPE_END, 0, NULL, 0}
 
 /* Special purpose PARAM_INST macros for certain data types */
 #define PARAM_INST_type(type, val, name, msg)\
 	{{name"=%s", sizeof(type), 0, 0, get_##type, show_##type, NULL}, \
-	(void *)&val, msg, 0}
+	 &val, msg, 0, 0, 1, 0}
 
 #define PARAM_INST_ADV_type(type, val, name, msg)\
 	{{name"=%s", sizeof(type), 0, 0, get_##type, show_##type, NULL}, \
-	(void *)&val, msg, PARAM_FLAG_ADVANCED}
+	 &val, msg, PARAM_FLAG_ADVANCED, 0, 1, 0}
 
-#define PARAM_INST_STRING(val, valsz, name, msg)\
-	{{name"=%s", valsz, 0, 0, get_string, show_string, NULL}, \
-	(void *)&val, msg, 0}
+#define PARAM_INST_STRING(_val, _valsz, _name, _msg)\
+	{{_name"=%s", (_valsz), 0, 0, get_string, show_string, NULL},	\
+	 &(_val), (_msg), 0, 0, 1, 0}
+
+#define PARAM_INST_XSTRING(_val, _valsz, _name, _msg, _flags, _givmin, _givmax) \
+	{{_name"=%s", (_valsz), 1, (_valsz) - 1, get_string, show_string, check_string}, \
+	 &(_val), _msg, (_flags), (_givmin), (_givmax), 0}
 
 #define PARAM_INST_U8(val, name, msg)\
 	PARAM_INST_type(u8, val, name, msg)
@@ -251,18 +263,18 @@ typedef u64 u64_size;
 
 #define PARAM_INST_GID(val, name, msg)                                  \
 	{{name"=%s", sizeof(gid_t), 0, 0, get_gid, show_gid, NULL},     \
-	(void *)&val, msg, PARAM_FLAG_ID}
+	 &val, msg, PARAM_FLAG_ID, 0, 1, 0}
 
 #define PARAM_INST_UID(val, name, msg)                                  \
 	{{name"=%s", sizeof(uid_t), 0, 0, get_uid, show_uid, NULL},     \
-	(void *)&val, msg, PARAM_FLAG_ID}
+	 &val, msg, PARAM_FLAG_ID, 0, 1, 0}
 
 #define PARAM_INST_MODE(val, name, msg)                                 \
 	{{name"=%s", sizeof(mode_t), 0, 0, get_mode, show_mode, NULL},  \
-	(void *)&val, msg, PARAM_FLAG_TUNABLE}
+	 &val, msg, PARAM_FLAG_TUNABLE, 0, 1, 0}
 
 #define PARAM_INST_PCT(val, name, msg)                               \
 	{{name"=%s", sizeof(u8), 0, 101, get_u8, show_u8, check_u8}, \
-	(void *)&val, msg, PARAM_FLAG_TUNABLE}
+	 &val, msg, PARAM_FLAG_TUNABLE, 0, 1, 0}
 
 #endif /* MPOOL_UTIL_PARAM_H */

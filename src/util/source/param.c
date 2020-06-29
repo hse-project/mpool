@@ -475,6 +475,14 @@ mpool_err_t show_string(char *str, size_t strsz, const void *val, size_t unused)
 	return (n < strsz) ? 0 : merr(EINVAL);
 }
 
+mpool_err_t check_string(uintptr_t min, uintptr_t max, void *val)
+{
+	if (!val || strlen(val) < min || strlen(val) > max)
+		return merr(EINVAL);
+
+	return 0;
+}
+
 mpool_err_t get_bool(const char *str, void *dst, size_t dstsz)
 {
 	long    v = 0;
@@ -713,11 +721,12 @@ mpool_err_t process_params(int argc, char **argv, struct param_inst *piv, int *a
 	if (argc < 1)
 		return 0;
 
-	/* Clear 'pi_set' to know what parameters are passed on the cmd line */
+	/* Reset "given" count (note that this function is deterministically
+	 * reusable only if the caller resets all the default values).
+	 */
 	for (index = 0; piv[index].pi_type.param_token != NULL; index++)
-		piv[index].pi_entered = false;
+		piv[index].pi_given = 0;
 
-	/* Need to create a match_table for this param_inst set */
 	err = param_gen_match_table(piv, &table, &entry_cnt);
 	if (err)
 		return err;
@@ -758,7 +767,7 @@ mpool_err_t process_params(int argc, char **argv, struct param_inst *piv, int *a
 			}
 		}
 
-		pi->pi_entered = true;
+		pi->pi_given++;
 		shuffle(argc, argv, 0, arg);
 		if (argindp)
 			(*argindp)++;
@@ -786,6 +795,36 @@ static void param_get_name(int index, char *buf, size_t buf_sz, const struct par
 
 	strlcpy(buf, key, MIN(len + 1, buf_sz));
 }
+
+mpool_err_t verify_params(const struct param_inst *paramv, char *buf, size_t bufsz)
+{
+	while (paramv && paramv->pi_type.param_token) {
+		char name[128];
+
+		if (paramv->pi_given < paramv->pi_given_min) {
+			const char *fmt = "`%s' must be specified at least once";
+
+			if (paramv->pi_given_min > 1)
+				fmt = "`%s' must be specified at least %d times";
+			param_get_name(0, name, sizeof(name), paramv);
+			snprintf(buf, bufsz, fmt, name, paramv->pi_given_min);
+			return merr(EINVAL);
+		} else if (paramv->pi_given > paramv->pi_given_max) {
+			const char *fmt = "`%s' may not be specified more than once";
+
+			if (paramv->pi_given_max > 1)
+				fmt = "`%s' may not be specified more than %d times";
+			param_get_name(0, name, sizeof(name), paramv);
+			snprintf(buf, bufsz, fmt, name, paramv->pi_given_max);
+			return merr(EINVAL);
+		}
+
+		++paramv;
+	}
+
+	return 0;
+}
+
 
 /* Set the values in table params to defaults before calling this function
  */
