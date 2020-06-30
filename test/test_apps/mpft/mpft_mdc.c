@@ -90,9 +90,11 @@ mpool_err_t mdc_correctness_simple(int argc, char **argv)
 	enum mp_media_classp mclassp;
 
 	show_args(argc, argv);
-	err = process_params(argc, argv, mdc_correctness_simple_params, &next_arg, 0);
-	if (err != 0) {
-		printf("%s process_params returned an error\n", __func__);
+	err = process_params(mdc_correctness_simple_params, argc, argv, &next_arg);
+	if (err) {
+		mpool_strinfo(err, errbuf, sizeof(errbuf));
+		fprintf(stderr, "%s: unable to convert `%s': %s\n",
+			__func__, argv[next_arg], errbuf);
 		return err;
 	}
 
@@ -325,9 +327,11 @@ mpool_err_t mdc_correctness_mp_release(int argc, char **argv)
 	enum mp_media_classp mclassp;
 
 	show_args(argc, argv);
-	err = process_params(argc, argv, mdc_correctness_mp_release_params, &next_arg, 0);
-	if (err != 0) {
-		printf("%s process_params returned an error\n", __func__);
+	err = process_params(mdc_correctness_mp_release_params, argc, argv, &next_arg);
+	if (err) {
+		mpool_strinfo(err, errbuf, sizeof(errbuf));
+		fprintf(stderr, "%s: unable to convert `%s': %s\n",
+			__func__, argv[next_arg], errbuf);
 		return err;
 	}
 
@@ -527,10 +531,12 @@ mpool_err_t mdc_correctness_multi_reader_single_app(int argc, char **argv)
 	enum mp_media_classp mclassp;
 
 	show_args(argc, argv);
-	err = process_params(argc, argv, mdc_correctness_multi_reader_single_app_params,
-			     &next_arg, 0);
-	if (err != 0) {
-		printf("%s process_params returned an error\n", __func__);
+	err = process_params(mdc_correctness_multi_reader_single_app_params,
+			     argc, argv, &next_arg);
+	if (err) {
+		mpool_strinfo(err, errbuf, sizeof(errbuf));
+		fprintf(stderr, "%s: unable to convert `%s': %s\n",
+			__func__, argv[next_arg], errbuf);
 		return err;
 	}
 
@@ -789,9 +795,11 @@ mpool_err_t mdc_correctness_reader_then_writer(int argc, char **argv)
 	enum mp_media_classp mclassp;
 
 	show_args(argc, argv);
-	err = process_params(argc, argv, mdc_correctness_reader_then_writer_params, &next_arg, 0);
-	if (err != 0) {
-		printf("%s process_params returned an error\n", __func__);
+	err = process_params(mdc_correctness_reader_then_writer_params, argc, argv, &next_arg);
+	if (err) {
+		mpool_strinfo(err, errbuf, sizeof(errbuf));
+		fprintf(stderr, "%s: unable to convert `%s': %s\n",
+			__func__, argv[next_arg], errbuf);
 		return err;
 	}
 
@@ -998,9 +1006,11 @@ mpool_err_t mdc_correctness_writer_then_reader(int argc, char **argv)
 	enum mp_media_classp mclassp;
 
 	show_args(argc, argv);
-	err = process_params(argc, argv, mdc_correctness_writer_then_reader_params, &next_arg, 0);
-	if (err != 0) {
-		printf("%s process_params returned an error\n", __func__);
+	err = process_params(mdc_correctness_writer_then_reader_params, argc, argv, &next_arg);
+	if (err) {
+		mpool_strinfo(err, errbuf, sizeof(errbuf));
+		fprintf(stderr, "%s: unable to convert `%s': %s\n",
+			__func__, argv[next_arg], errbuf);
 		return err;
 	}
 
@@ -1205,9 +1215,11 @@ mpool_err_t mdc_correctness_multi_mdc(int argc, char **argv)
 	enum mp_media_classp mclassp;
 
 	show_args(argc, argv);
-	err = process_params(argc, argv, mdc_correctness_multi_mdc_params, &next_arg, 0);
-	if (err != 0) {
-		printf("%s process_params returned an error\n", __func__);
+	err = process_params(mdc_correctness_multi_mdc_params, argc, argv, &next_arg);
+	if (err) {
+		mpool_strinfo(err, errbuf, sizeof(errbuf));
+		fprintf(stderr, "%s: unable to convert `%s': %s\n",
+			__func__, argv[next_arg], errbuf);
 		return err;
 	}
 

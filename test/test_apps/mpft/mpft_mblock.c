@@ -479,7 +479,7 @@ static mpool_err_t perf_seq_writes(int argc, char **argv)
 	u32    tc;
 	int    i;
 	int    err_cnt;
-	char   err_str[256];
+	char   errbuf[256];
 	u32    ma_usec = 0;	/* Alloc */
 	u32    wr_usec = 0;	/* Write */
 	u32    mc_usec = 0;	/* Commit */
@@ -511,9 +511,11 @@ static mpool_err_t perf_seq_writes(int argc, char **argv)
 	struct mpool_params        params;
 	u64                        mblocksz;
 
-	err = process_params(argc, argv, perf_seq_writes_params, &next_arg, 0);
-	if (err != 0) {
-		printf("%s process_params returned an error\n", test_name);
+	err = process_params(perf_seq_writes_params, argc, argv, &next_arg);
+	if (err) {
+		mpool_strinfo(err, errbuf, sizeof(errbuf));
+		fprintf(stderr, "%s: unable to convert `%s': %s\n",
+			test_name, argv[next_arg], errbuf);
 		return err;
 	}
 
@@ -538,7 +540,7 @@ static mpool_err_t perf_seq_writes(int argc, char **argv)
 	err = mpool_params_get(mp, &params, NULL);
 	if (err) {
 		fprintf(stderr, "%s: Error getting params. %s\n", test_name,
-			mpool_strinfo(err, err_str, sizeof(err_str)));
+			mpool_strinfo(err, errbuf, sizeof(errbuf)));
 		mpool_close(mp);
 		return err;
 	}
@@ -546,7 +548,7 @@ static mpool_err_t perf_seq_writes(int argc, char **argv)
 	err = mpool_usage_get(mp, &usage);
 	if (err) {
 		fprintf(stderr, "%s: Error getting usage. %s\n", test_name,
-			mpool_strinfo(err, err_str, sizeof(err_str)));
+			mpool_strinfo(err, errbuf, sizeof(errbuf)));
 		mpool_close(mp);
 		return err;
 	}
@@ -794,8 +796,8 @@ destroy_mblocks:
 	for (i = 0; i < mblocks_needed; i++) {
 		err = mpool_mblock_delete(mp, mbo[i].mblock_id);
 		if (err) {
-			mpool_strinfo(err, err_str, sizeof(err_str));
-			fprintf(stderr, "%s: Error deleting mblocks: %s\n", test_name, err_str);
+			mpool_strinfo(err, errbuf, sizeof(errbuf));
+			fprintf(stderr, "%s: Error deleting mblocks: %s\n", test_name, errbuf);
 			break;
 		}
 	}

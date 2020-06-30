@@ -708,9 +708,9 @@ static void param_free_match_table(struct match_token *table)
 	free(table);
 }
 
-bool show_advanced_params;
+bool show_hidden_params;
 
-mpool_err_t process_params(int argc, char **argv, struct param_inst *piv, int *argindp, u32 flag)
+mpool_err_t process_params(struct param_inst *piv, int argc, char **argv, int *argindp)
 {
 	struct match_token *table;
 	substring_t         val;
@@ -740,12 +740,8 @@ mpool_err_t process_params(int argc, char **argv, struct param_inst *piv, int *a
 
 		pi = piv + index;
 
-		if (!show_advanced_params &&
-		    (pi->pi_flags & PARAM_FLAG_ADVANCED))
-			continue; /* skip advanced params */
-
-		if (flag && !(flag & pi->pi_flags))
-			continue; /* skip if type not requested */
+		if (!show_hidden_params && (pi->pi_flags & PARAM_HIDDEN))
+			continue;
 
 		err = pi->pi_type.param_str_to_val(val.from, pi->pi_value, pi->pi_type.param_size);
 		if (err)
@@ -835,8 +831,7 @@ void show_default_params(struct param_inst *params, u32 flag)
 	for (; params->pi_type.param_token; ++params) {
 		char name[32], value[128];
 
-		if (!show_advanced_params &&
-		    (params->pi_flags & PARAM_FLAG_ADVANCED))
+		if (!show_hidden_params && (params->pi_flags & PARAM_HIDDEN))
 			continue; /* skip unwanted advanced param */
 
 		if (flag && !(flag & params->pi_flags))
@@ -847,7 +842,8 @@ void show_default_params(struct param_inst *params, u32 flag)
 		value[0] = '\000';
 		params->pi_type.param_val_to_str(value, sizeof(value), params->pi_value, 1);
 
-		fprintf(co.co_fp, "%s  %-8s  %s (default: %s)\n", hdr, name, params->pi_msg, value);
+		fprintf(co.co_fp, "%s  %-8s  %s (default: %s)\n",
+			hdr, name, params->pi_desc, value);
 
 		hdr = "";
 	}

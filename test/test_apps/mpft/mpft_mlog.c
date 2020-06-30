@@ -534,9 +534,11 @@ static mpool_err_t perf_seq_writes(int argc, char **argv)
 	struct oid_pair           *oid;
 	struct mdc_capacity        capreq;
 
-	err = process_params(argc, argv, perf_seq_writes_params, &next_arg, 0);
-	if (err != 0) {
-		printf("%s process_params returned an error\n", test_name);
+	err = process_params(perf_seq_writes_params, argc, argv, &next_arg);
+	if (err) {
+		mpool_strinfo(err, err_str, sizeof(err_str));
+		fprintf(stderr, "%s: unable to convert `%s': %s\n",
+			test_name, argv[next_arg], err_str);
 		return err;
 	}
 
@@ -890,9 +892,11 @@ mpool_err_t mlog_correctness_simple(int argc, char **argv)
 	struct mlog_props       props;
 
 	show_args(argc, argv);
-	err = process_params(argc, argv, mlog_correctness_simple_params, &next_arg, 0);
-	if (err != 0) {
-		printf("%s process_params returned an error\n", __func__);
+	err = process_params(mlog_correctness_simple_params, argc, argv, &next_arg);
+	if (err) {
+		mpool_strinfo(err, errbuf, sizeof(errbuf));
+		fprintf(stderr, "%s: unable to convert `%s': %s\n",
+			__func__, argv[next_arg], errbuf);
 		return err;
 	}
 
@@ -1097,10 +1101,11 @@ mpool_err_t mlog_correctness_basicio(int argc, char **argv)
 	struct mlog_props       props;
 
 	show_args(argc, argv);
-	err = process_params(argc, argv,
-		mlog_correctness_basicio_params, &next_arg, 0);
-	if (err != 0) {
-		printf("%s process_params returned an error\n", __func__);
+	err = process_params(mlog_correctness_basicio_params, argc, argv, &next_arg);
+	if (err) {
+		mpool_strinfo(err, errbuf, sizeof(errbuf));
+		fprintf(stderr, "%s: unable to convert `%s': %s\n",
+			__func__, argv[next_arg], errbuf);
 		return err;
 	}
 
@@ -1409,9 +1414,11 @@ mpool_err_t mlog_correctness_recovery(int argc, char **argv)
 
 
 	show_args(argc, argv);
-	err = process_params(argc, argv, mlog_correctness_recovery_params, &next_arg, 0);
-	if (err != 0) {
-		printf("%s process_params returned an error\n", __func__);
+	err = process_params(mlog_correctness_recovery_params, argc, argv, &next_arg);
+	if (err) {
+		mpool_strinfo(err, errbuf, sizeof(errbuf));
+		fprintf(stderr, "%s: unable to convert `%s': %s\n",
+			__func__, argv[next_arg], errbuf);
 		return err;
 	}
 

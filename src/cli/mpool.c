@@ -135,7 +135,7 @@ main(int argc, char **argv)
 	if (xgetopt(argc, argv, "+hTVv", xoptionv))
 		return EX_USAGE;
 
-	show_advanced_params = !!co.co_mutest;
+	show_hidden_params = !!co.co_mutest;
 
 	err = process_verb(&mpool_ui, argc - optind, argv + optind);
 

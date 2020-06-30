@@ -551,6 +551,7 @@ static struct param_inst mpft_params[] = {
 int main(int argc, char **argv)
 {
 
+	char    errbuf[128];
 	mpool_err_t  err = 0;
 	int     next_arg = 1;
 	char   *progname = argv[0];
@@ -574,7 +575,7 @@ int main(int argc, char **argv)
 	 * to hierarchically parse the command line.
 	 */
 
-	if (xgetopt(argc, argv, "hLhnTv", xoptionv))
+	if (xgetopt(argc, argv, "hLnTv", xoptionv))
 		return EX_USAGE;
 
 	if (co.co_log)
@@ -582,9 +583,11 @@ int main(int argc, char **argv)
 
 	next_arg = optind;
 
-	err = process_params(argc, argv, mpft_params, &next_arg, 0);
+	err = process_params(mpft_params, argc, argv, &next_arg);
 	if (err) {
-		usage(progname);
+		mpool_strinfo(err, errbuf, sizeof(errbuf));
+		fprintf(stderr, "%s: unable to convert `%s': %s\n",
+			progname, argv[next_arg], errbuf);
 		return EX_USAGE;
 	}
 

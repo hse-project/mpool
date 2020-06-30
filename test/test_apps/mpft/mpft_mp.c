@@ -62,9 +62,11 @@ mpool_err_t mp_correctness_simple(int argc, char **argv)
 	struct mpool       *mp;
 
 	show_args(argc, argv);
-	err = process_params(argc, argv, mp_correctness_simple_params, &next_arg, 0);
-	if (err != 0) {
-		printf("%s.%d process_params returned an error\n", __func__, __LINE__);
+	err = process_params(mp_correctness_simple_params, argc, argv, &next_arg);
+	if (err) {
+		mpool_strinfo(err, errbuf, sizeof(errbuf));
+		fprintf(stderr, "%s: unable to convert `%s': %s\n",
+			__func__, argv[next_arg], errbuf);
 		return err;
 	}
 
@@ -169,9 +171,11 @@ mpool_err_t mp_correctness_rdonly_open(int argc, char **argv)
 	struct mpool       *mp[2];
 
 	show_args(argc, argv);
-	err = process_params(argc, argv, mp_correctness_rdonly_open_params, &next_arg, 0);
-	if (err != 0) {
-		printf("%s.%d: process_params returned an error\n", __func__, __LINE__);
+	err = process_params(mp_correctness_rdonly_open_params, argc, argv, &next_arg);
+	if (err) {
+		mpool_strinfo(err, errbuf, sizeof(errbuf));
+		fprintf(stderr, "%s: unable to convert `%s': %s\n",
+			__func__, argv[next_arg], errbuf);
 		return err;
 	}
 
@@ -248,10 +252,11 @@ mpool_err_t mp_correctness_rdwr_open(int argc, char **argv)
 	struct mpool       *mp[2];
 
 	show_args(argc, argv);
-	err = process_params(argc, argv, mp_correctness_rdwr_open_params, &next_arg, 0);
-	if (err != 0) {
-		fprintf(stderr, "%s.%d: process_params returned an error\n",
-			__func__, __LINE__);
+	err = process_params(mp_correctness_rdwr_open_params, argc, argv, &next_arg);
+	if (err) {
+		mpool_strinfo(err, errbuf, sizeof(errbuf));
+		fprintf(stderr, "%s: unable to convert `%s': %s\n",
+			__func__, argv[next_arg], errbuf);
 		return err;
 	}
 
