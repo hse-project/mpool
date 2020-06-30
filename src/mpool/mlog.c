@@ -19,7 +19,6 @@
 #include "mpcore_defs.h"
 #include "logging.h"
 
-
 /**
  * pmd_obj_rdlock() - Read-lock object layout with appropriate nesting level.
  * @mp:
@@ -860,11 +859,7 @@ mlog_populate_rbuf(
 	*nsec   = min_t(u32, maxsec, *nsec);
 	iovcnt  = (*nsec + nseclpg - 1) / nseclpg;
 	oiovcnt = iovcnt;
-
-	/* No. of sectors in the last log page. */
 	l_iolen = MLOG_LPGSZ(lstat);
-	if (!IS_SECPGA(lstat))
-		l_iolen = (*nsec % nseclpg) * sectsz;
 
 	if (iovcnt > NELEM(iovbuf)) {
 		iov = malloc(iovcnt * sizeof(*iov));
@@ -1315,18 +1310,7 @@ static merr_t mlog_flush_abuf(struct mpool_descriptor *mp, struct pmd_layout *la
 	abidx   = lstat->lst_abidx;
 	l_iolen = MLOG_LPGSZ(lstat);
 
-	if (!IS_SECPGA(lstat)) {
-		u8 asidx;
-
-		asidx = lstat->lst_wsoff - (nseclpg * abidx + lstat->lst_asoff);
-
-		/* No. of sectors in the last log page. */
-		if (asidx < nseclpg - 1)
-			l_iolen = (asidx + 1) * sectsz;
-	}
-
 	iovcnt = abidx + 1;
-
 	if (iovcnt > NELEM(iovbuf)) {
 		iov = malloc(iovcnt * sizeof(*iov));
 		if (!iov)

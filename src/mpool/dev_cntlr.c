@@ -199,7 +199,7 @@ merr_t generic_get_optiosz(const char *dev, u32 *iosz)
 	}
 
 	if (sz)
-		*iosz = min_t(u32, *iosz, sz);
+		*iosz = clamp_t(u32, sz, PAGE_SIZE, *iosz);
 
 	return 0;
 }
