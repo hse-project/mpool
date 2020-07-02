@@ -446,7 +446,7 @@ struct pd_prop {
 	uint8_t                 pdp_devstate;
 	uint8_t                 pdp_phys_if;
 	uint8_t                 pdp_mclassp;
-	uint32_t                pdp_rsvd1;
+	bool                    pdp_fua;
 	uint64_t                pdp_cmdopt;
 
 	struct pd_znparam       pdp_zparam;

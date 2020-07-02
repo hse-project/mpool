@@ -294,6 +294,17 @@ devtab_get_prop_generic_blk(
 		return err;
 	pd_prop->pdp_optiosz = sz;
 
+	err = sysfs_get_val_u64(sysfs_dpath, "/queue/fua", 0, &val);
+	if (err) {
+		if (merr_errno(err) != ENOENT) {
+			mpool_elog(MPOOL_ERR "fua status for device %s failed, @@e", err, dpath);
+			return err;
+		}
+		err = 0;
+		val = 0;
+	}
+	pd_prop->pdp_fua = !!val;
+
 	/*
 	 * Get the number of sectors
 	 */

@@ -37,14 +37,7 @@ struct mpool_dev_info {
 };
 
 /* Shortcuts */
-#define pdi_didstr    pdi_parm.dpr_prop.pdp_didstr
 #define pdi_zonepg    pdi_parm.dpr_prop.pdp_zparam.dvb_zonepg
-#define pdi_zonetot   pdi_parm.dpr_prop.pdp_zparam.dvb_zonetot
-#define pdi_devtype   pdi_parm.dpr_prop.pdp_devtype
-#define pdi_cmdopt    pdi_parm.dpr_prop.pdp_cmdopt
-#define pdi_mclass    pdi_parm.dpr_prop.pdp_mclassp
-#define pdi_devsz     pdi_parm.dpr_prop.pdp_devsz
-#define pdi_sectorsz  pdi_parm.dpr_prop.pdp_sectorsz
 #define pdi_prop      pdi_parm.dpr_prop
 
 /**
