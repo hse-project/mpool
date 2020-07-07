@@ -31,4 +31,7 @@ udevadm control --reload-rules
 # Enable mpool systemd service
 systemctl enable mpool.service --now
 
+# Remove any stale mpool-blkid symlink
+rm -f /usr/lib/libblkid.so.1
+
 exit 0
