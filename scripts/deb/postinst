@@ -31,6 +31,9 @@ case $1 in
 
         # Enable mpool systemd service
         systemctl enable mpool.service --now
+
+        # Remove any stale mpool-blkid symlink
+        rm -f /usr/lib/libblkid.so.1
         ;;
 
     abort-remove)

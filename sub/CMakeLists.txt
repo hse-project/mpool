@@ -46,14 +46,19 @@ ExternalProject_Add(libblkid-pkg
         COMMAND mkdir -p ${MPOOL_EXT_INSTALL_PREFIX}/include/mpool_blkid
         COMMAND pwd && cp ./libblkid/src/blkid.h ${MPOOL_EXT_INSTALL_PREFIX}/include/mpool_blkid/blkid.h
         COMMAND cp -p ./.libs/libblkid.so ${MPOOL_EXT_INSTALL_PREFIX}/lib/libmpool-blkid.so
-	COMMAND ln -fs ${MPOOL_EXT_INSTALL_PREFIX}/lib/libmpool-blkid.so ${MPOOL_EXT_INSTALL_PREFIX}/lib/libblkid.so.1
+        COMMAND ln -fs libmpool-blkid.so ${MPOOL_EXT_INSTALL_PREFIX}/lib/libblkid.so.1
 
     BUILD_IN_SOURCE   1
     )
 
 install(
   FILES "${MPOOL_EXT_INSTALL_PREFIX}/lib/libmpool-blkid.so"
-  DESTINATION lib
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/mpool
+  COMPONENT runtime)
+
+install(
+  FILES "${MPOOL_EXT_INSTALL_PREFIX}/lib/libblkid.so.1"
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/mpool
   COMPONENT runtime)
 
 else()
