@@ -163,7 +163,8 @@ mpool_err_t mpool_close(struct mpool *mp);
  * @mclass:  input media mclass
  * @props:   media class props (output)
  *
- * Returns: 0 for success and ENOENT if the specified mclass is not present
+ * Returns: 0 for success
+ *          non-zero(err): mpool_errno(err) == ENOENT if the specified mclass is not present
  */
 /* MTF_MOCK */
 mpool_err_t
