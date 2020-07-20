@@ -80,7 +80,7 @@ enum mp_mgmt_flags {
  */
 enum mp_media_classp {
 	MP_MED_STAGING   = 0,
-	MP_MED_CAPACITY	 = 1,
+	MP_MED_CAPACITY  = 1,
 };
 
 #define MP_MED_BASE        MP_MED_STAGING
@@ -222,15 +222,18 @@ struct mpool_mclass_xprops {
  * mpool_mclass_props -
  *
  * @mc_mblocksz:   mblock size in MiB
- * @mc_avail:      available space in bytes (excluding spare space)
- * @mc_used:       used space in bytes (excluding spare space)
- * @mc_spare:      available spare space in bytes
- * @mc_spare_used: used spare space in bytes
+ * @mc_rsvd:       reserved struct field (for future use)
+ * @mc_total:      total space in the media class (mc_usable + mc_spare)
+ * @mc_usable:     usable space in bytes
+ * @mc_used:       bytes allocated from usable space
+ * @mc_spare:      spare space in bytes
+ * @mc_spare_used: bytes allocated from spare space
  */
 struct mpool_mclass_props {
 	uint32_t   mc_mblocksz;
 	uint32_t   mc_rsvd;
-	uint64_t   mc_avail;
+	uint64_t   mc_total;
+	uint64_t   mc_usable;
 	uint64_t   mc_used;
 	uint64_t   mc_spare;
 	uint64_t   mc_spare_used;

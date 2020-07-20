@@ -603,7 +603,8 @@ mpool_mclass_get(struct mpool *mp, enum mp_media_classp mclass, struct mpool_mcl
 		props->mc_mblocksz = (xprops->mc_zonepg << PAGE_SHIFT) >> 20;
 
 		usage = &xprops->mc_usage;
-		props->mc_avail = usage->mpu_usable;
+		props->mc_total = usage->mpu_usable + usage->mpu_spare;
+		props->mc_usable = usage->mpu_usable;
 		props->mc_used = usage->mpu_used;
 		props->mc_spare = usage->mpu_spare;
 		props->mc_spare_used = usage->mpu_spare - usage->mpu_fspare;
