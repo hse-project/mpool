@@ -659,7 +659,7 @@ mpool_mblock_read(struct mpool *mp, uint64_t mbid, const struct iovec *iov, int 
 mpool_err_t
 mpool_mcache_madvise(
 	struct mpool_mcache_map    *map,
-	uint                        mbidx,
+	uint32_t                    mbidx,
 	off_t                       offset,
 	size_t                      length,
 	int                         advice);
@@ -700,7 +700,7 @@ mpool_mcache_mincore(
  * pages are not contiguous, return NULL.
  */
 /* MTF_MOCK */
-void *mpool_mcache_getbase(struct mpool_mcache_map *map, const uint mbidx);
+void *mpool_mcache_getbase(struct mpool_mcache_map *map, const uint32_t mbidx);
 
 
 /**
@@ -720,8 +720,8 @@ void *mpool_mcache_getbase(struct mpool_mcache_map *map, const uint mbidx);
 mpool_err_t
 mpool_mcache_getpages(
 	struct mpool_mcache_map    *map,
-	const uint                  pagec,
-	const uint                  mbidx,
+	const uint32_t              pagec,
+	const uint32_t              mbidx,
 	const off_t                 offsetv[],
 	void                       *pagev[]);
 
