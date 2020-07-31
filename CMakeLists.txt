@@ -4,14 +4,10 @@
 # Copyright (C) 2015-2020 Micron Technology, Inc.  All rights reserved.
 #
 
-cmake_minimum_required( VERSION 2.8 )
+cmake_minimum_required( VERSION 3.6 )
 
-if( ${CMAKE_VERSION} VERSION_GREATER 3.0.1 )
-    cmake_policy( SET CMP0046 OLD )
-endif()
-if( ${CMAKE_VERSION} VERSION_GREATER 3.1.2 )
-    cmake_policy( SET CMP0053 NEW )
-endif()
+cmake_policy( SET CMP0046 OLD )
+cmake_policy( SET CMP0053 NEW )
 
 project( mpool C )
 
@@ -190,12 +186,6 @@ else()
 endif()
 
 set( CPACK_PACKAGE_RELEASE      "${BUILD_PKG_REL}${BUILD_RTYPE}${BUILD_PKG_DIST}" )
-
-if( ${CMAKE_MINIMUM_REQUIRED_VERSION} VERSION_LESS 3.6.2 )
-    set( CPACK_PACKAGE_FILE_NAME
-	"${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CPACK_PACKAGE_RELEASE}" )
-endif()
-
 
 # Create the version header file template:
 #
