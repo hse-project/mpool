@@ -16,22 +16,13 @@
  * @MPOOL_RC_ERRMSG:  problem encountered, the error message is in mdr_errmsg
  *
  * @MPOOL_RC_OPEN:    unable to open device path
- * @MPOOL_RC_EIO:     unable to read/write device
  * @MPOOL_RC_PARM:    unable to query or set parms or parms invalid
- * @MPOOL_RC_MAGIC:   device has magic value and needs to be erased
- * @MPOOL_RC_MIXED:   device params incompatible with others in same media class
- * @MPOOL_RC_MDC:     superblock metadata container info missing or invalid
- * @MPOOL_RC_ZOMBIE:  device previously removed from pool and is no longer a
- *                    member
+ * @MPOOL_RC_MAGIC:   device has magic value and needs to be erased member
  * @MPOOL_RC_STAT:    device state or status does not permit operation
  * @MPOOL_RC_ENOMEM:  no system memory available
  *
  * @MPCTL_RC_DEVRW:   Unable to read/write device
- * @MPCTL_RC_TOOMANY: Too many drives specified
- * @MPCTL_RC_BADMNT:  Partial activate, manually deactivate and attempt repair
  * @MPCTL_RC_NOTACTIVATED: The mpool is not deactivated
- * @MPCTL_RC_NLIST:   Name list ill formed
- * @MPCTL_RC_ECTYPE:  Invalid erasure code type for metadata
  */
 enum mpool_rc {
 	MPOOL_RC_NONE    = 0,
@@ -39,30 +30,19 @@ enum mpool_rc {
 
 	/* Mpool Core values */
 	MPOOL_RC_OPEN    = 2,
-	MPOOL_RC_EIO     = 3,
-	MPOOL_RC_PARM    = 5,
-	MPOOL_RC_MAGIC   = 6,
-	MPOOL_RC_MIXED   = 7,
-	MPOOL_RC_MDC     = 10,
-	MPOOL_RC_ZOMBIE  = 11,
-	MPOOL_RC_STAT    = 12,
-	MPOOL_RC_ENOMEM  = 13,
-	MPOOL_RC_MDC_COMPACT_ACTIVATE = 18,
+	MPOOL_RC_PARM    = 3,
+	MPOOL_RC_MAGIC   = 4,
+	MPOOL_RC_STAT    = 5,
+	MPOOL_RC_ENOMEM  = 6,
 
 	/* MPCTL values */
-	MPCTL_RC_DEVRW      = 1001,
-	MPCTL_RC_TOOMANY    = 1002,
-	MPCTL_RC_BADMNT     = 1003,
-	MPCTL_RC_NOTACTIVATED = 1012,
-	MPCTL_RC_NLIST      = 1014,
-	MPCTL_RC_DEVACTIVATED = 1019,
-	MPCTL_RC_MP_NODEV   = 1021,
-	MPCTL_RC_INVALDEV   = 1022,
-	MPCTL_RC_MPEXIST    = 1023,
-	MPCTL_RC_ENTNAM_INV = 1024,
-	MPCTL_RC_INVDEVORMCLASS = 1025,
-	MPCTL_RC_NOT_ONE    = 1026,
-	MPCTL_RC_NO_MDCAPACITY = 1027,
+	MPCTL_RC_DEVRW        = 1001,
+	MPCTL_RC_NOTACTIVATED = 1002,
+	MPCTL_RC_DEVACTIVATED = 1003,
+	MPCTL_RC_MP_NODEV     = 1004,
+	MPCTL_RC_INVALDEV     = 1005,
+	MPCTL_RC_MPEXIST      = 1006,
+	MPCTL_RC_ENTNAM_INV   = 1007,
 };
 
 #define MPOOL_DEVRPT_SZ     120
@@ -98,12 +78,6 @@ const char *mpool_devrpt_strerror(enum mpool_rc rcode);
  * @rcode:
  * @off:
  */
-void
-mpool_devrpt(
-	struct mpool_devrpt    *devrpt,
-	enum mpool_rc           rcode,
-	int                     off,
-	const char             *fmt,
-	...);
+void mpool_devrpt(struct mpool_devrpt *devrpt, enum mpool_rc rcode, int off, const char *fmt, ...);
 
 #endif

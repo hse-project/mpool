@@ -16,6 +16,7 @@
 typedef uuid_t uuid_le;
 
 #include <mpool/mpool_ioctl.h>
+#include <mpool/mpool_devrpt.h>
 
 typedef int64_t                 mpool_err_t;
 

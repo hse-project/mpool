@@ -18,8 +18,6 @@
 typedef uuid_t uuid_le;
 #endif
 
-#include <mpool/mpool_devrpt.h>
-
 #ifndef __user
 #define __user
 #endif
@@ -465,21 +463,20 @@ struct pd_prop {
  * IOCTL arguments.
  */
 
-/* Each mpool MPIOC_* parameter block must contain a struct mpioc_cmn
+/*
+ * Each mpool MPIOC_* parameter block must contain a struct mpioc_cmn
  * parameter block as the very first field (i.e., each derived parameter
  * block "is-a" struct mpioc_cmn).
  */
 struct mpioc_cmn {
 	uint32_t                mc_unused;
-	uint32_t                mc_rcode;       /* enum mpool_rc */
+	uint32_t                mc_rsvd;
 	int64_t                 mc_err;         /* mpool_err_t */
-	char __user            *mc_msg;         /* mdr_msg */
 	char __user            *mc_merr_base;
 } __attribute__((__aligned__(8)));
 
 struct mpioc_mpool {
 	struct mpioc_cmn        mp_cmn;         /* Must be first field! */
-	struct mpool_devrpt     mp_devrpt;
 	struct mpool_params     mp_params;
 	uint32_t                mp_flags;       /* mp_mgmt_flags */
 	uint32_t                mp_dpathc;      /* Count of device paths */
@@ -509,7 +506,6 @@ struct mpioc_mclass {
 
 struct mpioc_drive {
 	struct mpioc_cmn        drv_cmn;         /* Must be first field! */
-	struct mpool_devrpt     drv_devrpt;
 	uint32_t	        drv_flags;   /* mp_mgmt_flags */
 	uint32_t	        drv_rsvd1;
 	struct pd_prop __user  *drv_pd_prop; /* mp_dpathc elements */
@@ -654,7 +650,8 @@ struct mpioc_test {
 	uint64_t            mpt_uval[3];
 };
 
-/* mpioc_union is used by mpc_ioctl() to reserve enough storage
+/*
+ * mpioc_union is used by mpc_ioctl() to reserve enough storage
  * on the stack to contain any mpioc_* object (so as to avoid
  * a call to kmalloc() on each call to mpc_ioctl()).  Be very
  * careful not to bloat these structures.

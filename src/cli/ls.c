@@ -475,7 +475,6 @@ mpool_ls_list(
 	ls.ls_listv = propv;
 	ls.ls_listc = entryc + 1024;
 	ls.ls_cmd = MPIOC_LIST_CMD_PROP_LIST;
-	ls.ls_cmn.mc_msg = ei ? ei->mdr_msg : NULL;
 	ls.ls_cmn.mc_merr_base = mpool_merr_base;
 
 	fd = open(MPC_DEV_CTLPATH, O_RDONLY);
@@ -490,8 +489,6 @@ mpool_ls_list(
 
 	err = rc ? merr(errno) : ls.ls_cmn.mc_err;
 	if (err) {
-		if (ei)
-			ei->mdr_rcode = ls.ls_cmn.mc_rcode;
 		free(propv);
 		close(fd);
 		return err;

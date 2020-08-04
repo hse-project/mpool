@@ -58,35 +58,21 @@ struct devrpt_tab {
 };
 
 static const struct devrpt_tab devrpt_tab[] = {
-	/* Mpool Core values */
 	{ MPOOL_RC_NONE,    "Success" },
+
 	{ MPOOL_RC_OPEN,    "Unable to open" },
-	{ MPOOL_RC_EIO,     "Unable to read/write device" },
 	{ MPOOL_RC_PARM,    "Cannot query or set parms or parms invalid" },
 	{ MPOOL_RC_MAGIC,   "Valid magic found on device" },
 	{ MPOOL_RC_STAT,    "Device state does not permit operation" },
 	{ MPOOL_RC_ENOMEM,  "No system memory available" },
-	{ MPOOL_RC_MDC,     "Superblock mdc info missing or invalid" },
 
-	{ MPOOL_RC_MIXED,   "Device params incompatible with others in same media class" },
-	{ MPOOL_RC_ZOMBIE,  "Device previously removed from pool and is no longer a member" },
-	{ MPOOL_RC_MDC_COMPACT_ACTIVATE, "Failed to compact mpool MDC after upgrade" },
-
-	/* MPCTL values */
-	{ MPCTL_RC_TOOMANY,  "Too many devices specified" },
-	{ MPCTL_RC_BADMNT,   "Partial activation" },
-	{ MPCTL_RC_NLIST,    "Ill-formed name list" },
-	{ MPCTL_RC_MP_NODEV, "No such mpool" },
-	{ MPCTL_RC_INVALDEV, "Unable to add device" },
-	{ MPCTL_RC_MPEXIST,  "mpool already exists" },
-	{ MPCTL_RC_NOT_ONE,  "Zero or several devices in a media class" },
-
-	{ MPCTL_RC_ENTNAM_INV,     "Invalid name or label" },
-	{ MPCTL_RC_DEVACTIVATED,   "The device belongs to a activated mpool" },
+	{ MPCTL_RC_DEVRW,          "Unable to read/write device" },
 	{ MPCTL_RC_NOTACTIVATED,   "mpool is not activated" },
-	{ MPCTL_RC_INVDEVORMCLASS, "Invalid device path or media class name" },
-	{ MPCTL_RC_NO_MDCAPACITY,
-	 "An mpool must have at least one device in the CAPACITY media class" },
+	{ MPCTL_RC_DEVACTIVATED,   "The device belongs to a activated mpool" },
+	{ MPCTL_RC_MP_NODEV,       "No such mpool" },
+	{ MPCTL_RC_INVALDEV,       "Unable to add device" },
+	{ MPCTL_RC_MPEXIST,        "mpool already exists" },
+	{ MPCTL_RC_ENTNAM_INV,     "Invalid name or label" },
 
 	{ 0, NULL }
 };
@@ -99,19 +85,6 @@ const char *mpool_devrpt_strerror(enum mpool_rc rcode)
 		++entry;
 
 	return entry->msg ?: "Invalid rcode";
-}
-
-static void
-mpool_devrpt_merge(struct mpool_devrpt *dst, const struct mpool_devrpt *src, const char *entity)
-{
-	if (!dst || !src || !src->mdr_rcode)
-		return;
-
-	if (src->mdr_rcode == MPOOL_RC_ERRMSG)
-		entity = src->mdr_msg;
-
-	dst->mdr_rcode = src->mdr_rcode;
-	strlcpy(dst->mdr_msg, entity ?: "", sizeof(dst->mdr_msg));
 }
 
 /* mpool_transmogrify() - transmogrify a vector of entries
@@ -561,10 +534,6 @@ mpool_mclass_add(
 		return err;
 
 	err = mpool_ioctl(mp->mp_fd, MPIOC_DRV_ADD, &drv);
-	if (err) {
-		ei->mdr_rcode = drv.drv_cmn.mc_rcode;
-		mpool_devrpt_merge(ei, &drv.drv_devrpt, devname);
-	}
 
 out:
 	mpool_close(mp);
@@ -691,7 +660,6 @@ mpool_create(
 	if (mdcncap != 0 && mdcncap < mbsz)
 		mp.mp_params.mp_mdcncap = mbsz;
 
-	mp.mp_cmn.mc_msg = ei ? ei->mdr_msg : NULL;
 	mp.mp_pd_prop = &pd_prop;
 	mp.mp_flags   = flags;
 
@@ -714,9 +682,6 @@ mpool_create(
 
 		if (params)
 			*params = mp.mp_params;
-	} else if (ei) {
-		ei->mdr_rcode = mp.mp_cmn.mc_rcode;
-		mpool_devrpt_merge(ei, &mp.mp_devrpt, devname);
 	}
 
 	if (!err)
@@ -768,22 +733,12 @@ mpool_err_t mpool_destroy(const char *mpname, uint32_t flags, struct mpool_devrp
 		goto errout;
 	}
 
-	mp.mp_cmn.mc_msg = ei ? ei->mdr_msg : NULL;
 	mp.mp_dpathc = dcnt;
 	mp.mp_dpaths = dpathv[0];
 	mp.mp_dpathssz = strlen(dpathv[0]) + 1; /* trailing NUL */
 	mp.mp_flags = flags;
 
 	err = mpool_ioctl(fd, MPIOC_MP_DESTROY, &mp);
-	if (err && ei) {
-		ei->mdr_rcode = mp.mp_cmn.mc_rcode;
-		mpool_devrpt_merge(ei, &mp.mp_devrpt, mp.mp_devrpt.mdr_off == -1 ? "" :
-				   entries[mp.mp_devrpt.mdr_off].mp_path);
-	} else {
-		/* Print on stdout any info message present in mp_devrpt. */
-		if (mp.mp_devrpt.mdr_msg[0])
-			printf("%s\n", mp.mp_devrpt.mdr_msg);
-	}
 
 errout:
 	free(mp.mp_pd_prop);
@@ -817,7 +772,6 @@ mpool_err_t mpool_list(int *propscp, struct mpool_params **propsvp, struct mpool
 		return merr(ENOMEM);
 
 	memset(&ls, 0, sizeof(ls));
-	ls.ls_cmn.mc_msg = ei ? ei->mdr_msg : NULL;
 	ls.ls_cmd = MPIOC_LIST_CMD_PROP_LIST;
 	ls.ls_listc = propmax;
 	ls.ls_listv = propv;
@@ -832,8 +786,6 @@ mpool_err_t mpool_list(int *propscp, struct mpool_params **propsvp, struct mpool
 
 	err = mpool_ioctl(fd, MPIOC_PROP_GET, &ls);
 	if (err) {
-		if (ei)
-			ei->mdr_rcode = ls.ls_cmn.mc_rcode;
 		free(propv);
 		close(fd);
 		return err;
@@ -1116,7 +1068,6 @@ mpool_activate(const char *mpname, struct mpool_params *params, u32 flags, struc
 		goto errout;
 	}
 
-	mp.mp_cmn.mc_msg = ei ? ei->mdr_msg : NULL;
 	mp.mp_dpathc = entry_cnt;
 	mp.mp_dpaths = dpaths[0];
 	mp.mp_dpathssz = strlen(dpaths[0]) + 1; /* trailing NUL */
@@ -1125,24 +1076,13 @@ mpool_activate(const char *mpname, struct mpool_params *params, u32 flags, struc
 	strlcpy(mp.mp_params.mp_name, entry->mp_name, sizeof(mp.mp_params.mp_name));
 
 	err = mpool_ioctl(fd, MPIOC_MP_ACTIVATE, &mp);
-	if (err) {
-		if (ei) {
-			ei->mdr_rcode = mp.mp_cmn.mc_rcode;
-
-			mpool_devrpt_merge(ei, &mp.mp_devrpt, mp.mp_devrpt.mdr_off == -1 ? "" :
-					   entry[mp.mp_devrpt.mdr_off].mp_path);
-		}
+	if (err)
 		goto errout;
-	}
 
 	err = mpool_ugm_check(entry->mp_name, -1, &mp.mp_params);
 
 	if (params)
 		*params = mp.mp_params;
-
-	/* Print on stdout any info message present in mp_devrpt. */
-	if (!err && mp.mp_devrpt.mdr_msg[0])
-		printf("%s\n", mp.mp_devrpt.mdr_msg);
 
 	if (!err)
 		mpool_rundir_create(entry->mp_name);
@@ -1188,16 +1128,10 @@ mpool_err_t mpool_deactivate(const char *mpname, u32 flags, struct mpool_devrpt 
 	}
 
 	memset(&mp, 0, sizeof(mp));
-	mp.mp_cmn.mc_msg = ei ? ei->mdr_msg : NULL;
 	strlcpy(mp.mp_params.mp_name, entry->mp_name, sizeof(mp.mp_params.mp_name));
 
 	err = mpool_ioctl(fd, MPIOC_MP_DEACTIVATE, &mp);
 	if (err && ei) {
-		ei->mdr_rcode = mp.mp_cmn.mc_rcode;
-
-		/* ei->mdr_msg, if any, is already filled in by kernel
-		 * and mp.mp_cmn.mc_rcode is either MPOOL_RC_NONE or valid
-		 */
 		if (mpool_errno(err) == ENXIO)
 			mpool_devrpt(ei, MPCTL_RC_NOTACTIVATED, -1, NULL);
 	}
@@ -1275,19 +1209,12 @@ mpool_rename(const char *oldmp, const char *newmp, uint32_t flags, struct mpool_
 		goto errout;
 	}
 
-	mp.mp_cmn.mc_msg = ei ? ei->mdr_msg : NULL;
 	mp.mp_dpathc = entry_cnt;
 	mp.mp_dpaths = dpaths[0];
 	mp.mp_dpathssz = strlen(dpaths[0]) + 1; /* trailing NUL */
 	mp.mp_flags = flags;
 
 	err = mpool_ioctl(fd, MPIOC_MP_RENAME, &mp);
-	if (err && ei) {
-		ei->mdr_rcode = mp.mp_cmn.mc_rcode;
-
-		mpool_devrpt_merge(ei, &mp.mp_devrpt, mp.mp_devrpt.mdr_off == -1 ? "" :
-				   entry[mp.mp_devrpt.mdr_off].mp_path);
-	}
 
 	close(fd);
 
