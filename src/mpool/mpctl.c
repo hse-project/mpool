@@ -500,13 +500,14 @@ mpool_mclass_add(
 	struct pd_prop      pd_prop;
 	struct mpioc_drive  drv;
 	struct mpool       *mp;
+	struct mpool_params aparams;
 
 	char    rpath[PATH_MAX];
 	bool    is_activated;
 	merr_t  err;
 	u64     mbsz;
 
-	if (!mpname || !devname || !ei)
+	if (!mpname || !devname)
 		return merr(EINVAL);
 
 	mpool_devrpt_init(ei);
@@ -534,6 +535,11 @@ mpool_mclass_add(
 
 	if (!realpath(devname, rpath))
 		return merr(errno);
+
+	if (!params) {
+		mpool_params_init(&aparams);
+		params = &aparams;
+	}
 
 	mbsz = params->mp_mblocksz[mclassp];
 	mbsz = mbsz ? : MPOOL_MBSIZE_MB_DEFAULT;
