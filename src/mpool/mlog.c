@@ -246,7 +246,7 @@ mlog_init_fsetparms(
  * @nseclpg: number of sectors in a log page
  */
 static inline void
-mlog_extract_fsetparms(struct mlog_stat *lstat, u16 *sectsz, u32 *totsec, u16 *nsecmb, u8 *nseclpg)
+mlog_extract_fsetparms(struct mlog_stat *lstat, u16 *sectsz, u32 *totsec, u16 *nsecmb, u16 *nseclpg)
 {
 	if (sectsz)
 		*sectsz = MLOG_SECSZ(lstat);
@@ -278,7 +278,7 @@ mlog_logrecs_validate(
 	struct mlog_stat       *lstat,
 	int                    *midrec,
 	u16                     rbidx,
-	u8                      lbidx)
+	u16                     lbidx)
 {
 	merr_t                       err = 0;
 	u64                          recnum = 0;
@@ -572,11 +572,12 @@ mlog_rw(
  * @op:      MPOOL_OP_READ or MPOOL_OP_WRITE
  */
 static merr_t
-mlog_setup_buf(struct mlog_stat *lstat, struct iovec *iov, u16 *iovcntp, u16 l_iolen, u8 op)
+mlog_setup_buf(struct mlog_stat *lstat, struct iovec *iov, u16 *iovcntp, u32 l_iolen, u8 op)
 {
 	struct iovec   *iovstart = iov;
 	char          **xbuf;
-	u16             iovcnt, len, i;
+	u32             len;
+	u16             iovcnt, i;
 
 	if (!lstat || !iov || !iovcntp || l_iolen > PAGE_SIZE)
 		return merr(EINVAL);
@@ -671,7 +672,7 @@ mlog_logpage_validate(
 	struct mlog_descriptor    *mlh,
 	struct mlog_stat          *lstat,
 	u16                        rbidx,
-	u8                         nseclpg,
+	u16                        nseclpg,
 	int                       *midrec,
 	bool                      *leol_found,
 	u32                       *fsetidmax,
@@ -679,7 +680,7 @@ mlog_logpage_validate(
 {
 	merr_t             err = 0;
 	char              *rbuf;
-	u8                 lbidx;
+	u16                lbidx;
 	u16                sectsz;
 	struct pmd_layout *layout = mlog2layout(mlh);
 
@@ -781,7 +782,7 @@ mlog_populate_abuf(
 	u32    leadb;
 	u16    sectsz;
 	u16    iovcnt;
-	u8     leading;
+	u16    leading;
 
 	sectsz = MLOG_SECSZ(lstat);
 
@@ -842,12 +843,12 @@ mlog_populate_rbuf(
 
 	merr_t err;
 	off_t  off;
+	u32    l_iolen;
 	u16    maxsec;
-	u16    l_iolen;
 	u16    sectsz;
 	u16    iovcnt, oiovcnt;
-	u8     nseclpg;
-	u8     leading;
+	u16    nseclpg;
+	u16    leading;
 
 	mlog_extract_fsetparms(lstat, &sectsz, NULL, &maxsec, &nseclpg);
 
@@ -940,7 +941,7 @@ mlog_read_and_validate(struct mpool_descriptor *mp, struct pmd_layout *layout, b
 	u16    maxsec;
 	u16    nsecs;
 	u16    nlpgs;
-	u8     nseclpg;
+	u16    nseclpg;
 	bool   skip_ser = false;
 
 	remsec = MLOG_TOTSEC(lstat);
@@ -1239,9 +1240,9 @@ static merr_t mlog_logblocks_hdrpack(struct pmd_layout *layout)
 	u16    idx;
 	u16    abidx;
 	u16    sectsz;
-	u8     nseclpg;
-	u8     sec;
-	u8     start;
+	u16    nseclpg;
+	u16    sec;
+	u16    start;
 
 	sectsz  = MLOG_SECSZ(lstat);
 	nseclpg = MLOG_NSECLPG(lstat);
@@ -1300,10 +1301,10 @@ static merr_t mlog_flush_abuf(struct mpool_descriptor *mp, struct pmd_layout *la
 
 	merr_t err;
 	off_t  off;
+	u32    l_iolen;
 	u16    iovcnt, abidx;
-	u16    l_iolen;
 	u16    sectsz;
-	u8     nseclpg;
+	u16    nseclpg;
 
 	mlog_extract_fsetparms(lstat, &sectsz, NULL, NULL, &nseclpg);
 
@@ -1362,7 +1363,7 @@ mlog_flush_posthdlr_4ka(struct mpool_descriptor *mp, struct pmd_layout *layout, 
 	u32    nsecwr;
 	u16    abidx;
 	u16    sectsz;
-	u8     asidx;
+	u16    asidx;
 
 	sectsz = MLOG_SECSZ(lstat);
 	abidx  = lstat->lst_abidx;
@@ -1450,7 +1451,7 @@ static void mlog_flush_posthdlr(struct mpool_descriptor *mp, struct pmd_layout*l
 	off_t  lpgoff;
 	u16    abidx;
 	u16    sectsz;
-	u8     asidx;
+	u16    asidx;
 
 	sectsz = MLOG_SECSZ(lstat);
 	abidx  = lstat->lst_abidx;
@@ -1767,8 +1768,8 @@ mlog_update_append_idx(struct mpool_descriptor *mp, struct pmd_layout *layout, b
 	merr_t err;
 	u16    sectsz;
 	u16    abidx;
-	u8     asidx;
-	u8     nseclpg;
+	u16    asidx;
+	u16    nseclpg;
 
 	sectsz  = MLOG_SECSZ(lstat);
 	nseclpg = MLOG_NSECLPG(lstat);
@@ -1858,8 +1859,8 @@ mlog_append_marker(
 	u16    aoff;
 	char  *abuf;
 	off_t  lpgoff;
-	u8     asidx;
-	u8     nseclpg;
+	u16    asidx;
+	u16    nseclpg;
 	bool   skip_ser = false;
 
 	sectsz  = MLOG_SECSZ(lstat);
@@ -2095,8 +2096,8 @@ mlog_append_data_internal(
 	u16        aoff;
 	u16        sectsz;
 	u16        abidx;
-	u8         asidx;
-	u8         nseclpg;
+	u16        asidx;
+	u16        nseclpg;
 	int        cpidx;
 
 	mlog_extract_fsetparms(lstat, &sectsz, &datasec, NULL, &nseclpg);
@@ -2396,8 +2397,8 @@ mlog_logblock_load_internal(struct mpool_descriptor *mp, struct mlog_read_iter *
 	u16    nsecs;
 	u16    rbidx;
 	u16    nlpgs;
-	u8     nseclpg;
-	u8     rsidx;
+	u16    nseclpg;
+	u16    rsidx;
 
 	lstat = &lri->lri_layout->eld_lstat;
 
@@ -2511,8 +2512,8 @@ mlog_logblock_load(
 		 */
 		u16 abidx;
 		u16 sectsz;
-		u8  asidx;
-		u8  nseclpg;
+		u16 asidx;
+		u16 nseclpg;
 
 		if (!lri->lri_roff)
 			/*
