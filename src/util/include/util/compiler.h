@@ -25,7 +25,10 @@
 #define __printf(_a, _b)        __attribute__((format(printf, (_a), (_b))))
 
 #define __packed                __attribute__((packed))
+
+#ifndef __aligned
 #define __aligned(_size)        __attribute__((aligned((_size))))
+#endif
 
 #define __maybe_unused          __attribute__((__unused__))
 #define __weak                  __attribute__((__weak__, __noinline__))

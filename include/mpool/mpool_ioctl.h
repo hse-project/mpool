@@ -16,7 +16,10 @@
 #include <sys/uio.h>
 #include <sys/types.h>
 typedef uuid_t uuid_le;
-#endif
+#ifndef __aligned
+#define __aligned(SIZE) __attribute__((aligned(SIZE)))
+#endif /* __aligned */
+#endif /* __KERNEL__ */
 
 #ifndef __user
 #define __user
@@ -473,7 +476,7 @@ struct mpioc_cmn {
 	uint32_t                mc_rsvd;
 	int64_t                 mc_err;         /* mpool_err_t */
 	char __user            *mc_merr_base;
-} __attribute__((__aligned__(8)));
+} __aligned(8);
 
 struct mpioc_mpool {
 	struct mpioc_cmn        mp_cmn;         /* Must be first field! */
