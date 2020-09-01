@@ -124,6 +124,7 @@ struct mlog_stat {
 	struct mlog_fsetparms    lst_mfp;
 	char                   **lst_abuf;
 	char                   **lst_rbuf;
+	void                    *lst_freebufs;
 	off_t                    lst_rsoff;
 	off_t                    lst_rseoff;
 	off_t                    lst_asoff;
