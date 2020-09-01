@@ -161,40 +161,31 @@ static struct mlog_descriptor *layout2mlog(struct pmd_layout *layout)
  */
 
 /**
- * mlog_free_abuf() - Free log pages in the append buffer, range:[start, end].
+ * mlog_free_xbuf() - Remove log pages from the given read or append buffer
  *
  * @lstat: mlog_stat
+ * @bufv:  base of vector of buffer pointers
  * @start: start log page index, inclusive
  * @end:   end log page index, inclusive
  */
-static void mlog_free_abuf(struct mlog_stat *lstat, int start, int end)
+static void mlog_free_xbuf(struct mlog_stat *lstat, char **bufv, int start, int end)
 {
 	int i;
 
 	for (i = start; i <= end; i++) {
-		if (lstat->lst_abuf[i]) {
-			free_page((unsigned long)lstat->lst_abuf[i]);
-			lstat->lst_abuf[i] = NULL;
-		}
-	}
-}
+		void *buf = bufv[i];
 
-/**
- * mlog_free_rbuf() - Free log pages in the read buffer, range:[start, end].
- *
- * @lstat: mlog_stat
- * @start: start log page index, inclusive
- * @end:   end log page index, inclusive
- */
-static void mlog_free_rbuf(struct mlog_stat *lstat, int start, int end)
-{
-	int i;
+		if (!buf)
+			continue;
 
-	for (i = start; i <= end; i++) {
-		if (lstat->lst_rbuf[i]) {
-			free_page((unsigned long)lstat->lst_rbuf[i]);
-			lstat->lst_rbuf[i] = NULL;
+		if (i > 255) {
+			free_page((ulong)buf);
+		} else {
+			*(void **)buf = lstat->lst_freebufs;
+			lstat->lst_freebufs = buf;
 		}
+
+		bufv[i] = NULL;
 	}
 }
 
@@ -491,8 +482,8 @@ merr_t mlog_stat_reinit(struct mpool_descriptor *mp, struct mlog_descriptor *mlh
 
 	lstat = &layout->eld_lstat;
 
-	mlog_free_abuf(lstat, 0, lstat->lst_abidx);
-	mlog_free_rbuf(lstat, 0, MLOG_NLPGMB(lstat) - 1);
+	mlog_free_xbuf(lstat, lstat->lst_abuf, 0, lstat->lst_abidx);
+	mlog_free_xbuf(lstat, lstat->lst_rbuf, 0, MLOG_NLPGMB(lstat) - 1);
 
 	mlog_stat_init_common(layout, lstat);
 
@@ -513,8 +504,15 @@ static void mlog_stat_free(struct pmd_layout *layout)
 	if (!lstat->lst_abuf)
 		return;
 
-	mlog_free_rbuf(lstat, 0, MLOG_NLPGMB(lstat) - 1);
-	mlog_free_abuf(lstat, 0, MLOG_NLPGMB(lstat) - 1);
+	mlog_free_xbuf(lstat, lstat->lst_rbuf, 0, MLOG_NLPGMB(lstat) - 1);
+	mlog_free_xbuf(lstat, lstat->lst_abuf, 0, MLOG_NLPGMB(lstat) - 1);
+
+	while (lstat->lst_freebufs) {
+		void *buf = lstat->lst_freebufs;
+
+		lstat->lst_freebufs = *(void **)buf;
+		free_page((ulong)buf);
+	}
 
 	free(lstat->lst_abuf);
 	lstat->lst_abuf = NULL;
@@ -613,10 +611,15 @@ mlog_setup_buf(struct mlog_stat *lstat, struct iovec *iov, u16 *iovcntp, u32 l_i
 		/* No need to zero the read buffer as we never read more than
 		 * what's needed and do not consume beyond what's read.
 		 */
-		buf = (char *)__get_free_page(GFP_KERNEL);
-		if (!buf) {
-			mlog_free_rbuf(lstat, 0, i - 1);
-			return merr(ENOMEM);
+		buf = lstat->lst_freebufs;
+		if (buf) {
+			lstat->lst_freebufs = *(void **)buf;
+		} else {
+			buf = (char *)__get_free_page(GFP_KERNEL);
+			if (!buf) {
+				mlog_free_xbuf(lstat, lstat->lst_rbuf, 0, i - 1);
+				return merr(ENOMEM);
+			}
 		}
 
 		lstat->lst_rbuf[i] = buf;
@@ -883,7 +886,7 @@ mlog_populate_rbuf(
 		mp_pr_err("mpool %s, mlog 0x%lx populate read buffer, read IO failed iovcnt: %u, off: 0x%lx",
 			  err, mp->pds_name, (ulong)layout->eld_objid, iovcnt, off);
 
-		mlog_free_rbuf(lstat, 0, MLOG_NLPGMB(lstat) - 1);
+		mlog_free_xbuf(lstat, lstat->lst_rbuf, 0, MLOG_NLPGMB(lstat) - 1);
 		free(iov);
 
 		return err;
@@ -894,7 +897,7 @@ mlog_populate_rbuf(
 	 * likely to happen when there're multiple threads reading from
 	 * the same mlog simultaneously, using their own iterator.
 	 */
-	mlog_free_rbuf(lstat, oiovcnt, MLOG_NLPGMB(lstat) - 1);
+	mlog_free_xbuf(lstat, lstat->lst_rbuf, oiovcnt, MLOG_NLPGMB(lstat) - 1);
 
 	if (iov != iovbuf)
 		free(iov);
@@ -981,11 +984,11 @@ mlog_read_and_validate(struct mpool_descriptor *mp, struct pmd_layout *layout, b
 					  err, mp->pds_name, (ulong)layout->eld_objid, leol_found,
 					  fsetidmax, pfsetid);
 
-				mlog_free_rbuf(lstat, rbidx, nlpgs - 1);
+				mlog_free_xbuf(lstat, lstat->lst_rbuf, rbidx, nlpgs - 1);
 				goto exit;
 			}
 
-			mlog_free_rbuf(lstat, rbidx, rbidx);
+			mlog_free_xbuf(lstat, lstat->lst_rbuf, rbidx, rbidx);
 
 			/*
 			 * If LEOL is found, then note down the LEOL offset
@@ -1169,9 +1172,15 @@ mlog_alloc_abufpg(struct mpool_descriptor *mp, struct pmd_layout *layout, u16 ab
 
 	assert(MLOG_LPGSZ(lstat) == PAGE_SIZE);
 
-	abuf = (char *)get_zeroed_page(GFP_KERNEL);
-	if (!abuf)
-		return merr(ENOMEM);
+	abuf = lstat->lst_freebufs;
+	if (abuf) {
+		lstat->lst_freebufs = *(void **)abuf;
+		memset(abuf, 0, PAGE_SIZE);
+	} else {
+		abuf = (char *)get_zeroed_page(GFP_KERNEL);
+		if (!abuf)
+			return merr(ENOMEM);
+	}
 
 	assert(PAGE_ALIGNED(abuf));
 
@@ -1206,10 +1215,10 @@ mlog_alloc_abufpg(struct mpool_descriptor *mp, struct pmd_layout *layout, u16 ab
 		asoff = wsoff;
 		err = mlog_populate_abuf(mp, layout, &asoff, abuf, skip_ser);
 		if (err) {
-			mlog_free_abuf(lstat, abidx, abidx);
 			mp_pr_err("mpool %s, mlog 0x%lx, making write offset %ld 4K-aligned failed",
 				  err, mp->pds_name, (ulong)layout->eld_objid, wsoff);
 
+			mlog_free_xbuf(lstat, lstat->lst_abuf, abidx, abidx);
 			return err;
 		}
 
@@ -1564,7 +1573,7 @@ mlog_logblocks_flush(struct mpool_descriptor *mp, struct pmd_layout *layout, boo
 		start = 0;
 		end   = abidx - 1;
 	}
-	mlog_free_abuf(lstat, start, end);
+	mlog_free_xbuf(lstat, lstat->lst_abuf, start, end);
 
 	if (!IS_SECPGA(lstat))
 		mlog_flush_posthdlr_4ka(mp, layout, fsucc);
@@ -2443,7 +2452,7 @@ mlog_logblock_load_internal(struct mpool_descriptor *mp, struct mlog_read_iter *
 			goto media_read;
 
 		/* Free the active log page and move to next one. */
-		mlog_free_rbuf(lstat, rbidx, rbidx);
+		mlog_free_xbuf(lstat, lstat->lst_rbuf, rbidx, rbidx);
 		++rbidx;
 		rsidx = 0;
 
