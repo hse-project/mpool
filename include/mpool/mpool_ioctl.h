@@ -472,10 +472,8 @@ struct pd_prop {
  * block "is-a" struct mpioc_cmn).
  */
 struct mpioc_cmn {
-	uint32_t                mc_unused;
 	uint32_t                mc_rsvd;
-	int64_t                 mc_err;         /* mpool_err_t */
-	char __user            *mc_merr_base;
+	int32_t                 mc_errno;
 } __aligned(8);
 
 struct mpioc_mpool {
@@ -638,21 +636,6 @@ struct mpioc_vma {
 	uint64_t            im_rsvd;
 };
 
-/**
- * struct mpioc_test - Used for testing
- * @mpt_cmn:
- * @mpt_cmd:    subcommand
- * @mpt_sval:   in/out data for subcommand
- * @mpt_uval:   in/out data for subcommand
- */
-struct mpioc_test {
-	struct mpioc_cmn    mpt_cmn;
-	int32_t             mpt_cmd;
-	int32_t             mpt_rsvd1;
-	int64_t             mpt_sval[3];
-	uint64_t            mpt_uval[3];
-};
-
 /*
  * mpioc_union is used by mpc_ioctl() to reserve enough storage
  * on the stack to contain any mpioc_* object (so as to avoid
@@ -675,7 +658,6 @@ union mpioc_union {
 	struct mpioc_mblock_id      mpu_mblock_id;
 	struct mpioc_mblock_rw      mpu_mblock_rw;
 	struct mpioc_vma            mpu_vma;
-	struct mpioc_test           mpu_test;
 };
 
 #define MPIOC_MAGIC             ('2')
@@ -719,7 +701,5 @@ union mpioc_union {
 #define MPIOC_VMA_DESTROY       _IOWR(MPIOC_MAGIC, 71, struct mpioc_vma)
 #define MPIOC_VMA_PURGE         _IOWR(MPIOC_MAGIC, 72, struct mpioc_vma)
 #define MPIOC_VMA_VRSS          _IOWR(MPIOC_MAGIC, 73, struct mpioc_vma)
-
-#define MPIOC_TEST              _IOWR(MPIOC_MAGIC, 99, struct mpioc_test)
 
 #endif

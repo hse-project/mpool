@@ -19,7 +19,7 @@
 #include <pwd.h>
 #include <grp.h>
 
-extern char mpool_merr_base[];
+#define merr(_errnum)   (_errnum)
 
 #define min(x, y) ({				\
 	typeof(x) _min1 = (x);			\
@@ -839,7 +839,6 @@ static int destroy_command(int argc, char **argv)
 
 		memset(&mp, 0, sizeof(mp));
 		strcpy(mp.mp_params.mp_name, argv[0]);
-		mp.mp_cmn.mc_merr_base = mpool_merr_base;
 
 		fd = open(MPC_DEV_CTLPATH, O_RDWR);
 		if (-1 == fd) {
@@ -852,7 +851,8 @@ static int destroy_command(int argc, char **argv)
 
 		rc = ioctl(fd, cmd, &mp);
 
-		err = rc ? errno : mp.mp_cmn.mc_err;
+		err = rc ? merr(errno) :
+			merr(mp.mp_cmn.mc_errno);
 		if (err) {
 			char    errbuf[128];
 
@@ -942,7 +942,6 @@ static int get_command(int argc, char **argv)
 	ls.ls_listv = propv_base;
 	ls.ls_listc = propmax;
 	ls.ls_cmd = MPIOC_LIST_CMD_PROP_LIST;
-	ls.ls_cmn.mc_merr_base = mpool_merr_base;
 
 	fd = open(MPC_DEV_CTLPATH, O_RDONLY);
 	if (-1 == fd) {
@@ -953,7 +952,8 @@ static int get_command(int argc, char **argv)
 
 	rc = ioctl(fd, MPIOC_PROP_GET, &ls);
 
-	err = rc ? errno : ls.ls_cmn.mc_err;
+	err = rc ? merr(errno) :
+		merr(ls.ls_cmn.mc_errno);
 	if (err) {
 		char    errbuf[256];
 
@@ -1123,7 +1123,6 @@ static int list_command(int argc, char **argv)
 		ls.ls_listv = propv_base;
 		ls.ls_listc = propmax;
 		ls.ls_cmd = MPIOC_LIST_CMD_PROP_LIST;
-		ls.ls_cmn.mc_merr_base = mpool_merr_base;
 
 		fd = open(MPC_DEV_CTLPATH, O_RDONLY);
 		if (-1 == fd) {
@@ -1134,7 +1133,8 @@ static int list_command(int argc, char **argv)
 
 		rc = ioctl(fd, MPIOC_PROP_GET, &ls);
 
-		err = rc ? errno : ls.ls_cmn.mc_err;
+		err = rc ? merr(errno) :
+			merr(ls.ls_cmn.mc_errno);
 		if (err) {
 			char    errbuf[256];
 
@@ -2002,124 +2002,6 @@ static int mmrd_command(int argc, char **argv)
 	return 0;
 }
 
-static void test_help(int argc, char **argv)
-{
-	printf("\n");
-	printf("usage: %s %s [options] <mpool> <errno> ...\n", progname, argv[0]);
-
-	printf("usage: %s -h\n", progname);
-	printf("usage: %s -V\n", progname);
-	printf("-h, --help           print this help list\n");
-	printf("-n, --dryrun         show but do not execute operations\n");
-	printf("-v, --verbose        increase verbosity\n");
-	printf("<mpool>  mpool name\n");
-	printf("<errno>  and errno to encode\n");
-	printf("\n");
-}
-
-static int test_command(int argc, char **argv)
-{
-	struct option   longopts[] = {
-		COMOPTS_OPTIONS,
-		{ NULL }
-	};
-
-	struct mpool   *mp;
-	mpool_err_t     err;
-
-	char   *mpname, *subcmd, *optstring;
-	char    errbuf[128];
-	int     rc, i;
-
-	subcmd = argv[0];
-
-	optstring = mkoptstring(longopts);
-	if (!optstring) {
-		eprint("%s: mkoptstring failed: out of memory", __func__);
-		exit(EX_OSERR);
-	}
-
-	optind = 1;
-
-	while (1) {
-		int curind = optind;
-		int idx = 0;
-		int c;
-
-		c = getopt_long(argc, argv, optstring, longopts, &idx);
-		if (-1 == c)
-			break; /* got '--' or end of arg list */
-
-		switch (c) {
-		case 'h':
-			test_help(argc, argv);
-			free(optstring);
-			exit(0);
-
-		default:
-			comopts_handler(c, optarg, argv, curind, longopts, idx);
-			break;
-		}
-	}
-
-	free(optstring);
-
-	argc -= optind;
-	argv += optind;
-
-	if (argc < 1) {
-		syntax(fmt_insufficient_arguments);
-		exit(EX_USAGE);
-	}
-
-	mpname = argv[0];
-	--argc;
-	++argv;
-
-	err = mpool_open(mpname, O_RDWR, &mp, NULL);
-	if (err) {
-		eprint("mpool_open(%s) failed: %s",
-		       mpname, mpool_strinfo(err, errbuf, sizeof(errbuf)));
-		exit(EX_NOINPUT);
-	}
-
-	/* mpool currently doesn't return a short count for r/w requests
-	 * that extend beyond EOF (where "EOF" means valid data in the
-	 * mblock).  So we try to r/w as much as possible per iteration,
-	 * halving our r/w request size when we detect a failure until
-	 * our r/w size reaches the minimum (currently PAGE_SIZE).
-	 */
-	if (0 == strcmp(subcmd, "testerr")) {
-		if (argc < 1) {
-			syntax(fmt_insufficient_arguments);
-			exit(EX_USAGE);
-		}
-
-		for (i = 0; i < argc; ++i) {
-			struct mpioc_test   test = { };
-
-			test.mpt_cmd = 0;
-			test.mpt_sval[0] = atoi(argv[i]);
-			test.mpt_cmn.mc_merr_base = mpool_merr_base;
-
-			rc = ioctl(mp->mp_fd, MPIOC_TEST, &test);
-
-			err = rc ? errno : test.mpt_cmn.mc_err;
-
-			printf("argv[%d] %d: uerr %lx, kerr %lx, mpool_errno %d, mpool_strinfo %s\n",
-			       i, atoi(argv[i]), err, test.mpt_sval[1], mpool_errno(err),
-			       mpool_strinfo(err, errbuf, sizeof(errbuf)));
-		}
-	} else {
-		syntax("invalid subcommand %s", subcmd);
-		exit(EX_USAGE);
-	}
-
-	mpool_close(mp);
-
-	return 0;
-}
-
 static void main_help(int argc, char **argv)
 {
 	int i;
@@ -2265,6 +2147,5 @@ static const struct mpool_cmd mpool_cmds[] = {
 	{ "mbread",	"read an mblock", mbrw_command, mbrw_help },
 	{ "mbwrite",	"write an mblock", mbrw_command, mbrw_help },
 	{ "mmread",	"read an mblock via mmap", mmrd_command, mmrd_help },
-	{ "testerr",	"test mpool error handling", test_command, test_help },
 	{ NULL }
 };

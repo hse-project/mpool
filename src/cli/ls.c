@@ -20,8 +20,6 @@
 #include "yaml.h"
 #include "ls.h"
 
-extern char mpool_merr_base[];
-
 static
 const match_table_t
 devtype_table = {
@@ -475,7 +473,6 @@ mpool_ls_list(
 	ls.ls_listv = propv;
 	ls.ls_listc = entryc + 1024;
 	ls.ls_cmd = MPIOC_LIST_CMD_PROP_LIST;
-	ls.ls_cmn.mc_merr_base = mpool_merr_base;
 
 	fd = open(MPC_DEV_CTLPATH, O_RDONLY);
 	if (-1 == fd) {
@@ -487,8 +484,9 @@ mpool_ls_list(
 
 	rc = ioctl(fd, MPIOC_PROP_GET, &ls);
 
-	err = rc ? merr(errno) : ls.ls_cmn.mc_err;
-	if (err) {
+	if (rc || ls.ls_cmn.mc_errno) {
+		err = rc ? merr(errno) :
+			merr(ls.ls_cmn.mc_errno);
 		free(propv);
 		close(fd);
 		return err;
@@ -574,7 +572,7 @@ mpool_ls_list(
 		}
 
 		if (!match) {
-			props->pr_cmn.mc_err = -1;
+			props->pr_cmn.mc_errno = -1;
 			continue;
 		}
 
@@ -591,7 +589,7 @@ mpool_ls_list(
 		yaml_start_element_type(&yc, "mpools");
 
 	for (props = propv, i = 0; i < ls.ls_listc; ++i, ++props) {
-		if (props->pr_cmn.mc_err)
+		if (props->pr_cmn.mc_errno)
 			continue;
 
 		if (yaml)

@@ -138,11 +138,14 @@ static mpool_err_t mpool_ioctl(int fd, int cmd, void *arg)
 	struct mpioc_cmn   *cmn = arg;
 	int                 rc;
 
-	cmn->mc_merr_base = mpool_merr_base;
-
 	rc = ioctl(fd, cmd, arg);
+	if (rc)
+		return merr(errno);
 
-	return rc ? merr(errno) : cmn->mc_err;
+	if (cmn->mc_errno)
+		return merr(cmn->mc_errno);
+
+	return 0;
 }
 
 /**
