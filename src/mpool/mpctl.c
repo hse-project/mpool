@@ -135,14 +135,11 @@ static void mpool_params_init2(struct mpool_params *dst, const struct mpool_para
 
 static mpool_err_t mpool_ioctl(int fd, int cmd, void *arg)
 {
-	struct mpioc_cmn   *cmn = arg;
-	int                 rc;
-
-	cmn->mc_merr_base = mpool_merr_base;
+	int rc;
 
 	rc = ioctl(fd, cmd, arg);
 
-	return rc ? merr(errno) : cmn->mc_err;
+	return rc ? merr(errno) : 0;
 }
 
 /**

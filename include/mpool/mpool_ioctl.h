@@ -466,20 +466,7 @@ struct pd_prop {
  * IOCTL arguments.
  */
 
-/*
- * Each mpool MPIOC_* parameter block must contain a struct mpioc_cmn
- * parameter block as the very first field (i.e., each derived parameter
- * block "is-a" struct mpioc_cmn).
- */
-struct mpioc_cmn {
-	uint32_t                mc_unused;
-	uint32_t                mc_rsvd;
-	int64_t                 mc_err;         /* mpool_err_t */
-	char __user            *mc_merr_base;
-} __aligned(8);
-
 struct mpioc_mpool {
-	struct mpioc_cmn        mp_cmn;         /* Must be first field! */
 	struct mpool_params     mp_params;
 	uint32_t                mp_flags;       /* mp_mgmt_flags */
 	uint32_t                mp_dpathc;      /* Count of device paths */
@@ -492,28 +479,24 @@ struct mpioc_mpool {
 
 /**
  * struct mpioc_params -
- * @mps_cmn:
  * @mps_params;
  */
 struct mpioc_params {
-	struct mpioc_cmn        mps_cmn;        /* Must be first field! */
 	struct mpool_params     mps_params;
 };
 
 struct mpioc_mclass {
-	struct mpioc_cmn                    mcl_cmn; /* Must be first field! */
 	struct mpool_mclass_xprops __user  *mcl_xprops;
 	uint32_t                            mcl_cnt;
 	uint32_t                            mcl_rsvd1;
 };
 
 struct mpioc_drive {
-	struct mpioc_cmn        drv_cmn;         /* Must be first field! */
 	uint32_t	        drv_flags;   /* mp_mgmt_flags */
 	uint32_t	        drv_rsvd1;
-	struct pd_prop __user  *drv_pd_prop; /* mp_dpathc elements */
 	uint32_t                drv_dpathc;  /* Count of device paths */
 	uint32_t                drv_dpathssz;/* Length of mp_dpaths */
+	struct pd_prop __user  *drv_pd_prop; /* mp_dpathc elements */
 	char __user            *drv_dpaths;  /* Newline separated device paths*/
 };
 
@@ -525,14 +508,12 @@ enum mpioc_list_cmd {
 };
 
 struct mpioc_list {
-	struct mpioc_cmn        ls_cmn;     /* Must be first field! */
-	uint32_t                ls_cmd;     /* enum mpioc_list_cmd */
-	uint32_t                ls_listc;
-	void __user            *ls_listv;
+	uint32_t        ls_cmd;     /* enum mpioc_list_cmd */
+	uint32_t        ls_listc;
+	void __user    *ls_listv;
 };
 
 struct mpioc_prop {
-	struct mpioc_cmn            pr_cmn;         /* Must be first field! */
 	struct mpool_xprops         pr_xprops;
 	struct mpool_usage          pr_usage;
 	struct mpool_mclass_xprops  pr_mcxv[MP_MED_NUMBER];
@@ -542,14 +523,12 @@ struct mpioc_prop {
 };
 
 struct mpioc_devprops {
-	struct mpioc_cmn       dpr_cmn;         /* Must be first field! */
-	char                   dpr_pdname[PD_NAMESZ_MAX];
-	struct mpool_devprops  dpr_devprops;
+	char                    dpr_pdname[PD_NAMESZ_MAX];
+	struct mpool_devprops   dpr_devprops;
 };
 
 /**
  * struct mpioc_mblock:
- * @mb_cmn:
  * @mb_objid:   mblock unique ID (permanent)
  * @mb_offset:  mblock read offset (ephemeral)
  * @mb_props:
@@ -558,27 +537,23 @@ struct mpioc_devprops {
  * @mb_mclassp: enum mp_media_classp, declared as uint8_t
  */
 struct mpioc_mblock {
-	struct mpioc_cmn            mb_cmn;     /* Must be first field! */
-	uint64_t                    mb_objid;
-	int64_t                     mb_offset;
-	struct mblock_props_ex      mb_props;
-
-	uint8_t                     mb_spare;
-	uint8_t                     mb_mclassp;
-	uint16_t                    mb_rsvd1;
-	uint32_t                    mb_rsvd2;
-	uint64_t                    mb_rsvd3;
+	uint64_t                mb_objid;
+	int64_t                 mb_offset;
+	struct mblock_props_ex  mb_props;
+	uint8_t                 mb_spare;
+	uint8_t                 mb_mclassp;
+	uint16_t                mb_rsvd1;
+	uint32_t                mb_rsvd2;
+	uint64_t                mb_rsvd3;
 };
 
 struct mpioc_mblock_id {
-	struct mpioc_cmn    mi_cmn;     /* Must be first field! */
-	uint64_t            mi_objid;
+	uint64_t    mi_objid;
 };
 
 #define MPIOC_KIOV_MAX          (1024)
 
 struct mpioc_mblock_rw {
-	struct mpioc_cmn            mb_cmn;     /* Must be first field! */
 	uint64_t                    mb_objid;
 	int64_t                     mb_offset;
 	uint32_t                    mb_rsvd2;
@@ -587,31 +562,24 @@ struct mpioc_mblock_rw {
 	const struct iovec __user  *mb_iov;
 };
 
-/*
- * Mlog ioctl args
- */
 struct mpioc_mlog {
-	struct mpioc_cmn            ml_cmn;     /* Must be first field! */
-	uint64_t                    ml_objid;
-	uint64_t                    ml_rsvd;
-	struct mlog_props_ex        ml_props;
-
-	struct mlog_capacity        ml_cap;
-	uint8_t                     ml_mclassp; /* enum mp_media_classp */
-	uint8_t                     ml_rsvd1[7];
-	uint64_t                    ml_rsvd2;
+	uint64_t                ml_objid;
+	uint64_t                ml_rsvd;
+	struct mlog_props_ex    ml_props;
+	struct mlog_capacity    ml_cap;
+	uint8_t                 ml_mclassp; /* enum mp_media_classp */
+	uint8_t                 ml_rsvd1[7];
+	uint64_t                ml_rsvd2;
 };
 
 struct mpioc_mlog_id {
-	struct mpioc_cmn    mi_cmn;     /* Must be first field! */
-	uint64_t            mi_objid;
-	uint64_t            mi_gen;
-	uint8_t             mi_state;
-	uint8_t             mi_rsvd1[7];
+	uint64_t    mi_objid;
+	uint64_t    mi_gen;
+	uint8_t     mi_state;
+	uint8_t     mi_rsvd1[7];
 };
 
 struct mpioc_mlog_io {
-	struct mpioc_cmn        mi_cmn;     /* Must be first field! */
 	uint64_t                mi_objid;
 	int64_t                 mi_off;
 	uint8_t                 mi_op;
@@ -621,12 +589,7 @@ struct mpioc_mlog_io {
 	uint64_t                mi_rsvd2;
 };
 
-/**
- * struct mpioc_vma
- * @map_cmn:
- */
 struct mpioc_vma {
-	struct mpioc_cmn    im_cmn;
 	uint32_t            im_advice;
 	uint32_t            im_mbidc;
 	uint64_t __user    *im_mbidv;
@@ -638,52 +601,29 @@ struct mpioc_vma {
 	uint64_t            im_rsvd;
 };
 
-/**
- * struct mpioc_test - Used for testing
- * @mpt_cmn:
- * @mpt_cmd:    subcommand
- * @mpt_sval:   in/out data for subcommand
- * @mpt_uval:   in/out data for subcommand
- */
-struct mpioc_test {
-	struct mpioc_cmn    mpt_cmn;
-	int32_t             mpt_cmd;
-	int32_t             mpt_rsvd1;
-	int64_t             mpt_sval[3];
-	uint64_t            mpt_uval[3];
-};
-
-/*
- * mpioc_union is used by mpc_ioctl() to reserve enough storage
- * on the stack to contain any mpioc_* object (so as to avoid
- * a call to kmalloc() on each call to mpc_ioctl()).  Be very
- * careful not to bloat these structures.
- */
 union mpioc_union {
-	struct mpioc_cmn            mpu_cmn;
-	struct mpioc_mpool          mpu_mpool;
-	struct mpioc_drive          mpu_drive;
-	struct mpioc_params         mpu_params;
-	struct mpioc_mclass         mpu_mclass;
-	struct mpioc_list           mpu_list;
-	struct mpioc_prop           mpu_prop;
-	struct mpioc_devprops       mpu_devprops;
-	struct mpioc_mlog           mpu_mlog;
-	struct mpioc_mlog_id        mpu_mlog_id;
-	struct mpioc_mlog_io        mpu_mlog_io;
-	struct mpioc_mblock         mpu_mblock;
-	struct mpioc_mblock_id      mpu_mblock_id;
-	struct mpioc_mblock_rw      mpu_mblock_rw;
-	struct mpioc_vma            mpu_vma;
-	struct mpioc_test           mpu_test;
+	struct mpioc_mpool      mpu_mpool;
+	struct mpioc_drive      mpu_drive;
+	struct mpioc_params     mpu_params;
+	struct mpioc_mclass     mpu_mclass;
+	struct mpioc_list       mpu_list;
+	struct mpioc_prop       mpu_prop;
+	struct mpioc_devprops   mpu_devprops;
+	struct mpioc_mlog       mpu_mlog;
+	struct mpioc_mlog_id    mpu_mlog_id;
+	struct mpioc_mlog_io    mpu_mlog_io;
+	struct mpioc_mblock     mpu_mblock;
+	struct mpioc_mblock_id  mpu_mblock_id;
+	struct mpioc_mblock_rw  mpu_mblock_rw;
+	struct mpioc_vma        mpu_vma;
 };
 
 #define MPIOC_MAGIC             ('2')
 
 #define MPIOC_MP_CREATE         _IOWR(MPIOC_MAGIC, 1, struct mpioc_mpool)
-#define MPIOC_MP_DESTROY        _IOWR(MPIOC_MAGIC, 2, struct mpioc_mpool)
+#define MPIOC_MP_DESTROY        _IOW(MPIOC_MAGIC, 2, struct mpioc_mpool)
 #define MPIOC_MP_ACTIVATE       _IOWR(MPIOC_MAGIC, 5, struct mpioc_mpool)
-#define MPIOC_MP_DEACTIVATE     _IOWR(MPIOC_MAGIC, 6, struct mpioc_mpool)
+#define MPIOC_MP_DEACTIVATE     _IOW(MPIOC_MAGIC, 6, struct mpioc_mpool)
 #define MPIOC_MP_RENAME         _IOWR(MPIOC_MAGIC, 7, struct mpioc_mpool)
 
 #define MPIOC_PARAMS_GET        _IOWR(MPIOC_MAGIC, 10, struct mpioc_params)
@@ -698,28 +638,26 @@ union mpioc_union {
 #define MPIOC_DEVPROPS_GET      _IOWR(MPIOC_MAGIC, 22, struct mpioc_devprops)
 
 #define MPIOC_MLOG_ALLOC        _IOWR(MPIOC_MAGIC, 30, struct mpioc_mlog)
-#define MPIOC_MLOG_COMMIT       _IOWR(MPIOC_MAGIC, 32, struct mpioc_mlog_id)
-#define MPIOC_MLOG_ABORT        _IOWR(MPIOC_MAGIC, 33, struct mpioc_mlog_id)
-#define MPIOC_MLOG_DELETE       _IOWR(MPIOC_MAGIC, 34, struct mpioc_mlog_id)
+#define MPIOC_MLOG_COMMIT       _IOW(MPIOC_MAGIC, 32, struct mpioc_mlog_id)
+#define MPIOC_MLOG_ABORT        _IOW(MPIOC_MAGIC, 33, struct mpioc_mlog_id)
+#define MPIOC_MLOG_DELETE       _IOW(MPIOC_MAGIC, 34, struct mpioc_mlog_id)
 #define MPIOC_MLOG_FIND         _IOWR(MPIOC_MAGIC, 37, struct mpioc_mlog)
-#define MPIOC_MLOG_READ         _IOWR(MPIOC_MAGIC, 40, struct mpioc_mlog_io)
-#define MPIOC_MLOG_WRITE        _IOWR(MPIOC_MAGIC, 41, struct mpioc_mlog_io)
+#define MPIOC_MLOG_READ         _IOW(MPIOC_MAGIC, 40, struct mpioc_mlog_io)
+#define MPIOC_MLOG_WRITE        _IOW(MPIOC_MAGIC, 41, struct mpioc_mlog_io)
 #define MPIOC_MLOG_PROPS        _IOWR(MPIOC_MAGIC, 42, struct mpioc_mlog)
-#define MPIOC_MLOG_ERASE        _IOWR(MPIOC_MAGIC, 43, struct mpioc_mlog_id)
+#define MPIOC_MLOG_ERASE        _IOW(MPIOC_MAGIC, 43, struct mpioc_mlog_id)
 
 #define MPIOC_MB_ALLOC          _IOWR(MPIOC_MAGIC, 50, struct mpioc_mblock)
-#define MPIOC_MB_ABORT          _IOWR(MPIOC_MAGIC, 52, struct mpioc_mblock_id)
-#define MPIOC_MB_COMMIT         _IOWR(MPIOC_MAGIC, 53, struct mpioc_mblock_id)
-#define MPIOC_MB_DELETE         _IOWR(MPIOC_MAGIC, 54, struct mpioc_mblock_id)
+#define MPIOC_MB_ABORT          _IOW(MPIOC_MAGIC, 52, struct mpioc_mblock_id)
+#define MPIOC_MB_COMMIT         _IOW(MPIOC_MAGIC, 53, struct mpioc_mblock_id)
+#define MPIOC_MB_DELETE         _IOW(MPIOC_MAGIC, 54, struct mpioc_mblock_id)
 #define MPIOC_MB_FIND           _IOWR(MPIOC_MAGIC, 56, struct mpioc_mblock)
-#define MPIOC_MB_READ           _IOWR(MPIOC_MAGIC, 60, struct mpioc_mblock_rw)
-#define MPIOC_MB_WRITE          _IOWR(MPIOC_MAGIC, 61, struct mpioc_mblock_rw)
+#define MPIOC_MB_READ           _IOW(MPIOC_MAGIC, 60, struct mpioc_mblock_rw)
+#define MPIOC_MB_WRITE          _IOW(MPIOC_MAGIC, 61, struct mpioc_mblock_rw)
 
 #define MPIOC_VMA_CREATE        _IOWR(MPIOC_MAGIC, 70, struct mpioc_vma)
-#define MPIOC_VMA_DESTROY       _IOWR(MPIOC_MAGIC, 71, struct mpioc_vma)
-#define MPIOC_VMA_PURGE         _IOWR(MPIOC_MAGIC, 72, struct mpioc_vma)
+#define MPIOC_VMA_DESTROY       _IOW(MPIOC_MAGIC, 71, struct mpioc_vma)
+#define MPIOC_VMA_PURGE         _IOW(MPIOC_MAGIC, 72, struct mpioc_vma)
 #define MPIOC_VMA_VRSS          _IOWR(MPIOC_MAGIC, 73, struct mpioc_vma)
-
-#define MPIOC_TEST              _IOWR(MPIOC_MAGIC, 99, struct mpioc_test)
 
 #endif

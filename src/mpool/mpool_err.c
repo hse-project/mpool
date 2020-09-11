@@ -27,11 +27,7 @@
 #define MERR_RSVD_MASK      (0x0000000080000000ul)
 #define MERR_ERRNO_MASK     (0x000000007ffffffful)
 
-/* MERR_BASE_SZ    Size of struct merr_base[] buffer for kernel file names
- */
-#define MERR_BASE_SZ        (MERR_ALIGN * 64 * 2)
-
-char mpool_merr_base[MERR_BASE_SZ] _merr_attributes = "mpool_merr_baseu";
+char mpool_merr_base[] _merr_attributes = "mpool_merr_baseu";
 char mpool_merr_bug0[] _merr_attributes = "mpool_merr_bug0u";
 char mpool_merr_bug1[] _merr_attributes = "mpool_merr_bug1u";
 char mpool_merr_bug2[] _merr_attributes = "mpool_merr_bug2u";
