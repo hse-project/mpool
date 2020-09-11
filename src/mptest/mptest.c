@@ -829,7 +829,6 @@ static int destroy_command(int argc, char **argv)
 		struct mpioc_mpool  mp;
 		ulong               cmd;
 		int                 fd, rc;
-		mpool_err_t         err;
 
 		if (strlen(argv[0]) >= sizeof(mp.mp_params.mp_name)) {
 			syntax("mpool name may not be longer than %zu chars",
@@ -850,13 +849,10 @@ static int destroy_command(int argc, char **argv)
 		cmd = destroy ? MPIOC_MP_DESTROY : MPIOC_MP_DEACTIVATE;
 
 		rc = ioctl(fd, cmd, &mp);
+		if (rc) {
+			char errbuf[128];
 
-		err = rc ? merr(errno) :
-			merr(mp.mp_cmn.mc_errno);
-		if (err) {
-			char    errbuf[128];
-
-			mpool_strinfo(err, errbuf, sizeof(errbuf));
+			mpool_strinfo(merr(errno), errbuf, sizeof(errbuf));
 			eprint("%s %s failed: %s", subcmd, argv[0], errbuf);
 			exit(EX_DATAERR);
 		}
@@ -888,7 +884,6 @@ static int get_command(int argc, char **argv)
 	struct mpioc_prop  *propv_base, *prop;
 	struct mpioc_list   ls;
 	size_t              propmax = 1024;
-	mpool_err_t         err;
 	int                 fd, rc;
 	int                 i, j, jmin;
 	char               *optstring;
@@ -951,13 +946,10 @@ static int get_command(int argc, char **argv)
 	}
 
 	rc = ioctl(fd, MPIOC_PROP_GET, &ls);
+	if (rc) {
+		char errbuf[256];
 
-	err = rc ? merr(errno) :
-		merr(ls.ls_cmn.mc_errno);
-	if (err) {
-		char    errbuf[256];
-
-		mpool_strinfo(err, errbuf, sizeof(errbuf));
+		mpool_strinfo(merr(errno), errbuf, sizeof(errbuf));
 		eprint("list failed: %s\n", errbuf);
 		exit(EX_DATAERR);
 	}
@@ -1104,7 +1096,6 @@ static int list_command(int argc, char **argv)
 	if (1) {
 		struct mpioc_prop  *propv_base, *prop;
 		struct mpioc_list   ls;
-		mpool_err_t         err;
 
 		size_t  propmax = 1024;
 		int     labwidth = 6;
@@ -1132,13 +1123,10 @@ static int list_command(int argc, char **argv)
 		}
 
 		rc = ioctl(fd, MPIOC_PROP_GET, &ls);
+		if (rc) {
+			char errbuf[256];
 
-		err = rc ? merr(errno) :
-			merr(ls.ls_cmn.mc_errno);
-		if (err) {
-			char    errbuf[256];
-
-			mpool_strinfo(err, errbuf, sizeof(errbuf));
+			mpool_strinfo(merr(errno), errbuf, sizeof(errbuf));
 			eprint("list failed: %s\n", errbuf);
 			exit(EX_DATAERR);
 		}
