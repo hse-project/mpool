@@ -638,14 +638,14 @@ union mpioc_union {
 #define MPIOC_DEVPROPS_GET      _IOWR(MPIOC_MAGIC, 22, struct mpioc_devprops)
 
 #define MPIOC_MLOG_ALLOC        _IOWR(MPIOC_MAGIC, 30, struct mpioc_mlog)
-#define MPIOC_MLOG_COMMIT       _IOW(MPIOC_MAGIC, 32, struct mpioc_mlog_id)
+#define MPIOC_MLOG_COMMIT       _IOWR(MPIOC_MAGIC, 32, struct mpioc_mlog_id)
 #define MPIOC_MLOG_ABORT        _IOW(MPIOC_MAGIC, 33, struct mpioc_mlog_id)
 #define MPIOC_MLOG_DELETE       _IOW(MPIOC_MAGIC, 34, struct mpioc_mlog_id)
 #define MPIOC_MLOG_FIND         _IOWR(MPIOC_MAGIC, 37, struct mpioc_mlog)
 #define MPIOC_MLOG_READ         _IOW(MPIOC_MAGIC, 40, struct mpioc_mlog_io)
 #define MPIOC_MLOG_WRITE        _IOW(MPIOC_MAGIC, 41, struct mpioc_mlog_io)
 #define MPIOC_MLOG_PROPS        _IOWR(MPIOC_MAGIC, 42, struct mpioc_mlog)
-#define MPIOC_MLOG_ERASE        _IOW(MPIOC_MAGIC, 43, struct mpioc_mlog_id)
+#define MPIOC_MLOG_ERASE        _IOWR(MPIOC_MAGIC, 43, struct mpioc_mlog_id)
 
 #define MPIOC_MB_ALLOC          _IOWR(MPIOC_MAGIC, 50, struct mpioc_mblock)
 #define MPIOC_MB_ABORT          _IOW(MPIOC_MAGIC, 52, struct mpioc_mblock_id)
