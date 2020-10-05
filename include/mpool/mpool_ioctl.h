@@ -55,9 +55,6 @@ typedef uuid_t uuid_le;
 
 #define MPOOL_MDCNUM_DEFAULT        16
 
-/*
- * MPOOL struct definitions used by the ioctl commands.
- */
 
 /**
  * mp_mgmt_flags - Mpool Management Flags
@@ -255,9 +252,6 @@ struct mpool_xprops {
 	char                    ppx_pd_namev[MP_MED_NUMBER][PD_NAMESZ_MAX];
 };
 
-/*
- * mblock struct definitions used by the ioctl commands.
- */
 
 /*
  * struct mblock_props -
@@ -287,9 +281,8 @@ struct mblock_props_ex {
 	uint64_t                mbx_rsvd2;
 };
 
+
 /*
- * mlog struct definitions used by the ioctl commands.
- *
  * enum mlog_open_flags -
  * @MLOG_OF_COMPACT_SEM: Enforce compaction semantics
  * @MLOG_OF_SKIP_SER:    Appends and reads are guaranteed to be serialized
@@ -351,6 +344,7 @@ struct mlog_props_ex {
 	uint64_t            lpx_rsvd2;
 };
 
+
 /**
  * enum mdc_open_flags -
  * @MDC_OF_SKIP_SER: appends and reads are guaranteed to be serialized
@@ -384,12 +378,9 @@ struct mdc_props {
 	enum mp_media_classp   mdc_mclassp;
 };
 
-/*
- * mcache struct definitions used by the ioctl commands.
- */
 
 /**
- * mpc_vma_advice -
+ * enum mpc_vma_advice -
  * @MPC_VMA_COLD:
  * @MPC_VMA_WARM:
  * @MPC_VMA_HOT:
@@ -402,9 +393,6 @@ enum mpc_vma_advice {
 	MPC_VMA_PINNED
 };
 
-/*
- * Drive properties used by the ioctl commands.
- */
 
 /**
  * struct pd_znparam - zone parameter arg used in compute/set API functions
@@ -462,9 +450,6 @@ struct pd_prop {
 	uint64_t	        pdp_rsvd3;
 };
 
-/*
- * IOCTL arguments.
- */
 
 struct mpioc_mpool {
 	struct mpool_params     mp_params;
