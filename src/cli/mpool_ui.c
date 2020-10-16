@@ -1130,33 +1130,6 @@ static merr_t mpool_rename_func(struct verb_s *v, int argc, char **argv)
 }
 
 /**
- * mpool version
- */
-static void mpool_version_help(struct verb_s *v, bool terse)
-{
-	struct help_s  h = {
-		.token   = "version",
-		.shelp   = "Show mpool version",
-		.lhelp   = "Show mpool version",
-		.usage   = "",
-	};
-
-	mpool_generic_verb_help(v, &h, terse, NULL, 0);
-}
-
-static merr_t mpool_version_func(struct verb_s *v, int argc, char **argv)
-{
-	if (argc > 1) {
-		fprintf(co.co_fp, fmt_extraneous, progname, argv[1]);
-		return merr(EINVAL);
-	}
-
-	mpool_version_impl();
-
-	return 0;
-}
-
-/**
  * mpool test
  */
 struct test {
@@ -1246,7 +1219,6 @@ static struct verb_s mpool_verb[] = {
 	{ "rename",     "fhTVv",        mpool_rename_func,   mpool_rename_help,},
 	{ "scan",       "adHhNTVvY",    mpool_scan_func,     mpool_scan_help, },
 	{ "set",        "hTVv",         mpool_set_func,      mpool_set_help, },
-	{ "version",    "hTVv",         mpool_version_func,  mpool_version_help, },
 	{ "test",       "adhiusTVv",    mpool_test_func,     mpool_test_help,
 	  .xoption = mpool_test_xoptionv, .hidden = true, },
 	{ NULL },
