@@ -16,7 +16,7 @@ extern struct subject_s mblock_ui;
 extern struct subject_s mlog_ui;
 extern struct subject_s mdc_ui;
 
-const char *progname;
+extern const char *progname;
 
 /* Use this enum for the 'terse' argument to the various help functions to
  * improve readability
