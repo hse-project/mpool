@@ -12,14 +12,12 @@
 
 #include <stdlib.h>
 
-#define GFP_KERNEL                          0x00000004
-
 #ifndef __USE_ISOC11
 void *aligned_alloc(size_t align, size_t size);
 #endif
 
-unsigned long __get_free_page(unsigned int flags);
-unsigned long get_zeroed_page(unsigned int flags);
-void free_page(unsigned long addr);
+void *hse_page_alloc(void);
+void *hse_page_zalloc(void);
+void hse_page_free(void *mem);
 
 #endif /* MPOOL_UTIL_ALLOC_H */

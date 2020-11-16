@@ -20,12 +20,14 @@ void *aligned_alloc(size_t align, size_t size)
 }
 #endif
 
-unsigned long __weak __get_free_page(unsigned int flags)
+void * __weak
+hse_page_alloc(void)
 {
-	return (unsigned long)aligned_alloc(4096, 4096);
+	return aligned_alloc(4096, 4096);
 }
 
-unsigned long __weak get_zeroed_page(unsigned int flags)
+void * __weak
+hse_page_zalloc(void)
 {
 	void *mem;
 
@@ -33,10 +35,11 @@ unsigned long __weak get_zeroed_page(unsigned int flags)
 	if (mem)
 		memset(mem, 0, 4096);
 
-	return (unsigned long)mem;
+	return mem;
 }
 
-void __weak free_page(unsigned long addr)
+void __weak
+hse_page_free(void *mem)
 {
-	free((void *)addr);
+	free(mem);
 }

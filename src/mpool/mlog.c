@@ -179,7 +179,7 @@ static void mlog_free_xbuf(struct mlog_stat *lstat, char **bufv, int start, int 
 			continue;
 
 		if (i > 255) {
-			free_page((ulong)buf);
+			hse_page_free(buf);
 		} else {
 			*(void **)buf = lstat->lst_freebufs;
 			lstat->lst_freebufs = buf;
@@ -511,7 +511,7 @@ static void mlog_stat_free(struct pmd_layout *layout)
 		void *buf = lstat->lst_freebufs;
 
 		lstat->lst_freebufs = *(void **)buf;
-		free_page((ulong)buf);
+		hse_page_free(buf);
 	}
 
 	free(lstat->lst_abuf);
@@ -615,7 +615,7 @@ mlog_setup_buf(struct mlog_stat *lstat, struct iovec *iov, u16 *iovcntp, u32 l_i
 		if (buf) {
 			lstat->lst_freebufs = *(void **)buf;
 		} else {
-			buf = (char *)__get_free_page(GFP_KERNEL);
+			buf = hse_page_alloc();
 			if (!buf) {
 				mlog_free_xbuf(lstat, lstat->lst_rbuf, 0, i - 1);
 				return merr(ENOMEM);
@@ -1177,7 +1177,7 @@ mlog_alloc_abufpg(struct mpool_descriptor *mp, struct pmd_layout *layout, u16 ab
 		lstat->lst_freebufs = *(void **)abuf;
 		memset(abuf, 0, PAGE_SIZE);
 	} else {
-		abuf = (char *)get_zeroed_page(GFP_KERNEL);
+		abuf = hse_page_zalloc();
 		if (!abuf)
 			return merr(ENOMEM);
 	}
