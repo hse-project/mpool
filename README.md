@@ -1,5 +1,9 @@
 # Mpool: Object Storage Media Pool
 
+> **Notice**: [HSE](https://github.com/hse-project/hse) versions 2.0 and
+> later do not make use of mpool.  As a result, mpool is no longer
+> actively maintained.
+
 **Mpool** is a Linux&reg; loadable kernel module
 that implements an object storage device interface for SSDs and other
 solid-state storage.
