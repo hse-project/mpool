@@ -29,7 +29,7 @@ Mpool was originally developed for the
 but is made available as a separate project.
 
 
-# Key Features
+## Key Features
 
 * Object storage model comprising immutable blocks (blobs) and appendable logs
 * Objects can optionally be placed on multiple classes of solid-state storage
@@ -43,7 +43,7 @@ performance penalty
 * C API library that can be embedded in any application
 
 
-# Getting Started
+## Getting Started
 
 The [mpool Wiki](https://github.com/hse-project/mpool/wiki)
 contains all the information you need to get started with mpool.
