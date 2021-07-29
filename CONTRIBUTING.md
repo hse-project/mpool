@@ -1,7 +1,5 @@
 # Contributing to mpool
 
-We are currently focused on collaborating with the Linux community
-to get mpool upstream, and not able to accept contributions at this time.
-However, see the [mpool Wiki](https://github.com/hse-project/mpool/wiki)
-for how you can report a bug,
-make a feature request, provide feedback, or ask a question.
+> **Notice**: [HSE](https://github.com/hse-project/hse) versions 2.0 and
+> later do not make use of mpool.  As a result, mpool is no longer
+> actively maintained and we are not taking contributions.

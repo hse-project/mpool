@@ -1,5 +1,9 @@
 # Mpool: Object Storage Media Pool
 
+> **Notice**: [HSE](https://github.com/hse-project/hse) versions 2.0 and
+> later do not make use of mpool.  As a result, mpool is no longer
+> actively maintained.
+
 **Mpool** is a Linux&reg; loadable kernel module
 that implements an object storage device interface for SSDs and other
 solid-state storage.
@@ -25,7 +29,7 @@ Mpool was originally developed for the
 but is made available as a separate project.
 
 
-# Key Features
+## Key Features
 
 * Object storage model comprising immutable blocks (blobs) and appendable logs
 * Objects can optionally be placed on multiple classes of solid-state storage
@@ -39,7 +43,7 @@ performance penalty
 * C API library that can be embedded in any application
 
 
-# Getting Started
+## Getting Started
 
 The [mpool Wiki](https://github.com/hse-project/mpool/wiki)
 contains all the information you need to get started with mpool.
